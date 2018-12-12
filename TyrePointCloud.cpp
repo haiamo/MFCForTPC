@@ -3,6 +3,7 @@
 //2018/12/5 TonyHE Modify the return list in FindPins function. 
 //2018/12/9 TonyHE Realize the method of segementation searching for pins.
 //2018/12/10 TonyHE Add set functions for SegSearching properties.
+//2018/12/12 TonyHE Realize the overloading funtion, FiltePins.
 
 #include "stdafx.h"
 #include "TyrePointCloud.h"
@@ -19,13 +20,7 @@ TyrePointCloud::TyrePointCloud()
 	m_inlierratio = 0.2;
 	m_clustertolerance = 1000;
 
-	//Protected point clouds;
-	m_originPC.reset(::new PointCloud<PointXYZ>);
-	m_downsample.reset(::new PointCloud<PointXYZ>);
-	m_segbase.reset(::new PointCloud<PointXYZ>);
-	m_candPins.reset(::new PointCloud<PointXYZI>);
-	m_rgbPC.reset(::new PointCloud<PointXYZRGB>);
-	m_pointNormals.reset(::new PointCloud<Normal>);
+	InitCloudData();
 }
 
 
@@ -38,6 +33,26 @@ TyrePointCloud::~TyrePointCloud()
 	m_pinsPC.reset();
 	m_rgbPC.reset();
 	m_pointNormals.reset();
+}
+
+void TyrePointCloud::InitCloudData()
+{
+	//Protected point clouds;
+	m_originPC.reset(::new PointCloud<PointXYZ>);
+	m_downsample.reset(::new PointCloud<PointXYZ>);
+	m_segbase.reset(::new PointCloud<PointXYZ>);
+	if(!m_refPlanes.empty())
+		m_refPlanes.clear();
+	if (!m_refCoefs.empty())
+		m_refCoefs.clear();
+	if(!m_restClusters.empty())
+		m_restClusters.clear();
+	m_candPins.reset(::new PointCloud<PointXYZI>);
+	m_pinsPC.reset(::new PointCloud<PointXYZI>);
+	m_rgbPC.reset(::new PointCloud<PointXYZRGB>);
+	m_pointNormals.reset(::new PointCloud<Normal>);
+	if(!m_clusterDic.empty())
+		m_clusterDic.clear();
 }
 
 int TyrePointCloud::FiltePins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins)
@@ -79,6 +94,168 @@ int TyrePointCloud::FiltePins(Vector3d mineigenVector, vector<PointXYZI>& filted
 			}
 		}
 	}
+	return 0;
+}
+
+int TyrePointCloud::FiltePins(vector<PointXYZI>& filted_pins)
+{
+	map<int, vector<int>>::iterator dic_it;
+	vector<PointCloud<PointXYZ>::Ptr>::iterator ref_it=m_refPlanes.begin();
+	vector<ModelCoefficients::Ptr>::iterator cof_it=m_refCoefs.begin();
+	vector<PointCloud<PointXYZI>::Ptr>::iterator clu_it;
+	vector<Vector3f> box_min, box_max;
+	vector<Vector3f>::iterator boxmin_it, boxmax_it;
+	Vector3f tmpMin(0.0f, 0.0f, 0.0f), tmpMax(0.0f, 0.0f, 0.0f);
+	//Finding the outer box of the reference planes or cylinders.
+	for (ref_it = m_refPlanes.begin(); ref_it != m_refPlanes.end(); ref_it++)
+	{
+		for (size_t ii = 0; ii < (*ref_it)->points.size(); ii++)
+		{
+			if (ii == 0)
+			{
+				tmpMin = Vector3f((*ref_it)->points[ii].x, (*ref_it)->points[ii].y, (*ref_it)->points[ii].z);
+				tmpMax = tmpMin;
+				continue;
+			}
+
+			if ((*ref_it)->points[ii].x < tmpMin(0))
+			{
+				tmpMin(0) = (*ref_it)->points[ii].x;
+			}
+
+			if ((*ref_it)->points[ii].y < tmpMin(1))
+			{
+				tmpMin(1) = (*ref_it)->points[ii].y;
+			}
+
+			if ((*ref_it)->points[ii].z < tmpMin(2))
+			{
+				tmpMin(2) = (*ref_it)->points[ii].z;
+			}
+
+			if ((*ref_it)->points[ii].x > tmpMax(0))
+			{
+				tmpMax(0) = (*ref_it)->points[ii].x;
+			}
+
+			if ((*ref_it)->points[ii].y > tmpMax(1))
+			{
+				tmpMax(1) = (*ref_it)->points[ii].y;
+			}
+
+			if ((*ref_it)->points[ii].z > tmpMax(2))
+			{
+				tmpMax(2) = (*ref_it)->points[ii].z;
+			}
+		}
+		box_min.push_back(tmpMin);
+		box_max.push_back(tmpMax);
+	}
+
+	float a, b, c, d;//Plane's coeficients.
+	Vector3f proj_pt,cur_pt;
+	vector<int> pt_in_plane(m_refPlanes.size(), 0), ini_pt_plane(m_refPlanes.size(), 0);;
+	vector<int>::iterator pt_plane_it;
+	vector<int>::iterator maxID;
+	vector<int> tmp_cluster;
+	//Making combination between surfaces and clusters.
+	//Loop over the vector of rest point cloud clusters
+	for (clu_it = m_restClusters.begin(); clu_it != m_restClusters.end(); clu_it++)
+	{
+		//Loop over the points in the cluster
+		for(size_t ii=0;ii<(*clu_it)->points.size();ii++)
+		{
+			cur_pt = Vector3f((*clu_it)->points[ii].x, (*clu_it)->points[ii].y, (*clu_it)->points[ii].z);
+			boxmin_it = box_min.begin();
+			boxmax_it = box_max.begin();
+			pt_plane_it = pt_in_plane.begin();
+			cof_it = m_refCoefs.begin();
+			//Loop of reference planes and coefficients
+			while (cof_it != m_refCoefs.end())
+			{
+				if ((*cof_it)->values.size() == 4)//Plane
+				{
+					tmpMin = *boxmin_it;
+					tmpMax = *boxmax_it;
+					a = (*cof_it)->values[0];
+					b = (*cof_it)->values[1];
+					c = (*cof_it)->values[2];
+					d = (*cof_it)->values[3];
+					proj_pt(0) = ((b*b + c*c)*cur_pt(0) - a*(b*cur_pt(1) + c*cur_pt(2) + d)) / (a*a + b*b + c*c);
+					proj_pt(1) = b / a*(proj_pt(0) - cur_pt(0)) + cur_pt(1);
+					proj_pt(2) = c / a*(proj_pt(0) - cur_pt(0)) + cur_pt(2);
+					if ((proj_pt(0) > tmpMin(0) && proj_pt(1) > tmpMin(1) && proj_pt(2) > tmpMin(2)) && 
+						(proj_pt(0) < tmpMax(0) && proj_pt(1) < tmpMax(1) && proj_pt(2) < tmpMax(2)))
+					{
+						(*pt_plane_it)++;
+						(*clu_it)->points[ii].intensity = (proj_pt - cur_pt).norm();
+						break;
+					}
+				}
+				else if ((*cof_it)->values.size() == 7)//Cylinder
+				{
+				}
+				pt_plane_it++;
+				cof_it++;
+				boxmin_it++;
+				boxmax_it++;
+			}
+
+		}
+		maxID = max_element(pt_in_plane.begin(), pt_in_plane.end());
+		if (*maxID > (*clu_it)->points.size()*0.8)
+		{
+			dic_it = m_clusterDic.find(int(maxID - pt_in_plane.begin()));
+			
+			if (dic_it != m_clusterDic.end())
+			{
+				(dic_it->second).push_back(int(clu_it - m_restClusters.begin()));
+			}
+			else
+			{
+				tmp_cluster.clear();
+				tmp_cluster.push_back(int(clu_it - m_restClusters.begin()));
+				m_clusterDic.insert(pair<int, vector<int>>(int(maxID - pt_in_plane.begin()), tmp_cluster));
+			}
+		}
+		pt_in_plane = ini_pt_plane;
+	}
+
+	//Calculate the cluster distances to specific surfaces.
+	PointXYZI tmpPin;
+	float len = 0.0f;
+	int ptID = 0;
+	PointCloud<PointXYZI>::Ptr p_cluster;
+	//Loop of map between the plane indices and cluster indices.
+	for (dic_it = m_clusterDic.begin(); dic_it != m_clusterDic.end(); dic_it++)
+	{
+		cof_it = m_refCoefs.begin() + dic_it->first;
+		//Loop through the vector of cluster onto the binding surface.
+		for (int ii = 0; ii < dic_it->second.size(); ii++)
+		{
+			ptID = dic_it->second[ii];
+			p_cluster = m_restClusters[ptID];
+			//Loop of the points in the cluster onto the surface.
+			for (size_t jj = 0; jj < p_cluster->points.size(); jj++)
+			{
+				if (jj == 0)
+				{
+					len = p_cluster->points[jj].intensity;
+					tmpPin = p_cluster->points[jj];
+				}
+				else
+				{
+					if (p_cluster->points[jj].intensity > len)
+					{
+						len = p_cluster->points[jj].intensity;
+						tmpPin = p_cluster->points[jj];
+					}
+				}
+			}
+			filted_pins.push_back(tmpPin);
+		}
+	}
+
 	return 0;
 }
 
@@ -134,6 +311,7 @@ void TyrePointCloud::SetClusterTolerance(double ct)
 
 int TyrePointCloud::LoadTyrePC(string pcfile)
 {
+	InitCloudData();
 	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);
 	int f_error = -1;
 	string file_type = "";
@@ -180,6 +358,7 @@ int TyrePointCloud::LoadTyrePC(string pcfile)
 
 int TyrePointCloud::LoadTyrePC(PointCloud<PointXYZ>::Ptr in_cloud)
 {
+	InitCloudData();
 	if (!in_cloud)
 	{
 		if (!m_originPC)
@@ -435,10 +614,7 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 	Vector3f eigenValuesPCA = eigen_solver.eigenvalues();
 
 	PointCloud<Normal>::Ptr cur_normals = GetPointNormals();
-	if (!m_candPins)
-	{
-		m_candPins.reset(::new PointCloud<PointXYZI>);
-	}
+
 	Vector3d mineigenVector(eigenVecotorsPCA(0, 0), eigenVecotorsPCA(0, 1), eigenVecotorsPCA(0, 2));
 
 	//Downsample the dataset, Needed?
@@ -509,6 +685,7 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 		}
 		seg.setInputNormals(cur_normal);
 		seg.segment(*inliers, *coefficients);
+		m_refCoefs.push_back(coefficients);
 		if (inliers->indices.size() <0.5*nr_points)
 		{
 			if (seg.getModelType() == SACMODEL_PLANE)
@@ -543,6 +720,7 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 		cur_normal.reset(::new PointCloud<Normal>);
 		tree.reset(::new pcl::search::KdTree<PointXYZ>);
 		cloud_plane.reset(::new PointCloud<PointXYZ>);
+		coefficients.reset(::new ModelCoefficients);
 		bNormalRenewed = FALSE;
 	} while (cloud_filtered->points.size() > m_inlierratio * nr_points && cloud_plane->points.size() < 0.1*nr_points && m_refPlanes.size() < 15);
 	
@@ -559,13 +737,17 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 	ec.setInputCloud(cloud_filtered);
 	ec.extract(cluster_indices);
 
+	if (!m_candPins)
+	{
+		m_candPins.reset(::new PointCloud<PointXYZI>);
+	}
 	if (!cluster_indices.empty())
 	{
 		PointXYZI tmpPti;
 		Vector3d curpoint, curvector, pcaCent3d(pcaCentroid(0), pcaCentroid(1), pcaCentroid(2));
 		for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
 		{
-			pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster(::new pcl::PointCloud<pcl::PointXYZ>);
+			pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_cluster(::new pcl::PointCloud<pcl::PointXYZI>);
 			for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); pit++)
 			{
 				tmpPt = cloud_filtered->points[*pit];
@@ -576,12 +758,15 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 				curvector = curpoint - pcaCent3d;
 				tmpPti.intensity = curvector.dot(mineigenVector);
 				m_candPins->points.push_back(tmpPti);
+				cloud_cluster->points.push_back(tmpPti);
 			}
+			m_restClusters.push_back(cloud_cluster);
 		}
 	}
 
 	vector<PointXYZI> filted_pins;
-	FiltePins(mineigenVector, filted_pins);
+	//FiltePins(mineigenVector, filted_pins);
+	FiltePins(filted_pins);
 
 	if (!m_pinsPC)
 	{

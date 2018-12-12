@@ -2,6 +2,7 @@
 //2018/12/3 TonyHE Add enum TPCStatus and class TyrePointCloud
 //2018/12/9 TonyHE Add Segementation searching method
 //2018/12/10 TonyHE Add Properties for SegSearching
+//2018/12/12 TonyHE Add FiltePins overload function
 #pragma once
 #undef min
 #undef max
@@ -71,12 +72,20 @@ protected:
 	PointCloud<PointXYZ>::Ptr m_downsample;//Original down sampling cloud.
 	PointCloud<PointXYZ>::Ptr m_segbase;//Segementation basic cloud.
 	vector<PointCloud<PointXYZ>::Ptr> m_refPlanes;//Reference planes' list.
+	vector<ModelCoefficients::Ptr> m_refCoefs;//The coefficients of planes.
+	vector<PointCloud<PointXYZI>::Ptr> m_restClusters;//The clusters after segmentation searching.
 	PointCloud<PointXYZI>::Ptr m_candPins;//Candidate pins' point cloud.
 	PointCloud<PointXYZI>::Ptr m_pinsPC;//Pins on the tyres, include positions(X,Y,Z) and length(I).
 	PointCloud<PointXYZRGB>::Ptr m_rgbPC;//Point cloud with RGB.
 	PointCloud<Normal>::Ptr m_pointNormals;//Point nomrals.
 
+	map<int, vector<int>> m_clusterDic;//Key is the ID in refPlanes/refCoefs vector
+									   //value is the ID vector of restClusters
+
+	void InitCloudData();
+
 	int FiltePins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins);
+	int FiltePins(vector<PointXYZI>& filted_pins);
 public:
 	PointCloud<PointXYZ>::Ptr GetOriginalPC();
 	PointCloud<PointXYZI>::Ptr GetPinsPC();
