@@ -58,6 +58,8 @@ public:
 	int SaveXYZToPLYFile(vector<PointCloud<PointXYZ>::Ptr> in_pc, string ex_info);
 	int SaveXYZIToPLYFile(vector<PointCloud<PointXYZI>::Ptr> in_pc, string ex_info);
 
+	void SetSegParameters();
+
 protected:
 	//User defined methods
 	void GetPathAndType(string &fpath, string &ftype);

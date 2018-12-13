@@ -30,10 +30,12 @@
 #include <pcl\segmentation\extract_clusters.h>
 #include <pcl\ModelCoefficients.h>
 
+#include <ppl.h>
 
 using namespace pcl;
 using namespace Eigen;
 using namespace std;
+using namespace concurrency;
 
 enum TPCStatus
 {
@@ -79,14 +81,18 @@ private:
 	PinObject m_pinsobj;
 
 protected:
+	char* m_inCloud;//The input point cloud char pointer.
+
 	PointCloud<PointXYZ>::Ptr m_originPC;//Original point cloud
 	PointCloud<PointXYZ>::Ptr m_downsample;//Original down sampling cloud.
 	PointCloud<PointXYZ>::Ptr m_segbase;//Segementation basic cloud.
 	vector<PointCloud<PointXYZ>::Ptr> m_refPlanes;//Reference planes' list.
 	vector<ModelCoefficients::Ptr> m_refCoefs;//The coefficients of planes.
-	vector<PointCloud<PointXYZI>::Ptr> m_restClusters;//The clusters after segmentation searching.
+	vector<PointCloud<PointXYZI>::Ptr> m_restClusters;//The clusters after segmentation searching
+	vector<PointIndices> m_restIndices;// The indices of clusters.
 	PointCloud<PointXYZI>::Ptr m_candPins;//Candidate pins' point cloud.
 	PointCloud<PointXYZI>::Ptr m_pinsPC;//Pins on the tyres, include positions(X,Y,Z) and length(I).
+	vector<int> m_pinsID;// The head of pins' id in origin point cloud.
 	PointCloud<PointXYZRGB>::Ptr m_rgbPC;//Point cloud with RGB.
 	PointCloud<Normal>::Ptr m_pointNormals;//Point nomrals.
 
@@ -185,5 +191,7 @@ public:
 		 length(in): The length of char stream.
 		 out_pc(out): A list of PinObjects, which have position(x,y,z) and the length(len).
 	*/
+
+	int FindPinsMT(char* p_pc, int length, vector<PinObject> & out_pc);
 };
 

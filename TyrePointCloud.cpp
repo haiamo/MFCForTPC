@@ -227,6 +227,8 @@ int TyrePointCloud::FiltePins(vector<PointXYZI>& filted_pins)
 	float len = 0.0f;
 	int ptID = 0;
 	PointCloud<PointXYZI>::Ptr p_cluster;
+	PointIndices cur_indices;
+	int pinHeadID = 0;
 	//Loop of map between the plane indices and cluster indices.
 	for (dic_it = m_clusterDic.begin(); dic_it != m_clusterDic.end(); dic_it++)
 	{
@@ -236,6 +238,7 @@ int TyrePointCloud::FiltePins(vector<PointXYZI>& filted_pins)
 		{
 			ptID = dic_it->second[ii];
 			p_cluster = m_restClusters[ptID];
+			cur_indices = m_restIndices[ptID];
 			//Loop of the points in the cluster onto the surface.
 			for (size_t jj = 0; jj < p_cluster->points.size(); jj++)
 			{
@@ -243,6 +246,7 @@ int TyrePointCloud::FiltePins(vector<PointXYZI>& filted_pins)
 				{
 					len = p_cluster->points[jj].intensity;
 					tmpPin = p_cluster->points[jj];
+					pinHeadID = cur_indices.indices[jj];
 				}
 				else
 				{
@@ -250,10 +254,12 @@ int TyrePointCloud::FiltePins(vector<PointXYZI>& filted_pins)
 					{
 						len = p_cluster->points[jj].intensity;
 						tmpPin = p_cluster->points[jj];
+						pinHeadID = cur_indices.indices[jj];
 					}
 				}
 			}
 			filted_pins.push_back(tmpPin);
+			m_pinsID.push_back(pinHeadID);
 		}
 	}
 
@@ -752,6 +758,7 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 	ec.setSearchMethod(tree);
 	ec.setInputCloud(cloud_filtered);
 	ec.extract(cluster_indices);
+	m_restIndices = cluster_indices;
 
 	if (!m_candPins)
 	{
@@ -802,13 +809,14 @@ int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
 	string cur_str;
 	bool b_pcData = false;
 	int pos = 0;
-	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);
 	PointXYZ cur_pt;
+	PointXYZRGB cur_rgb;
 	float x, y, z;
 	int r, g, b;
 	int line_pos = 0;
 	const char* t1 = " ";
 	const char* t2 = "\n";
+	m_inCloud = p_pc;
 	while (pos<length)
 	{
 		if (!b_pcData)
@@ -865,7 +873,15 @@ int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
 						cur_pt.x = x;
 						cur_pt.y = y;
 						cur_pt.z = z;
-						cloud->points.push_back(cur_pt);
+						m_originPC->points.push_back(cur_pt);
+
+						cur_rgb.x = x;
+						cur_rgb.y = y;
+						cur_rgb.z = z;
+						cur_rgb.r = r;
+						cur_rgb.g = g;
+						cur_rgb.b = b;
+						m_rgbPC->points.push_back(cur_rgb);
 					}
 					else
 					{
@@ -881,6 +897,113 @@ int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
 		p_pc++;
 		pos++;
 	}
+
+	FindPinsBySegmentation(m_originPC, m_pinsPC);
+	PinObject tmpPXYZI;
+	CString newStr;
+	string new_ss;
+	for (size_t ii = 0; ii < m_pinsPC->points.size(); ii++)
+	{
+		tmpPXYZI.x = m_pinsPC->points[ii].x;
+		tmpPXYZI.y = m_pinsPC->points[ii].y;
+		tmpPXYZI.z = m_pinsPC->points[ii].z;
+		tmpPXYZI.len = m_pinsPC->points[ii].intensity;
+		out_pc.push_back(tmpPXYZI);
+		newStr.Format("%f %f %f 0 255 0\n", tmpPXYZI.x, tmpPXYZI.y, tmpPXYZI.z);
+		new_ss = new_ss + newStr.GetBuffer();
+	}
+	return 0;
+}
+
+int TyrePointCloud::FindPinsMT(char * p_pc, int length, vector<PinObject>& out_pc)
+{
+	string cur_str;
+	bool b_pcData = false;
+	int pos = 0;
+	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);
+	PointXYZ cur_pt;
+	float x, y, z;
+	int r, g, b;
+	int line_pos = 0;
+	const char* t1 = " ";
+	const char* t2 = "\n";
+	int cur_pos = 0;
+
+	while (pos < length)
+	{
+		if (*p_pc == *t1 || *p_pc == *t2)
+		{
+			if (cur_str != "")
+			{
+				cur_str.erase(0, cur_str.find_first_not_of(" "));
+				if (cur_str == "end_header")
+				{
+					b_pcData = true;
+					cur_pos = ++pos;
+					p_pc++;
+					break;
+				}
+				cur_str = "";
+			}
+		}
+		else
+		{
+			cur_str = cur_str + *p_pc;
+		}
+		pos++;
+		p_pc++;
+	}
+
+	parallel_for(int(cur_pos),length,[&](int pos)
+	{
+		if (*p_pc == *t1 || *p_pc == *t2)
+		{
+			if (cur_str != "")
+			{
+				cur_str.erase(0, cur_str.find_first_not_of(" "));
+				switch (line_pos)
+				{
+				case 0:
+					x = stof(cur_str);
+					break;
+				case 1:
+					y = stof(cur_str);
+					break;
+				case 2:
+					z = stof(cur_str);
+					break;
+				case 3:
+					r = stoi(cur_str);
+					break;
+				case 4:
+					g = stoi(cur_str);
+					break;
+				case 5:
+					b = stoi(cur_str);
+					break;
+				}
+				cur_str = "";
+				if (*p_pc == *t2)
+				{
+					line_pos = 0;
+					cur_pt.x = x;
+					cur_pt.y = y;
+					cur_pt.z = z;
+					cloud->points.push_back(cur_pt);
+				}
+				else
+				{
+					line_pos++;
+				}
+			}
+		}
+		else
+		{
+			cur_str = cur_str + *p_pc;
+		}
+		p_pc++;
+		pos++;
+	});
 	m_originPC = cloud;
 	PointCloud<PointXYZI>::Ptr pcl_pc(::new PointCloud<PointXYZI>);
 	FindPinsBySegmentation(cloud, pcl_pc);
@@ -893,6 +1016,6 @@ int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
 		tmpPXYZI.len = pcl_pc->points[ii].intensity;
 		out_pc.push_back(tmpPXYZI);
 	}
-	
+
 	return 0;
 }

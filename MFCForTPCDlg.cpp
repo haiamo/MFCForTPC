@@ -225,6 +225,7 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	}
 	cloud = m_tpc.GetOriginalPC();
 
+	SetSegParameters();
 	str_len = sprintf(info_str + str_len, "Starting pin searching, please wait...\n");
 	m_stc_St.SetWindowTextA(info_str);
 	PointCloud<PointXYZI>::Ptr pins;
@@ -276,7 +277,7 @@ int CMFCForTPCDlg::SaveXYZToPLYFile(vector<PointCloud<PointXYZ>::Ptr> in_pc, str
 	vector<PointCloud<PointXYZ>::Ptr>::iterator it = in_pc.begin();
 	for (it = in_pc.begin(); it < in_pc.end(); it++)
 	{
-		fe = pcl::io::savePLYFile(savepath + "_" + to_string(int(it - in_pc.begin())) + "_" + ex_info + ftype, **it);
+		fe = pcl::io::savePLYFile(savepath + "_" + to_string(int(it - in_pc.begin())) + "_" + ex_info +"."+ ftype, **it);
 		if (fe < 0)
 		{
 			res = res + fe;
@@ -293,13 +294,35 @@ int CMFCForTPCDlg::SaveXYZIToPLYFile(vector<PointCloud<PointXYZI>::Ptr> in_pc, s
 	vector<PointCloud<PointXYZI>::Ptr>::iterator it = in_pc.begin();
 	for (it = in_pc.begin(); it < in_pc.end(); it++)
 	{
-		fe = pcl::io::savePLYFile(savepath + "_" + to_string(int(it - in_pc.begin())) + "_" + ex_info + ftype, **it);
+		fe = pcl::io::savePLYFile(savepath + "_" + to_string(int(it - in_pc.begin())) + "_" + ex_info +"."+ ftype, **it);
 		if (fe < 0)
 		{
 			res = res + fe;
 		}
 	}
 	return res;
+}
+
+void CMFCForTPCDlg::SetSegParameters()
+{
+	CString cur_val;
+	m_edt_DownSamR.GetWindowTextA(cur_val);
+	m_tpc.SetDownSampleRaius(stof(cur_val.GetBuffer()));
+
+	m_edt_NumThds.GetWindowTextA(cur_val);
+	m_tpc.SetNumberOfThreads(stoi(cur_val.GetBuffer()));
+
+	m_edt_DisThrhd.GetWindowTextA(cur_val);
+	m_tpc.SetDistanceThreshold(stof(cur_val.GetBuffer()));
+
+	m_edt_NormDisWt.GetWindowTextA(cur_val);
+	m_tpc.SetNormalDistanceWeight(stof(cur_val.GetBuffer()));
+
+	m_edt_InlR.GetWindowTextA(cur_val);
+	m_tpc.SetInlierRatio(stof(cur_val.GetBuffer()));
+
+	m_edt_ClTol.GetWindowTextA(cur_val);
+	m_tpc.SetClusterTolerance(stof(cur_val.GetBuffer()));
 }
 
 void CMFCForTPCDlg::GetPathAndType(string & fpath, string & ftype)
@@ -354,5 +377,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	t.read(buffer, length);       // read the whole file into the buffer  
 	t.close();                    // close file handle  
 	vector<PinObject> res;
+	SetSegParameters();
 	m_tpc.FindPins(buffer, length, res);
+	//m_tpc.FindPinsMT(buffer, length, res);
 }
