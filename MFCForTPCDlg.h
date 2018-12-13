@@ -52,4 +52,21 @@ public:
 	CStatic m_stc_St;
 	CButton m_btn_run;
 	afx_msg void OnBnClickedBtnExit();
+
+public:
+	//User defined methods
+	int SaveXYZToPLYFile(vector<PointCloud<PointXYZ>::Ptr> in_pc, string ex_info);
+	int SaveXYZIToPLYFile(vector<PointCloud<PointXYZI>::Ptr> in_pc, string ex_info);
+
+protected:
+	//User defined methods
+	void GetPathAndType(string &fpath, string &ftype);
+
+private:
+	//User defined members
+	TyrePointCloud m_tpc;
+public:
+	afx_msg void OnBnClickedBtnSavedata();
+	CButton m_btn_savedata;
+	afx_msg void OnBnClickedButton2();
 };

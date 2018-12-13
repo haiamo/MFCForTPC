@@ -4,6 +4,7 @@
 //2018/12/9 TonyHE Realize the method of segementation searching for pins.
 //2018/12/10 TonyHE Add set functions for SegSearching properties.
 //2018/12/12 TonyHE Realize the overloading funtion, FiltePins.
+//2018/12/13 TonyHE Realize the fucntion of FindPin with char pointer and its length.
 
 #include "stdafx.h"
 #include "TyrePointCloud.h"
@@ -277,6 +278,21 @@ PointCloud<PointXYZRGB>::Ptr TyrePointCloud::GetRGBPC()
 PointCloud<Normal>::Ptr TyrePointCloud::GetPointNormals()
 {
 	return m_pointNormals;
+}
+
+void TyrePointCloud::GetReferencePlanes(vector<PointCloud<PointXYZ>::Ptr>& out_ref)
+{
+	out_ref = m_refPlanes;
+}
+
+void TyrePointCloud::GetReferenceCoefficients(vector<ModelCoefficients::Ptr>& out_ref)
+{
+	out_ref = m_refCoefs;
+}
+
+void TyrePointCloud::GetRestClusters(vector<PointCloud<PointXYZI>::Ptr>& out_ref)
+{
+	out_ref = m_restClusters;
 }
 
 void TyrePointCloud::SetDownSampleRaius(float dsr)
@@ -778,5 +794,105 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 		m_pinsPC->points.push_back(*ii);
 	}
 	out_pc = m_pinsPC;
+	return 0;
+}
+
+int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
+{
+	string cur_str;
+	bool b_pcData = false;
+	int pos = 0;
+	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);
+	PointXYZ cur_pt;
+	float x, y, z;
+	int r, g, b;
+	int line_pos = 0;
+	const char* t1 = " ";
+	const char* t2 = "\n";
+	while (pos<length)
+	{
+		if (!b_pcData)
+		{
+			if (*p_pc==*t1 || *p_pc==*t2)
+			{
+				if (cur_str!="")
+				{
+					cur_str.erase(0, cur_str.find_first_not_of(" "));
+					if (cur_str == "end_header")
+					{
+						b_pcData = true;
+					}
+					cur_str = "";
+				}
+			}
+			else
+			{
+				cur_str = cur_str + *p_pc;
+			}
+		}
+		else
+		{
+			if (*p_pc == *t1 || *p_pc == *t2)
+			{
+				if (cur_str!="")
+				{
+					cur_str.erase(0, cur_str.find_first_not_of(" "));
+					switch (line_pos)
+					{
+					case 0:
+						x = stof(cur_str);
+						break;
+					case 1:
+						y = stof(cur_str);
+						break;
+					case 2:
+						z = stof(cur_str);
+						break;
+					case 3:
+						r = stoi(cur_str);
+						break;
+					case 4:
+						g = stoi(cur_str);
+						break;
+					case 5:
+						b = stoi(cur_str);
+						break;
+					}
+					cur_str = "";
+					if (*p_pc==*t2)
+					{
+						line_pos = 0;
+						cur_pt.x = x;
+						cur_pt.y = y;
+						cur_pt.z = z;
+						cloud->points.push_back(cur_pt);
+					}
+					else
+					{
+						line_pos++;
+					}
+				}
+			}
+			else
+			{
+				cur_str = cur_str + *p_pc;
+			}
+		}
+		p_pc++;
+		pos++;
+	}
+	m_originPC = cloud;
+	PointCloud<PointXYZI>::Ptr pcl_pc(::new PointCloud<PointXYZI>);
+	FindPinsBySegmentation(cloud, pcl_pc);
+	PinObject tmpPXYZI;
+	for (size_t ii = 0; ii < pcl_pc->points.size(); ii++)
+	{
+		tmpPXYZI.x = pcl_pc->points[ii].x;
+		tmpPXYZI.y = pcl_pc->points[ii].y;
+		tmpPXYZI.z = pcl_pc->points[ii].z;
+		tmpPXYZI.len = pcl_pc->points[ii].intensity;
+		out_pc.push_back(tmpPXYZI);
+	}
+	
 	return 0;
 }

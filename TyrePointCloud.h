@@ -3,6 +3,7 @@
 //2018/12/9 TonyHE Add Segementation searching method
 //2018/12/10 TonyHE Add Properties for SegSearching
 //2018/12/12 TonyHE Add FiltePins overload function
+//2018/12/13 TonyHE Add FindPins function with input of char pointer.
 #pragma once
 #undef min
 #undef max
@@ -50,6 +51,14 @@ enum TPCStatus
 	NONE_INLIERS = -100
 };
 
+struct PinObject
+{
+	float x;
+	float y;
+	float z;
+	float len;
+};
+
 class TyrePointCloud
 {
 public:
@@ -66,6 +75,8 @@ private:
 	double m_normaldistanceweight;
 	double m_inlierratio;
 	float m_clustertolerance;
+
+	PinObject m_pinsobj;
 
 protected:
 	PointCloud<PointXYZ>::Ptr m_originPC;//Original point cloud
@@ -91,6 +102,11 @@ public:
 	PointCloud<PointXYZI>::Ptr GetPinsPC();
 	PointCloud<PointXYZRGB>::Ptr GetRGBPC();
 	PointCloud<Normal>::Ptr GetPointNormals();
+
+	//Get segementation references and clusters.
+	void GetReferencePlanes(vector<PointCloud<PointXYZ>::Ptr> &out_ref);
+	void GetReferenceCoefficients(vector<ModelCoefficients::Ptr> &out_ref);
+	void GetRestClusters(vector<PointCloud<PointXYZI>::Ptr> &out_ref);
 
 public:
 	//Set parameters:
@@ -162,5 +178,12 @@ public:
 
 	int FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr &out_pc);
 
+	int FindPins(char* p_pc, int length, vector<PinObject> & out_pc);
+	/* Find pins by input a char stream
+	   Parameters:
+	     p_pc(in): Char pointer of the input point cloud.
+		 length(in): The length of char stream.
+		 out_pc(out): A list of PinObjects, which have position(x,y,z) and the length(len).
+	*/
 };
 

@@ -67,6 +67,7 @@ void CMFCForTPCDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_STC_FilePath, m_stc_FlPth);
 	DDX_Control(pDX, IDC_STC_Status, m_stc_St);
 	DDX_Control(pDX, IDC_BTN_Run, m_btn_run);
+	DDX_Control(pDX, IDC_BTN_SaveData, m_btn_savedata);
 }
 
 BEGIN_MESSAGE_MAP(CMFCForTPCDlg, CDialogEx)
@@ -75,6 +76,8 @@ BEGIN_MESSAGE_MAP(CMFCForTPCDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BTN_Run, &CMFCForTPCDlg::OnBnClickedBtnRun)
 	ON_BN_CLICKED(ID_BTN_Exit, &CMFCForTPCDlg::OnBnClickedBtnExit)
+	ON_BN_CLICKED(IDC_BTN_SaveData, &CMFCForTPCDlg::OnBnClickedBtnSavedata)
+	ON_BN_CLICKED(IDC_BUTTON2, &CMFCForTPCDlg::OnBnClickedButton2)
 END_MESSAGE_MAP()
 
 
@@ -116,6 +119,8 @@ BOOL CMFCForTPCDlg::OnInitDialog()
 	m_edt_NormDisWt.SetWindowTextA("0.2");
 	m_edt_InlR.SetWindowTextA("0.05");
 	m_edt_ClTol.SetWindowTextA("300");
+
+	m_btn_savedata.EnableWindow(FALSE);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -174,6 +179,7 @@ HCURSOR CMFCForTPCDlg::OnQueryDragIcon()
 void CMFCForTPCDlg::OnBnClickedBtnRun()
 {
 	m_btn_run.EnableWindow(FALSE);
+	m_btn_savedata.EnableWindow(FALSE);
 	CFileDialog fileopendlg(TRUE);
 	CString filepath;
 	if (fileopendlg.DoModal() == IDOK)
@@ -185,8 +191,6 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	{
 		m_stc_FlPth.SetWindowTextA("");
 	}
-
-	TyrePointCloud cur_pc;
 	
 	// Load point cloud file
 	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
@@ -208,7 +212,7 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 		int f_error = -1;
 		
 		QueryPerformanceCounter(&nst);
-		f_error = cur_pc.LoadTyrePC(pcfile);
+		f_error = m_tpc.LoadTyrePC(pcfile);
 		QueryPerformanceCounter(&nend);
 		if (-1 == f_error)
 		{
@@ -219,13 +223,13 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 		str_len = sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 		m_stc_St.SetWindowTextA(info_str);
 	}
-	cloud = cur_pc.GetOriginalPC();
+	cloud = m_tpc.GetOriginalPC();
 
 	str_len = sprintf(info_str + str_len, "Starting pin searching, please wait...\n");
 	m_stc_St.SetWindowTextA(info_str);
 	PointCloud<PointXYZI>::Ptr pins;
 	QueryPerformanceCounter(&nst);
-	cur_pc.FindPinsBySegmentation(cloud, pins);
+	m_tpc.FindPinsBySegmentation(cloud, pins);
 	QueryPerformanceCounter(&nend);
 	memset(info_str, 0, sizeof(info_str)/sizeof(char));
 	char* tmp_str=new char[1000];
@@ -242,6 +246,7 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	}
 	m_stc_St.SetWindowTextA(info_str);
 	m_btn_run.EnableWindow(TRUE);
+	m_btn_savedata.EnableWindow(TRUE);
 
 	//Pointers clearation.
 	delete[] tmp_str;
@@ -261,4 +266,93 @@ void CMFCForTPCDlg::OnBnClickedBtnExit()
 	delete[] test;
 	*/
 	CDialogEx::OnOK();
+}
+
+int CMFCForTPCDlg::SaveXYZToPLYFile(vector<PointCloud<PointXYZ>::Ptr> in_pc, string ex_info)
+{
+	string savepath, ftype;
+	GetPathAndType(savepath, ftype);
+	int fe = 0, res = 0;
+	vector<PointCloud<PointXYZ>::Ptr>::iterator it = in_pc.begin();
+	for (it = in_pc.begin(); it < in_pc.end(); it++)
+	{
+		fe = pcl::io::savePLYFile(savepath + "_" + to_string(int(it - in_pc.begin())) + "_" + ex_info + ftype, **it);
+		if (fe < 0)
+		{
+			res = res + fe;
+		}
+	}
+	return res;
+}
+
+int CMFCForTPCDlg::SaveXYZIToPLYFile(vector<PointCloud<PointXYZI>::Ptr> in_pc, string ex_info)
+{
+	string savepath, ftype;
+	GetPathAndType(savepath, ftype);
+	int fe = 0, res = 0;
+	vector<PointCloud<PointXYZI>::Ptr>::iterator it = in_pc.begin();
+	for (it = in_pc.begin(); it < in_pc.end(); it++)
+	{
+		fe = pcl::io::savePLYFile(savepath + "_" + to_string(int(it - in_pc.begin())) + "_" + ex_info + ftype, **it);
+		if (fe < 0)
+		{
+			res = res + fe;
+		}
+	}
+	return res;
+}
+
+void CMFCForTPCDlg::GetPathAndType(string & fpath, string & ftype)
+{
+	CString cs_file;
+	m_stc_FlPth.GetWindowTextA(cs_file);
+
+	string path, fullname, fname, savepath;
+	size_t pathid = 0, ftypeid = 0;
+
+	path = cs_file.GetBuffer();
+	pathid = path.find_last_of("\\");
+	fullname = path.substr(pathid + 1);
+	ftypeid = fullname.find_last_of(".");
+	fname = fullname.substr(0, ftypeid);
+	ftype = fullname.substr(ftypeid + 1);
+	fpath = path.substr(0, pathid + 1) + fname;
+}
+
+
+void CMFCForTPCDlg::OnBnClickedBtnSavedata()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	vector<PointCloud<PointXYZ>::Ptr> refPlanes;
+	vector<PointCloud<PointXYZI>::Ptr> restClusters;
+	m_tpc.GetReferencePlanes(refPlanes);
+	m_tpc.GetRestClusters(restClusters);
+	SaveXYZToPLYFile(refPlanes, "refPl");
+	SaveXYZIToPLYFile(restClusters, "restCl");
+}
+
+
+void CMFCForTPCDlg::OnBnClickedButton2()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CFileDialog fileopendlg(TRUE);
+	CString filepath;
+	if (fileopendlg.DoModal() == IDOK)
+	{
+		filepath = fileopendlg.GetPathName();
+	}
+	//char* filename;
+	//strcpy(filename, filepath);
+	std::ifstream t;
+	int length;
+	char* buffer;
+	t.open(filepath);      // open input file  
+	t.seekg(0, std::ios::end);    // go to the end  
+	length = t.tellg();           // report location (this is the length)  
+	t.seekg(0, std::ios::beg);    // go back to the beginning  
+	buffer = new char[length];    // allocate memory for a buffer of appropriate dimension  
+	t.read(buffer, length);       // read the whole file into the buffer  
+	t.close();                    // close file handle  
+	vector<PinObject> res;
+	m_tpc.FindPins(buffer, length, res);
 }
