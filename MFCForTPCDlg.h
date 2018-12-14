@@ -58,6 +58,12 @@ public:
 	int SaveXYZToPLYFile(vector<PointCloud<PointXYZ>::Ptr> in_pc, string ex_info);
 	int SaveXYZIToPLYFile(vector<PointCloud<PointXYZI>::Ptr> in_pc, string ex_info);
 
+	template <typename PointTPtr>
+	int SaveCloudToFile(vector<PointTPtr> p_inpc, string ex_info);
+
+	template <typename PointTPtr>
+	int SaveCloudToFile(PointTPtr p_inpc, string ex_info);
+
 	void SetSegParameters();
 
 protected:
@@ -72,3 +78,5 @@ public:
 	CButton m_btn_savedata;
 	afx_msg void OnBnClickedButton2();
 };
+
+

@@ -192,6 +192,5 @@ public:
 		 out_pc(out): A list of PinObjects, which have position(x,y,z) and the length(len).
 	*/
 
-	int FindPinsMT(char* p_pc, int length, vector<PinObject> & out_pc);
 };
 

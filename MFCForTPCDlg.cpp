@@ -303,6 +303,33 @@ int CMFCForTPCDlg::SaveXYZIToPLYFile(vector<PointCloud<PointXYZI>::Ptr> in_pc, s
 	return res;
 }
 
+template<typename PointTPtr>
+int CMFCForTPCDlg::SaveCloudToFile(vector<PointTPtr> p_inpc, string ex_info)
+{
+	string savepath, ftype;
+	GetPathAndType(savepath, ftype);
+	int fe = 0, res = 0;
+	for (vector<PointTPtr>::iterator it = p_inpc.begin(); it < p_inpc.end(); it++)
+	{
+		fe = pcl::io::savePLYFile(savepath + "_" + to_string(int(it - p_inpc.begin())) + "_" + ex_info + "." + ftype, **it);
+		if (fe < 0)
+		{
+			res += fe;
+		}
+	}
+	return res;
+}
+
+template<typename PointTPtr>
+int CMFCForTPCDlg::SaveCloudToFile(PointTPtr p_inpc, string ex_info)
+{
+	string savepath, ftype;
+	GetPathAndType(savepath, ftype);
+	int fe = 0;
+	fe=pcl::io::savePLYFile(savepath + "_" + ex_info + "." + ftype, *p_inpc);
+	return 0;
+}
+
 void CMFCForTPCDlg::SetSegParameters()
 {
 	CString cur_val;
@@ -350,8 +377,10 @@ void CMFCForTPCDlg::OnBnClickedBtnSavedata()
 	vector<PointCloud<PointXYZI>::Ptr> restClusters;
 	m_tpc.GetReferencePlanes(refPlanes);
 	m_tpc.GetRestClusters(restClusters);
-	SaveXYZToPLYFile(refPlanes, "refPl");
-	SaveXYZIToPLYFile(restClusters, "restCl");
+	SaveCloudToFile(refPlanes, "refPl");
+	SaveCloudToFile(restClusters, "restCl");
+	//SaveXYZToPLYFile(refPlanes, "refPl");
+	//SaveXYZIToPLYFile(restClusters, "restCl");
 }
 
 
@@ -376,6 +405,103 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	buffer = new char[length];    // allocate memory for a buffer of appropriate dimension  
 	t.read(buffer, length);       // read the whole file into the buffer  
 	t.close();                    // close file handle  
+	/*
+	string cur_str, in_str = buffer, tmpstr;
+	bool b_pcData = false;
+	int pos = 0;
+	PointXYZ cur_pt;
+	PointXYZRGB cur_rgb;
+	float x, y, z;
+	int r, g, b;
+	int line_pos = 0;
+	const char* t1 = " ";
+	const char* t2 = "\n";
+	string::iterator str_it = in_str.begin();
+	PointCloud<PointXYZ>::Ptr cloud=m_tpc.GetOriginalPC();
+	PointCloud<PointXYZRGB>::Ptr cloud_rgb=m_tpc.GetRGBPC();
+
+	for(pos=0;pos<length;pos++)//while (pos<length && str_it<in_str.end())
+	{
+		tmpstr = *str_it;
+		if (!b_pcData)
+		{
+			
+			if (tmpstr.compare(" ")==0|| tmpstr.compare("\n")==0)
+			{
+				if (cur_str != "")
+				{
+					cur_str.erase(0, cur_str.find_first_not_of(" "));
+					if (cur_str == "end_header")
+					{
+						b_pcData = true;
+					}
+					cur_str = "";
+				}
+			}
+			else
+			{
+				cur_str = cur_str + tmpstr;
+			}
+		}
+		else
+		{
+			if (tmpstr.compare(" ")==0 || tmpstr.compare("\n")==0)
+			{
+				if (cur_str != "")
+				{
+					cur_str.erase(0, cur_str.find_first_not_of(" "));
+					switch (line_pos)
+					{
+					case 0:
+						x = stof(cur_str);
+						break;
+					case 1:
+						y = stof(cur_str);
+						break;
+					case 2:
+						z = stof(cur_str);
+						break;
+					case 3:
+						r = stoi(cur_str);
+						break;
+					case 4:
+						g = stoi(cur_str);
+						break;
+					case 5:
+						b = stoi(cur_str);
+						break;
+					}
+					cur_str = "";
+					if (tmpstr.compare("\n")==0)
+					{
+						line_pos = 0;
+						cur_pt.x = x;
+						cur_pt.y = y;
+						cur_pt.z = z;
+						cloud->points.push_back(cur_pt);
+
+						cur_rgb.x = x;
+						cur_rgb.y = y;
+						cur_rgb.z = z;
+						cur_rgb.r = r;
+						cur_rgb.g = g;
+						cur_rgb.b = b;
+						cloud_rgb->points.push_back(cur_rgb);
+					}
+					else
+					{
+						line_pos++;
+					}
+				}
+			}
+			else
+			{
+				cur_str = cur_str + tmpstr;
+			}
+		}
+		//pos++;
+		str_it++;
+	}*/
 	vector<PinObject> res;
 	SetSegParameters();
 	m_tpc.FindPins(buffer, length, res);
