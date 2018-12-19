@@ -1,4 +1,3 @@
-
 // MFCForTPCDlg.h : 头文件
 //
 
@@ -12,6 +11,7 @@
 #include "afxwin.h"
 #include <atlconv.h>
 
+using namespace pcl;
 
 
 // CMFCForTPCDlg 对话框

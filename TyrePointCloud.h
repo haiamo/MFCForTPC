@@ -45,6 +45,7 @@ enum TPCStatus
 	LOAD_PCD_ERROR = -3,
 	FILE_TYPE_ERROR = -4,
 	NULL_PC_PTR = -5,
+	EMPTY_POINT = -6,
 
 	//Estimating normals
 	NEGATIVE_R_K = -50,
@@ -59,6 +60,22 @@ struct PinObject
 	float y;
 	float z;
 	float len;
+};
+
+enum PtRefType//Point reference type
+{
+	ORIGIN_P,
+	DOWNSAMPLE_P,
+	SEGEMENTBASE_P,
+	REFPLANES_V,
+	REFCOEFFICIENTS_V,
+	RESTCLUSTERS_V,
+	RESTINDICES_V,
+	CANDIDATEPINS_P,
+	PINSPC_P,
+	PINSID_V,
+	ORIGINRGB_P,
+	POINTNORMAL_P
 };
 
 class TyrePointCloud
@@ -79,6 +96,9 @@ private:
 	float m_clustertolerance;
 
 	PinObject m_pinsobj;
+
+	//Implementation
+	
 
 protected:
 	char* m_inCloud;//The input point cloud char pointer.
