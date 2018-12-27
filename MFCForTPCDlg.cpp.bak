@@ -113,12 +113,12 @@ BOOL CMFCForTPCDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	m_edt_DownSamR.SetWindowTextW(_T("300"));
-	m_edt_NumThds.SetWindowTextW(_T("2"));
-	m_edt_DisThrhd.SetWindowTextW(_T("500"));
-	m_edt_NormDisWt.SetWindowTextW(_T("0.2"));
-	m_edt_InlR.SetWindowTextW(_T("0.05"));
-	m_edt_ClTol.SetWindowTextW(_T("300"));
+	m_edt_DownSamR.SetWindowTextA("300");
+	m_edt_NumThds.SetWindowTextA("2");
+	m_edt_DisThrhd.SetWindowTextA("500");
+	m_edt_NormDisWt.SetWindowTextA("0.2");
+	m_edt_InlR.SetWindowTextA("0.05");
+	m_edt_ClTol.SetWindowTextA("300");
 
 	m_btn_savedata.EnableWindow(FALSE);
 
@@ -185,27 +185,27 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	if (fileopendlg.DoModal() == IDOK)
 	{
 		filepath = fileopendlg.GetPathName();
-		m_stc_FlPth.SetWindowTextW(filepath);
+		m_stc_FlPth.SetWindowTextA(filepath);
 	}
 	else
 	{
-		m_stc_FlPth.SetWindowTextW(_T(""));
+		m_stc_FlPth.SetWindowTextA("");
 	}
 	
 	// Load point cloud file
 	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
 	QueryPerformanceFrequency(&nfreq);
 	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
-	CString	cs_file;
+	CString	cs_file = "";
 	string pcfile = "";
 	char* info_str = new char[1000];
 	int str_len = 0;
-	m_stc_FlPth.GetWindowTextW(cs_file);
+	m_stc_FlPth.GetWindowTextA(cs_file);
 	pcfile = CT2A(cs_file.GetBuffer());
 	if (0 == strcmp("", pcfile.data()))
 	{
-		MessageBox(_T("The file path is empty, please check again."), _T("Load Info"), MB_OK | MB_ICONERROR);
-		m_stc_St.SetWindowTextW(_T("Loading failed: empty file path"));
+		MessageBox("The file path is empty, please check again.", "Load Info", MB_OK | MB_ICONERROR);
+		m_stc_St.SetWindowTextA("Loading failed: empty file path");
 	}
 	else
 	{
@@ -216,18 +216,18 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 		QueryPerformanceCounter(&nend);
 		if (-1 == f_error)
 		{
-			MessageBox(_T("Failed to load point cloud data, please try again!"), _T("LoadError"), MB_OK | MB_ICONERROR);
-			m_stc_St.SetWindowTextW(_T("Loading failed: PCL function failed"));
+			MessageBox("Failed to load point cloud data, please try again!", "LoadError", MB_OK | MB_ICONERROR);
+			m_stc_St.SetWindowTextA("Loading failed: PCL function failed");
 		}
 		
 		str_len = sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
-		m_stc_St.SetWindowTextW((LPCTSTR)(LPTSTR)info_str);
+		m_stc_St.SetWindowTextA(info_str);
 	}
 	cloud = m_tpc.GetOriginalPC();
 
 	SetSegParameters();
 	str_len = sprintf(info_str + str_len, "Starting pin searching, please wait...\n");
-	m_stc_St.SetWindowTextW((LPCTSTR)(LPTSTR)info_str);
+	m_stc_St.SetWindowTextA(info_str);
 	PointCloud<PointXYZI>::Ptr pins;
 	QueryPerformanceCounter(&nst);
 	m_tpc.FindPinsBySegmentation(cloud, pins);
@@ -236,7 +236,7 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	char* tmp_str=new char[1000];
 	sprintf(tmp_str, "Searching pins costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 	info_str = strcat(info_str, tmp_str);
-	m_stc_St.SetWindowTextW((LPCTSTR)(LPTSTR)info_str);
+	m_stc_St.SetWindowTextA(info_str);
 	size_t ii = 0;
 	while (ii < pins->points.size() && ii < 5)
 	{
@@ -245,7 +245,7 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 		info_str = strcat(info_str, tmp_str);
 		ii++;
 	}
-	m_stc_St.SetWindowTextW((LPCTSTR)(LPTSTR)info_str);
+	m_stc_St.SetWindowTextA(info_str);
 	m_btn_run.EnableWindow(TRUE);
 	m_btn_savedata.EnableWindow(TRUE);
 
@@ -333,35 +333,34 @@ int CMFCForTPCDlg::SaveCloudToFile(PointTPtr p_inpc, string ex_info)
 void CMFCForTPCDlg::SetSegParameters()
 {
 	CString cur_val;
-	m_edt_DownSamR.GetWindowTextW(cur_val);
+	m_edt_DownSamR.GetWindowTextA(cur_val);
 	m_tpc.SetDownSampleRaius(stof(cur_val.GetBuffer()));
 
-	m_edt_NumThds.GetWindowTextW(cur_val);
+	m_edt_NumThds.GetWindowTextA(cur_val);
 	m_tpc.SetNumberOfThreads(stoi(cur_val.GetBuffer()));
 
-	m_edt_DisThrhd.GetWindowTextW(cur_val);
+	m_edt_DisThrhd.GetWindowTextA(cur_val);
 	m_tpc.SetDistanceThreshold(stof(cur_val.GetBuffer()));
 
-	m_edt_NormDisWt.GetWindowTextW(cur_val);
+	m_edt_NormDisWt.GetWindowTextA(cur_val);
 	m_tpc.SetNormalDistanceWeight(stof(cur_val.GetBuffer()));
 
-	m_edt_InlR.GetWindowTextW(cur_val);
+	m_edt_InlR.GetWindowTextA(cur_val);
 	m_tpc.SetInlierRatio(stof(cur_val.GetBuffer()));
 
-	m_edt_ClTol.GetWindowTextW(cur_val);
+	m_edt_ClTol.GetWindowTextA(cur_val);
 	m_tpc.SetClusterTolerance(stof(cur_val.GetBuffer()));
 }
 
 void CMFCForTPCDlg::GetPathAndType(string & fpath, string & ftype)
 {
 	CString cs_file;
-	m_stc_FlPth.GetWindowTextW(cs_file);
+	m_stc_FlPth.GetWindowTextA(cs_file);
 
 	string path, fullname, fname, savepath;
 	size_t pathid = 0, ftypeid = 0;
 
-	USES_CONVERSION;
-	path = W2A(cs_file);
+	path = cs_file.GetBuffer();
 	pathid = path.find_last_of("\\");
 	fullname = path.substr(pathid + 1);
 	ftypeid = fullname.find_last_of(".");
@@ -388,7 +387,7 @@ void CMFCForTPCDlg::OnBnClickedBtnSavedata()
 void CMFCForTPCDlg::OnBnClickedButton2()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	/*CFileDialog fileopendlg(TRUE);
+	CFileDialog fileopendlg(TRUE);
 	CString filepath;
 	if (fileopendlg.DoModal() == IDOK)
 	{
@@ -406,7 +405,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	buffer = new char[length];    // allocate memory for a buffer of appropriate dimension  
 	t.read(buffer, length);       // read the whole file into the buffer  
 	t.close();                    // close file handle  
-
+	/*
 	string cur_str, in_str = buffer, tmpstr;
 	bool b_pcData = false;
 	int pos = 0;
@@ -502,60 +501,9 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		}
 		//pos++;
 		str_it++;
-	}
+	}*/
 	vector<PinObject> res;
 	SetSegParameters();
-	m_tpc.FindPins(buffer, length, res);*/
+	m_tpc.FindPins(buffer, length, res);
 	//m_tpc.FindPinsMT(buffer, length, res);
-
-	CString cur_val;
-	m_edt_DownSamR.GetWindowTextW(cur_val);
-	int cursize = stoi(cur_val.GetBuffer());
-	double* a = new double[cursize];
-	double* b = new double[cursize];
-	double* cg = new double[cursize];
-	double* c = new double[cursize];
-	//int a[cursize], b[cursize], c[cursize],cg[cursize];
-	for (int i = 0; i < cursize; i++)
-	{
-		a[i] = i*1.0;
-		b[i] = i*i*1.0;
-	}
-
-	long now1 = clock();//存储图像处理开始时间  
-	runtest(a, b, cg, cursize);//调用显卡加速
-	char* gpustr = new char[100];
-	sprintf(gpustr, "GPU running time: %fms\n", ((double)(clock() - now1)) / CLOCKS_PER_SEC * 1000);//输出GPU处理时间
-
-	long now2 = clock();//存储图像处理开始时间  
-	int dif = 0;
-	for (int i = 0; i < cursize; i++)
-	{
-		c[i] = (a[i] + b[i]);
-		if (abs(cg[i] - c[i]) > 1e-5)
-		{
-			dif++;
-		}
-	}
-	char* cpustr = new char[100];
-	sprintf(cpustr, "CPU runing time: %fms\n", ((double)(clock() - now2)) / CLOCKS_PER_SEC * 1000);//输出GPU处理时间
-	char* difstr = new char[50];
-	sprintf(difstr, "They have %d different values.", dif);
-	strcat(cpustr, difstr);
-	strcat(gpustr, cpustr);
-	MessageBoxA(this->GetSafeHwnd(), gpustr, "Run Result", 0);
-	delete[] gpustr;
-	delete[] cpustr;
-	delete[] difstr;
-	delete[] a;
-	delete[] b;
-	delete[] c;
-	delete[] cg;
-	gpustr = nullptr;
-	cpustr = nullptr;
-	difstr = nullptr;
-	a = nullptr;
-	b = nullptr;
-	c = nullptr;
-	cg = nullptr;
 }
