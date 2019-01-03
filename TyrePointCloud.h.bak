@@ -30,16 +30,7 @@
 #include <pcl\segmentation\extract_clusters.h>
 #include <pcl\ModelCoefficients.h>
 
-#include <pcl\gpu\features\features.hpp>
-#include <pcl\gpu\octree\device_format.hpp>
-#include <pcl\gpu\containers\device_memory.hpp>
-#include <pcl\gpu\containers\device_array.hpp>
-#include <pcl\gpu\octree\octree.hpp>
-#include <boost\shared_ptr.hpp>
-
 #include <ppl.h>
-
-#include "cudaMain.h"
 
 using namespace pcl;
 using namespace Eigen;
@@ -87,7 +78,6 @@ enum PtRefType//Point reference type
 	POINTNORMAL_P
 };
 
-//Class for point cloud
 class TyrePointCloud
 {
 public:
@@ -125,7 +115,6 @@ protected:
 	vector<int> m_pinsID;// The head of pins' id in origin point cloud.
 	PointCloud<PointXYZRGB>::Ptr m_rgbPC;//Point cloud with RGB.
 	PointCloud<Normal>::Ptr m_pointNormals;//Point nomrals.
-	PointCloud<Normal>::Ptr m_gpuPtNormals;//Point normals by applying GPU computing.
 
 	map<int, vector<int>> m_clusterDic;//Key is the ID in refPlanes/refCoefs vector
 									   //value is the ID vector of restClusters
@@ -134,13 +123,11 @@ protected:
 
 	int FiltePins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins);
 	int FiltePins(vector<PointXYZI>& filted_pins);
-
 public:
 	PointCloud<PointXYZ>::Ptr GetOriginalPC();
 	PointCloud<PointXYZI>::Ptr GetPinsPC();
 	PointCloud<PointXYZRGB>::Ptr GetRGBPC();
 	PointCloud<Normal>::Ptr GetPointNormals();
-	PointCloud<Normal>::Ptr GetGPUPointNormals();
 
 	//Get segementation references and clusters.
 	void GetReferencePlanes(vector<PointCloud<PointXYZ>::Ptr> &out_ref);
@@ -183,8 +170,6 @@ public:
 		 folder(in): Searching indices in point cloud, with 1/folder of points.
 		 threads(in): The number of threads for multiple threads methods proprety.
 	*/
-
-	int FindPointNormalsGPU();
 
 	int FindPins(PointCloud<PointXYZI>::Ptr &out_pc);
 	/* Searching pins on tyre surface(override):
