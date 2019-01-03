@@ -14,7 +14,6 @@
 
 using namespace pcl;
 
-extern "C" int runtest(double *host_a, double *host_b, double *host_c, int cursize);
 
 // CMFCForTPCDlg ¶Ô»°¿ò
 class CMFCForTPCDlg : public CDialogEx
@@ -80,5 +79,3 @@ public:
 	CButton m_btn_savedata;
 	afx_msg void OnBnClickedButton2();
 };
-
-
