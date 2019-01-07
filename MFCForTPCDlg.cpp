@@ -612,7 +612,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 			QueryPerformanceCounter(&nst);
 			f_error = m_tpc.LoadTyrePC(pcfile);
 			QueryPerformanceCounter(&nend);
-			if (-1 == f_error)
+			if (0 > f_error)
 			{
 				MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
 				m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
