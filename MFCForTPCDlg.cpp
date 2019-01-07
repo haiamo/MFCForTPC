@@ -508,7 +508,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	m_tpc.FindPins(buffer, length, res);*/
 	//m_tpc.FindPinsMT(buffer, length, res);
 
-	CString cur_val;
+	/*CString cur_val;
 	m_edt_DownSamR.GetWindowTextW(cur_val);
 	int cursize = stoi(cur_val.GetBuffer());
 	double* a = new double[cursize];
@@ -523,7 +523,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	}
 
 	long now1 = clock();//存储图像处理开始时间  
-	runtest(a, b, cg, cursize);//调用显卡加速
+	//runtest(a, b, cg, cursize);//调用显卡加速
 	char* gpustr = new char[100];
 	sprintf(gpustr, "GPU running time: %fms\n", ((double)(clock() - now1)) / CLOCKS_PER_SEC * 1000);//输出GPU处理时间
 
@@ -557,5 +557,5 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	a = nullptr;
 	b = nullptr;
 	c = nullptr;
-	cg = nullptr;
+	cg = nullptr;*/
 }

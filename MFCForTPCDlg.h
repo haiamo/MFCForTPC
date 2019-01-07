@@ -10,11 +10,8 @@
 #include "afxcmn.h"
 #include "afxwin.h"
 #include <atlconv.h>
-#include "cudaMain.h"
 
 using namespace pcl;
-
-extern "C" int runtest(double *host_a, double *host_b, double *host_c, int cursize);
 
 // CMFCForTPCDlg ¶Ô»°¿ò
 class CMFCForTPCDlg : public CDialogEx
