@@ -113,12 +113,12 @@ BOOL CMFCForTPCDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	m_edt_DownSamR.SetWindowTextW(_T("300"));
-	m_edt_NumThds.SetWindowTextW(_T("2"));
-	m_edt_DisThrhd.SetWindowTextW(_T("500"));
-	m_edt_NormDisWt.SetWindowTextW(_T("0.2"));
-	m_edt_InlR.SetWindowTextW(_T("0.05"));
-	m_edt_ClTol.SetWindowTextW(_T("300"));
+	m_edt_DownSamR.SetWindowText(_T("300"));
+	m_edt_NumThds.SetWindowText(_T("2"));
+	m_edt_DisThrhd.SetWindowText(_T("500"));
+	m_edt_NormDisWt.SetWindowText(_T("0.2"));
+	m_edt_InlR.SetWindowText(_T("0.05"));
+	m_edt_ClTol.SetWindowText(_T("300"));
 
 	m_btn_savedata.EnableWindow(FALSE);
 
@@ -185,11 +185,11 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	if (fileopendlg.DoModal() == IDOK)
 	{
 		filepath = fileopendlg.GetPathName();
-		m_stc_FlPth.SetWindowTextW(filepath);
+		m_stc_FlPth.SetWindowText(filepath);
 	}
 	else
 	{
-		m_stc_FlPth.SetWindowTextW(_T(""));
+		m_stc_FlPth.SetWindowText(L"");
 	}
 	
 	// Load point cloud file
@@ -201,11 +201,12 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	char* info_str = new char[1000];
 	int str_len = 0;
 	m_stc_FlPth.GetWindowTextW(cs_file);
+	USES_CONVERSION;
 	pcfile = CT2A(cs_file.GetBuffer());
 	if (0 == strcmp("", pcfile.data()))
 	{
-		MessageBox(_T("The file path is empty, please check again."), _T("Load Info"), MB_OK | MB_ICONERROR);
-		m_stc_St.SetWindowTextW(_T("Loading failed: empty file path"));
+		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
+		m_stc_St.SetWindowText(L"Loading failed: empty file path");
 	}
 	else
 	{
@@ -216,18 +217,21 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 		QueryPerformanceCounter(&nend);
 		if (-1 == f_error)
 		{
-			MessageBox(_T("Failed to load point cloud data, please try again!"), _T("LoadError"), MB_OK | MB_ICONERROR);
-			m_stc_St.SetWindowTextW(_T("Loading failed: PCL function failed"));
+			MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
+			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
 		}
 		
 		str_len = sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
-		m_stc_St.SetWindowTextW((LPCTSTR)(LPTSTR)info_str);
+		
+		LPCWSTR info_wch = A2W(info_str);
+		m_stc_St.SetWindowText(info_wch);
 	}
 	cloud = m_tpc.GetOriginalPC();
 
 	SetSegParameters();
 	str_len = sprintf(info_str + str_len, "Starting pin searching, please wait...\n");
-	m_stc_St.SetWindowTextW((LPCTSTR)(LPTSTR)info_str);
+	LPCWSTR info_wstr = A2W(info_str);
+	m_stc_St.SetWindowText(info_wstr);
 	PointCloud<PointXYZI>::Ptr pins;
 	QueryPerformanceCounter(&nst);
 	m_tpc.FindPinsBySegmentation(cloud, pins);
@@ -236,7 +240,7 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	char* tmp_str=new char[1000];
 	sprintf(tmp_str, "Searching pins costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 	info_str = strcat(info_str, tmp_str);
-	m_stc_St.SetWindowTextW((LPCTSTR)(LPTSTR)info_str);
+	m_stc_St.SetWindowText((LPCTSTR)(LPTSTR)info_str);
 	size_t ii = 0;
 	while (ii < pins->points.size() && ii < 5)
 	{
@@ -245,7 +249,7 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 		info_str = strcat(info_str, tmp_str);
 		ii++;
 	}
-	m_stc_St.SetWindowTextW((LPCTSTR)(LPTSTR)info_str);
+	m_stc_St.SetWindowText((LPCTSTR)(LPTSTR)info_str);
 	m_btn_run.EnableWindow(TRUE);
 	m_btn_savedata.EnableWindow(TRUE);
 
@@ -508,6 +512,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	m_tpc.FindPins(buffer, length, res);*/
 	//m_tpc.FindPinsMT(buffer, length, res);
 
+	/*CUDA test
 	CString cur_val;
 	m_edt_DownSamR.GetWindowTextW(cur_val);
 	int cursize = stoi(cur_val.GetBuffer());
@@ -531,7 +536,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	int dif = 0;
 	for (int i = 0; i < cursize; i++)
 	{
-		c[i] = (a[i] + b[i]);
+		c[i] = a[i] *sin(b[i]);
 		if (abs(cg[i] - c[i]) > 1e-5)
 		{
 			dif++;
@@ -557,5 +562,142 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	a = nullptr;
 	b = nullptr;
 	c = nullptr;
-	cg = nullptr;
+	cg = nullptr;*/
+
+	USES_CONVERSION;
+	CFileDialog fileopendlg(TRUE);
+	CString filepath;
+	bool b_loadfile = true;
+	if (fileopendlg.DoModal() == IDOK)
+	{
+		filepath = fileopendlg.GetPathName();
+		CString pre_file;
+		m_stc_FlPth.GetWindowText(pre_file);
+		m_stc_FlPth.SetWindowText(filepath);
+		if (0 == strcmp(W2A(pre_file.GetBuffer()), W2A(filepath.GetBuffer())))
+		{
+			b_loadfile = false;
+		}
+	}
+	else
+	{
+		m_stc_FlPth.SetWindowText(L"");
+	}
+
+	// Load point cloud file
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	QueryPerformanceFrequency(&nfreq);
+	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
+	CString	cs_file;
+	string pcfile = "";
+	char* info_str = new char[1000];
+	char* res_str = new char[1000];
+	char* tmp_str = new char[100];
+	LPCWSTR info_wstr;
+	int str_len = 0;
+	m_stc_FlPth.GetWindowTextW(cs_file);
+	pcfile = CT2A(cs_file.GetBuffer());
+	if (0 == strcmp("", pcfile.data()))
+	{
+		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
+		m_stc_St.SetWindowText(L"Loading failed: empty file path");
+	}
+	else
+	{
+		
+		if (b_loadfile)
+		{
+			int f_error = -1;
+
+			QueryPerformanceCounter(&nst);
+			f_error = m_tpc.LoadTyrePC(pcfile);
+			QueryPerformanceCounter(&nend);
+			if (-1 == f_error)
+			{
+				MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
+				m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
+			}
+
+			sprintf(tmp_str, "Loading text costs %.3f seconds.\nStart normal searching, please wait...", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+			sprintf(res_str,"Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+			strcpy(info_str, tmp_str);
+			info_wstr = A2W(info_str);
+			m_stc_St.SetWindowText(info_wstr);
+			strcpy(info_str, res_str);
+		}
+		else
+		{
+			sprintf(tmp_str, "Start normal searching, please wait...");
+			strcpy(res_str, "");
+			strcpy(info_str, tmp_str);
+			info_wstr = A2W(info_str);
+			m_stc_St.SetWindowText(info_wstr);
+			strcpy(info_str, res_str);
+		}
+
+
+		SetSegParameters();
+		PointCloud<Normal>::Ptr ptNormal;
+		PointCloud<Normal>::Ptr gpuNormal;
+		CString cur_val;
+		m_edt_DisThrhd.GetWindowTextW(cur_val);
+
+		/*long now1 = clock();
+		m_tpc.FindPointNormals(0, stof(cur_val.GetBuffer()), 1, 4);
+		sprintf(tmp_str, "CPU running time: %f s.\n", ((float)(clock() - now1)) / CLOCKS_PER_SEC);
+		strcat(info_str, tmp_str);
+		strcat(res_str, tmp_str);
+		strcpy(tmp_str, "Normal searching by GPU, please wait...");
+		strcat(info_str, tmp_str);
+		info_wstr = A2W(info_str);
+		m_stc_St.SetWindowText(info_wstr);
+		strcpy(info_str, res_str);*/
+
+		long now2 = clock();
+		m_tpc.FindPointNormalsGPU();
+		sprintf(tmp_str, "GPU runing time: %f s.\n", ((float)(clock() - now2)) / CLOCKS_PER_SEC);
+		strcat(info_str, tmp_str);
+		strcat(res_str, tmp_str);
+		strcpy(tmp_str, "Start compearing data by CPU and GPU, please wait...");
+		strcat(info_str, tmp_str);
+		info_wstr = A2W(info_str);
+		m_stc_St.SetWindowText(info_wstr);
+		strcpy(info_str, res_str);
+		
+		ptNormal = m_tpc.GetPointNormals();
+		gpuNormal = m_tpc.GetGPUPointNormals();
+		size_t difSize = 0;
+		
+		Vector3d cpuN, gpuN;
+		double angle = 0.0;
+		if (ptNormal->points.size() == gpuNormal->points.size())
+		{
+			for (size_t ii = 0; ii < ptNormal->points.size(); ii++)
+			{
+				cpuN = Vector3d(ptNormal->points[ii].normal_x, ptNormal->points[ii].normal_y, ptNormal->points[ii].normal_z);
+				gpuN = Vector3d(gpuNormal->points[ii].normal_x, gpuNormal->points[ii].normal_y, gpuNormal->points[ii].normal_z);
+				angle= acos(cpuN.dot(gpuN) / (cpuN.norm()*gpuN.norm())) / M_PI * 180;
+				if (angle>6.0f && angle<174.0f)
+				{
+					difSize++;
+				}
+			}
+			sprintf(tmp_str, "There are %zd different elements between CPU and GPU normals.", difSize);
+			strcat(info_str, tmp_str);
+			info_wstr = A2W(info_str);
+			m_stc_St.SetWindowText(info_wstr);
+		}
+		else
+		{
+			strcpy(tmp_str, "The normal lists by CPU and GPU have different sizes.");
+			strcat(info_str, tmp_str);
+			info_wstr = A2W(info_str);
+			m_stc_St.SetWindowText(info_wstr);
+		}
+	}
+
+	delete[] info_str;
+	delete[] tmp_str;
+	info_str = nullptr;
+	tmp_str = nullptr;
 }

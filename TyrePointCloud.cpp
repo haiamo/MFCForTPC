@@ -460,6 +460,70 @@ int TyrePointCloud::LoadTyrePC(PointCloud<PointXYZ>::Ptr in_cloud)
 	}
 }
 
+int TyrePointCloud::LoadTyrePC(char * p_pc, int length)
+{
+	if (!p_pc)
+	{
+		return EMPTY_CHAR_PTR;
+	}
+	else
+	{
+		string in_str=p_pc;
+		stringstream oss;
+		oss << in_str;
+		string cur_str;
+		thrust::host_vector<char*> char_lines;
+		size_t len = 0;
+		char* tmpCharp;
+		const char* eol = "\0";
+		bool b_pcData = false;
+		int line_len = 0;
+		while (getline(oss,cur_str))
+		{
+			if (!b_pcData)
+			{
+				if (cur_str == "end_header")
+				{
+					b_pcData = true;
+				}
+			}
+			else
+			{
+				len = cur_str.length();
+				tmpCharp = (char*)malloc((len+1) * sizeof(char));
+				cur_str.copy(tmpCharp, len, 0);
+				tmpCharp[len] = *eol;
+				if (char_lines.size() == 0)
+				{
+					line_len = strlen(tmpCharp);
+				}
+				else if (strlen(tmpCharp) > line_len && strlen(tmpCharp)<2*line_len)
+				{
+					line_len = strlen(tmpCharp);
+				}
+				char_lines.push_back(tmpCharp);
+			}
+		}
+		size_t lines_len = char_lines.size();
+
+		thrust::host_vector<GPUPoint> out_pt(char_lines.size());
+		GPUCharToValue(char_lines,out_pt,line_len);
+		PointXYZRGB tmprgb;
+		for (size_t ii = 0; ii < out_pt.size(); ii++)
+		{
+			tmprgb.x = out_pt[ii].x;
+			tmprgb.y = out_pt[ii].y;
+			tmprgb.z = out_pt[ii].z;
+			tmprgb.r = out_pt[ii].r;
+			tmprgb.g = out_pt[ii].g;
+			tmprgb.b = out_pt[ii].b;
+			m_originPC->points.push_back(PointXYZ(tmprgb.x, tmprgb.y, tmprgb.z));
+			m_rgbPC->points.push_back(tmprgb);
+		}
+	}
+	return 0;
+}
+
 int TyrePointCloud::FindPointNormals()
 {
 	int error = FindPointNormals(30, 0, 1, 2);
@@ -1087,3 +1151,55 @@ int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
 	p_pc = m_inCloud;
 	return 0;
 }
+
+/*int ConvCharToValue(char * p_pc, pcl::PointCloud<PointXYZ>::Ptr& out_pt)
+{
+	if (!p_pc)
+	{
+		return EMPTY_CHAR_PTR;
+	}
+	else
+	{
+		string in_str = p_pc;
+		stringstream oss;
+		oss << in_str;
+		string cur_str;
+		thrust::host_vector<char*> str_host;
+		char* tmpCharp;
+		bool b_pcData = false;
+		size_t len;
+		while (getline(oss, cur_str))
+		{
+			if (!b_pcData)
+			{
+				if (cur_str == "end_header")
+				{
+					b_pcData = true;
+				}
+			}
+			else
+			{
+				len = cur_str.length();
+				tmpCharp = (char*)malloc((len + 1) * sizeof(char));
+				cur_str.copy(tmpCharp, len, 0);
+				str_host.push_back(tmpCharp);
+			}
+			cur_str = "";
+		}
+		size_t lines_len = str_host.size();
+
+		thrust::device_vector<char*> str_dev;
+		thrust::copy(str_host.begin(), str_host.end(), str_dev.begin());
+
+		pcl::gpu::DeviceArray<PointXYZRGB> pt_dev;
+		pcl::PointCloud<PointXYZRGB>::Ptr pt_host;
+		pt_host->points.resize(lines_len, PointXYZRGB());
+		pt_dev.upload(pt_host->points);
+		CharToValueDev(str_dev, pt_dev);
+		pt_dev.download(pt_host->points);
+	}
+
+	return 0;
+}*/
+
+

@@ -11,7 +11,10 @@
 #define ACCURACY 10e-6
 
 #include <iostream>
- 
+#include <sstream>
+
+#include "cudaMain.h"
+
 #include <pcl\io\pcd_io.h>
 #include <pcl\io\ply_io.h>
 #include <pcl\io\io.h>
@@ -39,7 +42,11 @@
 
 #include <ppl.h>
 
-#include "cudaMain.h"
+#include <thrust\device_vector.h>
+#include <thrust\host_vector.h>
+#include <thrust\functional.h>
+
+
 
 using namespace pcl;
 using namespace Eigen;
@@ -55,6 +62,7 @@ enum TPCStatus
 	FILE_TYPE_ERROR = -4,
 	NULL_PC_PTR = -5,
 	EMPTY_POINT = -6,
+	EMPTY_CHAR_PTR = -7,
 
 	//Estimating normals
 	NEGATIVE_R_K = -50,
@@ -86,6 +94,8 @@ enum PtRefType//Point reference type
 	ORIGINRGB_P,
 	POINTNORMAL_P
 };
+
+
 
 //Class for point cloud
 class TyrePointCloud
@@ -169,6 +179,13 @@ public:
 	     in_cloud(in): The input point cloud pointer.
 	*/
 
+	int LoadTyrePC(char* p_pc, int length);
+	/* Loading tyre point clouds from a char list by using CUDA.
+	   Parameters:
+	     p_pc(in): The pointer of the input char list.
+		 length(in): The number of points in the char list.
+	*/
+
 	int FindPointNormals();
 	/* Method to find out the point normals of point cloud(override).
 	   Parameters:
@@ -229,3 +246,5 @@ public:
 
 };
 
+//GPU Host Interfaces:
+//int ConvCharToValue(char* in_pc, pcl::PointCloud<PointXYZ>::Ptr& out_pt);
