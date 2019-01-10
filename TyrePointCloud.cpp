@@ -472,12 +472,8 @@ int TyrePointCloud::LoadTyrePC(char * p_pc, int length)
 		stringstream oss;
 		oss << in_str;
 		string cur_str;
-		thrust::host_vector<char*> char_lines;
-		size_t len = 0;
-		char* tmpCharp;
-		const char* eol = "\0";
+		size_t line_width = 0,width=0,height = 0,hID=0;
 		bool b_pcData = false;
-		int line_len = 0;
 		while (getline(oss,cur_str))
 		{
 			if (!b_pcData)
@@ -489,37 +485,79 @@ int TyrePointCloud::LoadTyrePC(char * p_pc, int length)
 			}
 			else
 			{
-				len = cur_str.length();
-				tmpCharp = (char*)malloc((len+1) * sizeof(char));
-				cur_str.copy(tmpCharp, len, 0);
-				tmpCharp[len] = *eol;
-				if (char_lines.size() == 0)
+				line_width = cur_str.length();
+				if (height == 0)
 				{
-					line_len = strlen(tmpCharp);
+					width = line_width;
 				}
-				else if (strlen(tmpCharp) > line_len && strlen(tmpCharp)<2*line_len)
+				if (line_width > 0 && line_width<width*2)
 				{
-					line_len = strlen(tmpCharp);
+					if (line_width > width )
+					{
+						width = line_width;
+					}
+					height++;
 				}
-				char_lines.push_back(tmpCharp);
 			}
 		}
-		size_t lines_len = char_lines.size();
 
-		thrust::host_vector<GPUPoint> out_pt(char_lines.size());
-		GPUCharToValue(char_lines,out_pt,line_len);
-		PointXYZRGB tmprgb;
-		for (size_t ii = 0; ii < out_pt.size(); ii++)
+		char** chars;
+		chars = new char*[height];
+		for (size_t ii = 0; ii < height; ii++)
 		{
-			tmprgb.x = out_pt[ii].x;
-			tmprgb.y = out_pt[ii].y;
-			tmprgb.z = out_pt[ii].z;
-			tmprgb.r = out_pt[ii].r;
-			tmprgb.g = out_pt[ii].g;
-			tmprgb.b = out_pt[ii].b;
+			chars[ii] = new char[width];
+		}
+		oss.clear();
+		oss << in_str;
+		b_pcData = false;
+		hID = 0;
+		while (getline(oss, cur_str))
+		{
+			if (!b_pcData)
+			{
+				if (cur_str == "end_header")
+				{
+					b_pcData = true;
+				}
+			}
+			else
+			{
+				if (hID > height-1)
+				{
+					break;
+				}
+				line_width = cur_str.length();
+				cur_str.copy(chars[hID], line_width, 0);
+				for (size_t ii = line_width; ii < width; ii++)
+				{
+					chars[hID][ii] = ' ';
+				}
+				chars[hID][width] = '\0';
+				hID++;
+			}
+		}
+
+		float* x, *y, *z;
+		x = (float*)malloc(sizeof(float)*height);
+		y = (float*)malloc(sizeof(float)*height);
+		z = (float*)malloc(sizeof(float)*height);
+
+		GPUCharToValue(chars,x,y,z,height,width);
+		PointXYZRGB tmprgb;
+		for (size_t ii = 0; ii < height; ii++)
+		{
+			tmprgb.x = x[ii];
+			tmprgb.y = y[ii];
+			tmprgb.z = z[ii];
+			tmprgb.r = 150;
+			tmprgb.g = 150;
+			tmprgb.b = 150;
 			m_originPC->points.push_back(PointXYZ(tmprgb.x, tmprgb.y, tmprgb.z));
 			m_rgbPC->points.push_back(tmprgb);
 		}
+		free(x);
+		free(y);
+		free(z);
 	}
 	return 0;
 }

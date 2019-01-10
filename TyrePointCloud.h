@@ -46,6 +46,7 @@
 #include <thrust\host_vector.h>
 #include <thrust\functional.h>
 
+#include "cuda_runtime.h"
 
 
 using namespace pcl;
