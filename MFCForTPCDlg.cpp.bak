@@ -270,7 +270,8 @@ void CMFCForTPCDlg::OnBnClickedBtnExit()
 	sprintf(test, "test %f", 100.2);
 	delete[] test;
 	*/
-	CDialogEx::OnOK();
+	//CDialogEx::OnOK();
+	CDialogEx::OnCancel();
 }
 
 int CMFCForTPCDlg::SaveXYZToPLYFile(vector<PointCloud<PointXYZ>::Ptr> in_pc, string ex_info)
