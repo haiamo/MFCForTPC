@@ -11,7 +11,10 @@
 #define ACCURACY 10e-6
 
 #include <iostream>
- 
+#include <sstream>
+
+#include "cudaMain.h"
+
 #include <pcl\io\pcd_io.h>
 #include <pcl\io\ply_io.h>
 #include <pcl\io\io.h>
@@ -35,11 +38,18 @@
 #include <pcl\gpu\containers\device_memory.hpp>
 #include <pcl\gpu\containers\device_array.hpp>
 #include <pcl\gpu\octree\octree.hpp>
+//#include <pcl\gpu\segmentation\impl\gpu_extract_clusters.hpp>
+//#include <pcl\gpu\segmentation\gpu_extract_clusters.h>
 #include <boost\shared_ptr.hpp>
 
 #include <ppl.h>
 
-#include "cudaMain.h"
+#include <thrust\device_vector.h>
+#include <thrust\host_vector.h>
+#include <thrust\functional.h>
+
+#include "cuda_runtime.h"
+
 
 using namespace pcl;
 using namespace Eigen;
@@ -55,6 +65,7 @@ enum TPCStatus
 	FILE_TYPE_ERROR = -4,
 	NULL_PC_PTR = -5,
 	EMPTY_POINT = -6,
+	EMPTY_CHAR_PTR = -7,
 
 	//Estimating normals
 	NEGATIVE_R_K = -50,
@@ -87,6 +98,8 @@ enum PtRefType//Point reference type
 	POINTNORMAL_P
 };
 
+
+
 //Class for point cloud
 class TyrePointCloud
 {
@@ -97,8 +110,11 @@ public:
 private:
 	BOOL m_normalUserDefined;
 
+	//GPU Point Normal Searching Properties:
+	float m_searchradius;
+	int m_maxneighboranswers;
+	
 	//Segementation Properties:
-	float m_downsampleradius;
 	unsigned int m_numberofthreds;
 	double m_distancethreshold;
 	double m_normaldistanceweight;
@@ -132,8 +148,8 @@ protected:
 
 	void InitCloudData();
 
-	int FiltePins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins);
-	int FiltePins(vector<PointXYZI>& filted_pins);
+	int FiltPins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins);
+	int FiltPins(vector<PointXYZI>& filted_pins);
 
 public:
 	PointCloud<PointXYZ>::Ptr GetOriginalPC();
@@ -149,7 +165,11 @@ public:
 
 public:
 	//Set parameters:
-	void SetDownSampleRaius(float dsr);
+	//Point Normal Searching
+	void SetSearchRadius(float radius);
+	void SetMaxNeighborAnswers(int maxans);
+
+	//Segmentation
 	void SetNumberOfThreads(unsigned int nt);
 	void SetDistanceThreshold(double dt);
 	void SetNormalDistanceWeight(double ndw);
@@ -163,61 +183,16 @@ public:
 	     pcfile(in): The input file directory of point clouds.
 	*/
 
-	int LoadTyrePC(PointCloud<PointXYZ>::Ptr in_cloud);
-	/* Loading tyre point clouds from an exist cloud.
+	int LoadTyrePC(char* p_pc, int length);
+	/* Loading tyre point clouds from a char list by using CUDA.
 	   Parameters:
-	     in_cloud(in): The input point cloud pointer.
+	     p_pc(in): The pointer of the input char list.
+		 length(in): The number of points in the char list.
 	*/
 
-	int FindPointNormals();
-	/* Method to find out the point normals of point cloud(override).
-	   Parameters:
-	     None: default by neighbors=20, radius=0,folder=1, threads=2.
-	*/
+	int FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gpu::Octree::Ptr &in_tree, PointCloud<Normal>::Ptr &out_normal);
 
-	int FindPointNormals(int neighbors, double radius, int folder, int threads);
-	/* Method to find out the point normals of point cloud(override).
-	   Parameters:
-	     neighbors(in): K-neighbors of searching.
-		 radius(in): Searching radius.
-		 folder(in): Searching indices in point cloud, with 1/folder of points.
-		 threads(in): The number of threads for multiple threads methods proprety.
-	*/
-
-	int FindPointNormalsGPU();
-
-	int FindPins(PointCloud<PointXYZI>::Ptr &out_pc);
-	/* Searching pins on tyre surface(override):
-	   Parameters:
-	     out_pc(out): Out point cloud pointer with the length of pins.
-	*/
-
-	int FindPins(string pcfile, PointCloud<PointXYZI>::Ptr &out_pc);
-	/* Searching pins on tyre surface(override):
-	   Parameters:
-	     pcfile(in): Input the point cloud from the directory.
-	     out_pc(out): Out point cloud pointer with the length of pins.
-	*/
-
-	int FindPins(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr &out_pc);
-	/* Searching pins on tyre surface(override):
-	   Parameters:
-	     in_pc(in): Input point cloud pointer.
-	     out_pc(out): Out point cloud pointer with the length of pins.
-	*/
-
-	int FindPins(PointCloud<PointXYZ>::Ptr in_pc, int neighbors, double radius, int folder, int threads, PointCloud<PointXYZI>::Ptr &out_pc);
-	/* Searching pins on tyre surface(override):
-	   Parameters:
-	     in_pc(in): Input point cloud pointer.
-		 neighbor(in): K-neighbors for searching normals.
-		 radius(in): Searching radius for point normals method.
-		 folder(in): Normal searching indices folder, which is the 1/folder of points.
-		 threads(in): The number of threads, which will be used in the multiple threads normal searching method.
-	     out_pc(out): Out point cloud pointer with the length of pins.
-	*/
-
-	int FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr &out_pc);
+	int FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr &out_pc);
 
 	int FindPins(char* p_pc, int length, vector<PinObject> & out_pc);
 	/* Find pins by input a char stream
@@ -229,3 +204,5 @@ public:
 
 };
 
+//GPU Host Interfaces:
+//int ConvCharToValue(char* in_pc, pcl::PointCloud<PointXYZ>::Ptr& out_pt);

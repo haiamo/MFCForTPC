@@ -13,13 +13,16 @@ TyrePointCloud::TyrePointCloud()
 {
 	m_normalUserDefined = FALSE;
 
+	//GPU Point Normal Searching Properties:
+	m_searchradius = 500;
+	m_maxneighboranswers = 200;
+
 	//Segementation Properties:
-	m_downsampleradius = 300;
 	m_numberofthreds = 2;
-	m_distancethreshold = 300;
-	m_normaldistanceweight = 0.5;
+	m_distancethreshold = 500;
+	m_normaldistanceweight = 0.1;
 	m_inlierratio = 0.2;
-	m_clustertolerance = 1000;
+	m_clustertolerance = 300;
 
 	InitCloudData();
 }
@@ -57,7 +60,7 @@ void TyrePointCloud::InitCloudData()
 		m_clusterDic.clear();
 }
 
-int TyrePointCloud::FiltePins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins)
+int TyrePointCloud::FiltPins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins)
 {
 	PointXYZI tmpPt;
 	Vector3d cur_vec, cur_proj, base_vec, base_proj;
@@ -99,7 +102,7 @@ int TyrePointCloud::FiltePins(Vector3d mineigenVector, vector<PointXYZI>& filted
 	return 0;
 }
 
-int TyrePointCloud::FiltePins(vector<PointXYZI>& filted_pins)
+int TyrePointCloud::FiltPins(vector<PointXYZI>& filted_pins)
 {
 	map<int, vector<int>>::iterator dic_it;
 	vector<PointCloud<PointXYZ>::Ptr>::iterator ref_it=m_refPlanes.begin();
@@ -107,47 +110,27 @@ int TyrePointCloud::FiltePins(vector<PointXYZI>& filted_pins)
 	vector<PointCloud<PointXYZI>::Ptr>::iterator clu_it;
 	vector<Vector3f> box_min, box_max;
 	vector<Vector3f>::iterator boxmin_it, boxmax_it;
-	Vector3f tmpMin(0.0f, 0.0f, 0.0f), tmpMax(0.0f, 0.0f, 0.0f);
+	Vector3f tmpMin(0.0f, 0.0f, 0.0f), tmpMax(0.0f, 0.0f, 0.0f), tmpCurPt(0.0f, 0.0f, 0.0f);
 	//Finding the outer box of the reference planes or cylinders.
 	for (ref_it = m_refPlanes.begin(); ref_it != m_refPlanes.end(); ref_it++)
 	{
 		for (size_t ii = 0; ii < (*ref_it)->points.size(); ii++)
 		{
+			tmpCurPt= Vector3f((*ref_it)->points[ii].x, (*ref_it)->points[ii].y, (*ref_it)->points[ii].z);
 			if (ii == 0)
 			{
-				tmpMin = Vector3f((*ref_it)->points[ii].x, (*ref_it)->points[ii].y, (*ref_it)->points[ii].z);
-				tmpMax = tmpMin;
+				tmpMin = tmpCurPt;
+				tmpMax = tmpCurPt;
 				continue;
 			}
-
-			if ((*ref_it)->points[ii].x < tmpMin(0))
+			if ((tmpCurPt - tmpMin).cwiseSign() == Vector3f(-1.0, -1.0, -1.0))
 			{
-				tmpMin(0) = (*ref_it)->points[ii].x;
+				tmpMin = tmpCurPt;
 			}
 
-			if ((*ref_it)->points[ii].y < tmpMin(1))
+			if ((tmpCurPt - tmpMax).cwiseSign() == Vector3f(1.0, 1.0, 1.0))
 			{
-				tmpMin(1) = (*ref_it)->points[ii].y;
-			}
-
-			if ((*ref_it)->points[ii].z < tmpMin(2))
-			{
-				tmpMin(2) = (*ref_it)->points[ii].z;
-			}
-
-			if ((*ref_it)->points[ii].x > tmpMax(0))
-			{
-				tmpMax(0) = (*ref_it)->points[ii].x;
-			}
-
-			if ((*ref_it)->points[ii].y > tmpMax(1))
-			{
-				tmpMax(1) = (*ref_it)->points[ii].y;
-			}
-
-			if ((*ref_it)->points[ii].z > tmpMax(2))
-			{
-				tmpMax(2) = (*ref_it)->points[ii].z;
+				tmpMax = tmpCurPt;
 			}
 		}
 		box_min.push_back(tmpMin);
@@ -307,9 +290,14 @@ void TyrePointCloud::GetRestClusters(vector<PointCloud<PointXYZI>::Ptr>& out_ref
 	out_ref = m_restClusters;
 }
 
-void TyrePointCloud::SetDownSampleRaius(float dsr)
+void TyrePointCloud::SetSearchRadius(float radius)
 {
-	m_downsampleradius = dsr;
+	m_searchradius = radius;
+}
+
+void TyrePointCloud::SetMaxNeighborAnswers(int maxans)
+{
+	m_maxneighboranswers = maxans;
 }
 
 void TyrePointCloud::SetNumberOfThreads(unsigned int nt)
@@ -344,6 +332,8 @@ int TyrePointCloud::LoadTyrePC(string pcfile)
 	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);
 	int f_error = -1;
 	string file_type = "";
+	m_originPC.reset(::new PointCloud<PointXYZ>);
+	m_rgbPC.reset(::new PointCloud<PointXYZRGB>);
 
 	if (0 == strcmp("", pcfile.data()))
 	{
@@ -412,127 +402,129 @@ int TyrePointCloud::LoadTyrePC(string pcfile)
 	}
 }
 
-int TyrePointCloud::LoadTyrePC(PointCloud<PointXYZ>::Ptr in_cloud)
+int TyrePointCloud::LoadTyrePC(char * p_pc, int length)
 {
-	InitCloudData();
-	if (!in_cloud)
+	if (!p_pc)
 	{
-		if (!m_originPC)
+		return EMPTY_CHAR_PTR;
+	}
+	else
+	{
+		m_originPC.reset(::new pcl::PointCloud<PointXYZ>);
+		m_rgbPC.reset(::new pcl::PointCloud<PointXYZRGB>);
+		string in_str=p_pc;
+		stringstream oss;
+		oss << in_str;
+		string cur_str;
+		size_t line_width = 0,width=0,height = 0,hID=0;
+		bool b_pcData = false;
+		char** chars;
+		while (getline(oss,cur_str))
 		{
-			m_originPC.reset(::new PointCloud<PointXYZ>);
-		}
-
-		if (!m_rgbPC)
-		{
-			m_rgbPC.reset(::new PointCloud<PointXYZRGB>);
-		}
-		PointXYZ tmpPt;
-		PointXYZRGB tmpRGB;
-		size_t ii = 0;
-		for ( ii= 0; ii < in_cloud->points.size(); ++ii)
-		{
-			tmpPt.x = in_cloud->points[ii].x;
-			tmpPt.y = in_cloud->points[ii].y;
-			tmpPt.z = in_cloud->points[ii].z;
-
-			tmpRGB.x = in_cloud->points[ii].x;
-			tmpRGB.y = in_cloud->points[ii].y;
-			tmpRGB.z = in_cloud->points[ii].z;
-			tmpRGB.rgb = 255;
-
-			if (abs(tmpPt.x) > ACCURACY && abs(tmpPt.y) > ACCURACY && abs(tmpPt.z) > ACCURACY)
+			if (!b_pcData)
 			{
-				m_originPC->points.push_back(tmpPt);
+				if (cur_str == "end_header")
+				{
+					b_pcData = true;
+				}
+				if (cur_str.find("element vertex") != std::string::npos)
+				{
+					cur_str.erase(cur_str.begin(), cur_str.begin()+14);
+					size_t index = 0;
+					if (!cur_str.empty())
+					{
+						while ((index = cur_str.find(' ', index)) != string::npos)
+						{
+							cur_str.erase(index, 1);
+						}
+					}
+					height = stoull(cur_str);
+				}
+			}
+			else
+			{
+				line_width = cur_str.length();
+				width = line_width * 2;
 			}
 		}
-		if (ii == 0)
+
+		
+		chars = (char**)malloc(sizeof(char*)*height);
+		for (size_t ii = 0; ii < height; ii++)
 		{
-			return EMPTY_POINT;
+			chars[ii] = (char*)malloc(sizeof(char)*(width+1));
 		}
-		else
+		oss.clear();
+		oss << in_str;
+		b_pcData = false;
+		hID = 0;
+		while (getline(oss, cur_str))
 		{
-			return 0;
+			if (!b_pcData)
+			{
+				if (cur_str == "end_header")
+				{
+					b_pcData = true;
+				}
+			}
+			else
+			{
+				if (hID > height-1)
+				{
+					break;
+				}
+				line_width = cur_str.length();
+				cur_str.copy(chars[hID], line_width, 0);
+				for (size_t ii = line_width; ii < width; ii++)
+				{
+					chars[hID][ii] = ' ';
+				}
+				chars[hID][width] = '\0';
+				hID++;
+			}
 		}
-	}
-	else
-	{
-		return NULL_PC_PTR;
-	}
-}
 
-int TyrePointCloud::FindPointNormals()
-{
-	int error = FindPointNormals(30, 0, 1, 2);
-	m_normalUserDefined = FALSE;
-	return error;
-}
+		float* x, *y, *z;
+		x = (float*)malloc(sizeof(float)*height);
+		y = (float*)malloc(sizeof(float)*height);
+		z = (float*)malloc(sizeof(float)*height);
 
-int TyrePointCloud::FindPointNormals(int neighbors, double radius, int folder, int threads)
-{
-	// Normal Estimation Process
-	// Parameters preparation
-	pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());//Create a null kdtree object.
-	pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(::new pcl::PointCloud<pcl::Normal>);
-	PointCloud<PointXYZ>::Ptr cloud = GetOriginalPC();
-	//Estimating normal by multiple threads
-	if (threads <= 0)
-	{
-		threads = 1;
-	}
-	ne.setNumberOfThreads(threads);
-	ne.setInputCloud(cloud);
-
-	//Transfer kdtree object to normal estimation object.
-	//tree->setInputCloud(cloud);
-	ne.setSearchMethod(tree);
-
-	// Set searching neighbor radius or k-neighbors.
-	if (radius <= 0 && neighbors>0)
-	{
-		ne.setKSearch(neighbors);
-	}
-	else if (radius > 0)
-	{
-		ne.setRadiusSearch(radius);
-	}
-	else
-	{
-		return NEGATIVE_R_K;
-	}
-	
-
-	//Set searching indices of cloud points
-	if (folder >= 2)
-	{
-		vector<int> indices(floor(cloud->points.size() / folder));
-		for (int ii = 0; ii<indices.size(); ++ii)
+		GPUCharToValue(chars,x,y,z,height,width);
+		PointXYZRGB tmprgb;
+		for (size_t ii = 0; ii < height; ii++)
 		{
-			indices[ii] = ii * int(folder);
+			tmprgb.x = x[ii];
+			tmprgb.y = y[ii];
+			tmprgb.z = z[ii];
+			tmprgb.r = 150;
+			tmprgb.g = 150;
+			tmprgb.b = 150;
+			m_originPC->points.push_back(PointXYZ(tmprgb.x, tmprgb.y, tmprgb.z));
+			m_rgbPC->points.push_back(tmprgb);
 		}
-		IndicesPtr indicesptr(new vector<int>(indices));
-		ne.setIndices(indicesptr);
-	}
+		free(x);
+		free(y);
+		free(z);
 
-	//Searching normals
-	ne.compute(*cloud_normals);
-	m_pointNormals = cloud_normals;
-	m_normalUserDefined = TRUE;
+		for (size_t ii = 0; ii < height; ii++)
+		{
+			free(chars[ii]);
+		}
+		free(chars);
+	}
 	return 0;
 }
 
-int TyrePointCloud::FindPointNormalsGPU()
+int TyrePointCloud::FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gpu::Octree::Ptr &in_tree, PointCloud<Normal>::Ptr &out_normal)
 {
 	pcl::gpu::NormalEstimation ne;
-	pcl::gpu::Octree::Ptr oct(new pcl::gpu::Octree());
-	pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(::new pcl::PointCloud<pcl::Normal>);
-	PointCloud<PointXYZ>::Ptr cloud = GetOriginalPC();
+	PointCloud<PointXYZ>::Ptr cloud = in_pc;
 	pcl::gpu::Octree::PointCloud cloud_device;
 	cloud_device.upload(cloud->points);
 
-	pcl::gpu::Octree octree_device;
-	octree_device.setCloud(cloud_device);
-	octree_device.build();
+	pcl::gpu::Octree::Ptr octree_device(in_tree);
+	octree_device->setCloud(cloud_device);
+	octree_device->build();
 
 	// Create two query points
 	std::vector<pcl::PointXYZ> query_host;
@@ -540,7 +532,7 @@ int TyrePointCloud::FindPointNormalsGPU()
 	for (size_t ii = 0; ii < cloud->points.size(); ii++)
 	{
 		query_host.push_back(cloud->points[ii]);
-		radii.push_back(m_distancethreshold);
+		radii.push_back(m_searchradius);
 	}
 
 	pcl::gpu::Octree::Queries queries_device;
@@ -549,216 +541,25 @@ int TyrePointCloud::FindPointNormalsGPU()
 	pcl::gpu::Octree::Radiuses radii_device;
 	radii_device.upload(radii);
 
-	const int max_answers = 200;
-
 	// Output buffer on the device
-	pcl::gpu::NeighborIndices result_device(queries_device.size(), max_answers);
+	pcl::gpu::NeighborIndices result_device(queries_device.size(), m_maxneighboranswers);
 
 	// Do the actual search
-	octree_device.radiusSearch(queries_device, radii_device, max_answers, result_device);
+	octree_device->radiusSearch(queries_device, radii_device, m_maxneighboranswers, result_device);
 
 	std::vector<int> sizes, data;
 	result_device.sizes.download(sizes);
 	result_device.data.download(data);
 
-	/*std::cout << "INFO: Data generated" << std::endl;
-
-	std::cout << "INFO: found : " << data.size() << " data.size" << std::endl;
-	std::cout << "INFO: found : " << sizes.size() << " sizes.size" << std::endl;
-
-	for (size_t i = 0; i < sizes.size(); ++i)
-	{
-		std::cout << "INFO: sizes : " << i << " size " << sizes[i] << std::endl;
-		if (sizes[i] != 0)
-		{
-			pcl::PointCloud<pcl::PointXYZ> cloud_result;
-			// Fill in the cloud data
-			cloud_result.height = 1;
-			cloud_result.is_dense = false;
-
-			for (size_t j = 0; j < sizes[i]; ++j)
-			{
-				cloud_result.points.push_back(cloud->points[data[j + i * max_answers]]);
-				std::cout << "INFO: data : " << j << " " << j + i * max_answers << " data " << data[j + i * max_answers] << std::endl;
-			}
-			std::stringstream ss;
-			ss << "cloud_cluster_" << i << ".pcd";
-			cloud_result.width = cloud_result.points.size();
-		}
-	}*/
-
 	pcl::gpu::DeviceArray<PointXYZ> normals;
-	pcl::gpu::DeviceArray<PointXYZ> normals1;
 	ne.setInputCloud(cloud_device);
-	ne.setRadiusSearch(m_distancethreshold, max_answers);
+	ne.setRadiusSearch(m_searchradius, m_maxneighboranswers);
 	ne.setViewPoint(0.0, 0.0, 0.0);
-	ne.compute(normals);
-	ne.computeNormals(cloud_device, result_device, normals1);
-	std::vector<PointXYZ> res_normals;
-	std::vector<PointXYZ> res_normals1;
-	normals.download(res_normals);
-	normals1.download(res_normals1);
-
-	Normal tmpNormal;
-	m_gpuPtNormals.reset(::new PointCloud<Normal>);
-	m_pointNormals.reset(::new PointCloud<Normal>);
-	for (size_t ii = 0; ii < res_normals.size(); ii++)
-	{
-		tmpNormal.normal_x = res_normals[ii].x;
-		tmpNormal.normal_y = res_normals[ii].y;
-		tmpNormal.normal_z = res_normals[ii].z;
-		m_gpuPtNormals->points.push_back(tmpNormal);
-
-		tmpNormal.normal_x = res_normals1[ii].x;
-		tmpNormal.normal_y = res_normals1[ii].y;
-		tmpNormal.normal_z = res_normals1[ii].z;
-		m_pointNormals->points.push_back(tmpNormal);
-	}
+	out_normal = m_gpuPtNormals;
 	return 0;
 }
 
-int TyrePointCloud::FindPins(PointCloud<PointXYZI>::Ptr &out_pc)
-{
-	int error =0;
-	if (!m_normalUserDefined)
-	{
-		error = FindPointNormals();
-		if (error < 0)
-		{
-			return error;
-		}
-	}
-	
-	error = FindPins(m_originPC, out_pc);
-	return error;
-}
-
-int TyrePointCloud::FindPins(string pcfile, PointCloud<PointXYZI>::Ptr & out_pc)
-{
-	int error = 0;
-	error = LoadTyrePC(pcfile);
-	if (error < 0)
-	{
-		return error;
-	}
-	if (!m_normalUserDefined)
-	{
-		error = FindPointNormals();
-		if (error < 0)
-		{
-			return error;
-		}
-	}
-	
-	error = FindPins(m_originPC, out_pc);
-	return error;
-}
-
-int TyrePointCloud::FindPins(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr & out_pc)
-{
-	int error = 0;
-	if (!m_normalUserDefined)
-	{
-		error = FindPointNormals();
-		if (error < 0)
-		{
-			return error;
-		}
-	}
-	//Calculate the eigen vectors by PCA.
-	Vector4f pcaCentroid;
-	compute3DCentroid(*in_pc, pcaCentroid);
-	Matrix3f covariance;
-	computeCovarianceMatrixNormalized(*in_pc, pcaCentroid, covariance);
-	SelfAdjointEigenSolver<Matrix3f> eigen_solver(covariance, ComputeEigenvectors);
-	Matrix3f eigenVecotorsPCA = eigen_solver.eigenvectors();
-	Vector3f eigenValuesPCA = eigen_solver.eigenvalues();
-
-	//Compute pins' postions and lengths.
-	PointCloud<Normal>::Ptr cur_normals = GetPointNormals();
-	if (!m_rgbPC)
-	{
-		m_rgbPC.reset(::new PointCloud<PointXYZRGB>);
-	}
-
-	if (!m_candPins)
-	{
-		m_candPins.reset(::new PointCloud<PointXYZI>);
-	}
-	PointXYZRGB tmprgb;
-	PointXYZI tmpi;
-	Vector3d mineigenVector(eigenVecotorsPCA(0, 0), eigenVecotorsPCA(0, 1), eigenVecotorsPCA(0, 2));
-	Vector3d normalPtr, pcaCent3d(pcaCentroid(0), pcaCentroid(1), pcaCentroid(2)), curpoint, curvector;
-	vector<double> angles(cur_normals->points.size());
-	vector<size_t> ppoinID;
-	double cur_angle = 0.0, cur_depth = 0.0;
-	for (size_t ii = 0; ii < cur_normals->points.size(); ++ii)
-	{
-		normalPtr = Vector3d(cur_normals->points[ii].normal_x, cur_normals->points[ii].normal_y, cur_normals->points[ii].normal_z);
-		curpoint = Vector3d(in_pc->points[ii].x, in_pc->points[ii].y, in_pc->points[ii].z);
-		curvector = curpoint - pcaCent3d;
-		tmprgb.x = in_pc->points[ii].x;
-		tmprgb.y = in_pc->points[ii].y;
-		tmprgb.z = in_pc->points[ii].z;
-
-		if (normalPtr.norm() < ACCURACY || _isnan(normalPtr[0]) || _isnan(normalPtr[1]) || _isnan(normalPtr[2]))
-		{
-			continue;
-		}
-		cur_angle = acos((normalPtr.dot(mineigenVector)) / (normalPtr.norm()*mineigenVector.norm())) / M_PI * 180;
-		angles[ii] = cur_angle;
-		if (cur_angle > 80 && cur_angle < 100)
-		{
-			ppoinID.push_back(ii);
-			tmprgb.r = 255;
-			tmprgb.g = 0;
-			tmprgb.b = 0;
-			cur_depth = curvector.dot(mineigenVector);
-			if (cur_depth<0)
-			{
-				tmpi.x = in_pc->points[ii].x;
-				tmpi.y = in_pc->points[ii].y;
-				tmpi.z = in_pc->points[ii].z;
-				tmpi.intensity = cur_depth;
-				m_candPins->push_back(tmpi);
-			}
-		}
-		else
-		{
-			tmprgb.r = 0;
-			tmprgb.g = 0;
-			tmprgb.b = 255;
-			tmpi.intensity = 0.0;
-		}
-		m_rgbPC->points.push_back(tmprgb);
-	}
-	//out_pc = m_candPins;
-
-	//Filting pins' postions and length.
-	vector<PointXYZI> pins;
-	FiltePins(mineigenVector, pins);
-
-	if (!m_pinsPC)
-	{
-		m_pinsPC.reset(::new PointCloud<PointXYZI>);
-	}
-
-	for (vector<PointXYZI>::iterator ii = pins.begin(); ii < pins.end(); ++ii)
-	{
-		m_pinsPC->points.push_back(*ii);
-	}
-	out_pc = m_pinsPC;
-	return 0;
-}
-
-int TyrePointCloud::FindPins(PointCloud<PointXYZ>::Ptr in_pc, int neighbors, double radius, int folder, int threads, PointCloud<PointXYZI>::Ptr & out_pc)
-{
-	FindPointNormals(neighbors, radius, folder, threads);
-	FindPins(in_pc, out_pc);
-	return 0;
-}
-
-int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr & out_pc)
+int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr & out_pc)
 {
 	if (!in_pc)
 	{
@@ -767,13 +568,17 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 	out_pc.reset(::new PointCloud<PointXYZI>);
 
 	int error = 0;
+	// Estimate point normals
+	PointCloud<Normal>::Ptr cur_normal(::new PointCloud<Normal>);
+	pcl::gpu::Octree::Ptr oct(new pcl::gpu::Octree());
 	if (!m_normalUserDefined)
 	{
-		error = FindPointNormals();
+		error = FindPointNormalsGPU(in_pc, oct, cur_normal);
 		if (error < 0)
 		{
 			return error;
 		}
+		m_gpuPtNormals = cur_normal;
 	}
 	//Calculate the eigen vectors by PCA.
 	Vector4f pcaCentroid;
@@ -783,47 +588,15 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 	SelfAdjointEigenSolver<Matrix3f> eigen_solver(covariance, ComputeEigenvectors);
 	Matrix3f eigenVecotorsPCA = eigen_solver.eigenvectors();
 	Vector3f eigenValuesPCA = eigen_solver.eigenvalues();
-
-	PointCloud<Normal>::Ptr cur_normals = GetPointNormals();
-
 	Vector3d mineigenVector(eigenVecotorsPCA(0, 0), eigenVecotorsPCA(0, 1), eigenVecotorsPCA(0, 2));
 
 	//Downsample the dataset, Needed?
 	pcl::VoxelGrid<pcl::PointXYZ> vg;
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(::new pcl::PointCloud<pcl::PointXYZ>);
-	
-	if (m_downsampleradius > 0)
-	{
-		vg.setInputCloud(m_originPC);
-		vg.setLeafSize(m_downsampleradius, m_downsampleradius, m_downsampleradius);
-		vg.filter(*cloud_filtered);
-	}
-	else
-	{
-		cloud_filtered = m_originPC;
-	}
-	m_downsample = cloud_filtered;
-
-	// Estimate point normals
-	pcl::NormalEstimationOMP<PointXYZ, pcl::Normal> ne;
-	PointCloud<Normal>::Ptr cur_normal(::new PointCloud<Normal>);
-	pcl::search::KdTree<PointXYZ>::Ptr tree(::new pcl::search::KdTree<PointXYZ>());
-	ne.setNumberOfThreads(m_numberofthreds);
-	ne.setSearchMethod(tree);
-	ne.setInputCloud(cloud_filtered);
-	ne.setKSearch(50);
-	if (!m_pointNormals)
-	{
-		m_pointNormals.reset(::new PointCloud<Normal>);
-	}
-	ne.compute(*cur_normal);
-	m_pointNormals = cur_normal;
-
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered = m_originPC;
 
 	// Create the segmentation object for the planar model and set all the parameters
-	//pcl::SACSegmentation<pcl::PointXYZ> seg;
 	pcl::SACSegmentationFromNormals<PointXYZ, Normal>seg;
-	pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+	pcl::PointIndices::Ptr inliers(::new pcl::PointIndices);
 	pcl::ModelCoefficients::Ptr coefficients(::new pcl::ModelCoefficients);
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane(::new pcl::PointCloud<pcl::PointXYZ>());
 	seg.setOptimizeCoefficients(true);
@@ -837,22 +610,21 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 
 
 	PointCloud<PointXYZ>::Ptr cloud_f(::new PointCloud<PointXYZ>);
-	int i = 0, nr_points = (int)cloud_filtered->points.size();
+	size_t i = 0, nr_points = cloud_filtered->points.size();
 	PointXYZ tmpPt;
 	if (!m_segbase)
 	{
 		m_segbase.reset(::new PointCloud<PointXYZ>);
 	}
 	BOOL bNormalRenewed = TRUE;
-	do//while (cloud_filtered->points.size() > m_inlierratio * nr_points)
+	do
 	{
 		// Segment the largest planar component from the remaining cloud
 		seg.setInputCloud(cloud_filtered);
 		if (!bNormalRenewed)
 		{
-			ne.setSearchMethod(tree);
-			ne.setInputCloud(cloud_filtered);
-			ne.compute(*cur_normal);
+			oct.reset(new pcl::gpu::Octree());
+			FindPointNormalsGPU(cloud_filtered, oct, cur_normal);
 		}
 		seg.setInputNormals(cur_normal);
 		seg.segment(*inliers, *coefficients);
@@ -889,19 +661,17 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 		extract.filter(*cloud_f);
 		cloud_filtered = cloud_f;
 		cur_normal.reset(::new PointCloud<Normal>);
-		tree.reset(::new pcl::search::KdTree<PointXYZ>);
 		cloud_plane.reset(::new PointCloud<PointXYZ>);
 		coefficients.reset(::new ModelCoefficients);
 		bNormalRenewed = FALSE;
 	} while (cloud_filtered->points.size() > m_inlierratio * nr_points && cloud_plane->points.size() < 0.1*nr_points && m_refPlanes.size() < 15);
-	
-	// Creating the KdTree object for the search method of the extraction
-	//pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(::new pcl::search::KdTree<pcl::PointXYZ>);
+
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(::new pcl::search::KdTree<pcl::PointXYZ>);
 	tree->setInputCloud(cloud_filtered);
 
-	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-	ec.setClusterTolerance(m_clustertolerance); 
+	std::vector<pcl::PointIndices> cluster_indices;
+	ec.setClusterTolerance(m_clustertolerance);
 	ec.setMinClusterSize(100);
 	ec.setMaxClusterSize(25000);
 	ec.setSearchMethod(tree);
@@ -939,7 +709,7 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 	//Filtering pins with their neighbors.
 	vector<PointXYZI> filted_pins;
 	//FiltePins(mineigenVector, filted_pins);
-	FiltePins(filted_pins);
+	FiltPins(filted_pins);
 
 	if (!m_pinsPC)
 	{
@@ -979,99 +749,10 @@ int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, Poin
 
 int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
 {
-	string cur_str;
-	bool b_pcData = false;
-	int pos = 0;
-	PointXYZ cur_pt;
-	PointXYZRGB cur_rgb;
-	float x, y, z;
-	int r, g, b;
-	int line_pos = 0;
-	const char* t1 = " ";
-	const char* t2 = "\n";
-	m_inCloud = p_pc;
-	while (pos<length)
-	{
-		if (!b_pcData)
-		{
-			if (*p_pc==*t1 || *p_pc==*t2)
-			{
-				if (cur_str!="")
-				{
-					cur_str.erase(0, cur_str.find_first_not_of(" "));
-					if (cur_str == "end_header")
-					{
-						b_pcData = true;
-					}
-					cur_str = "";
-				}
-			}
-			else
-			{
-				cur_str = cur_str + *p_pc;
-			}
-		}
-		else
-		{
-			if (*p_pc == *t1 || *p_pc == *t2)
-			{
-				if (cur_str!="")
-				{
-					cur_str.erase(0, cur_str.find_first_not_of(" "));
-					switch (line_pos)
-					{
-					case 0:
-						x = stof(cur_str);
-						break;
-					case 1:
-						y = stof(cur_str);
-						break;
-					case 2:
-						z = stof(cur_str);
-						break;
-					case 3:
-						r = stoi(cur_str);
-						break;
-					case 4:
-						g = stoi(cur_str);
-						break;
-					case 5:
-						b = stoi(cur_str);
-						break;
-					}
-					cur_str = "";
-					if (*p_pc==*t2)
-					{
-						line_pos = 0;
-						cur_pt.x = x;
-						cur_pt.y = y;
-						cur_pt.z = z;
-						m_originPC->points.push_back(cur_pt);
+	LoadTyrePC(p_pc, length);
 
-						cur_rgb.x = x;
-						cur_rgb.y = y;
-						cur_rgb.z = z;
-						cur_rgb.r = r;
-						cur_rgb.g = g;
-						cur_rgb.b = b;
-						m_rgbPC->points.push_back(cur_rgb);
-					}
-					else
-					{
-						line_pos++;
-					}
-				}
-			}
-			else
-			{
-				cur_str = cur_str + *p_pc;
-			}
-		}
-		p_pc++;
-		pos++;
-	}
+	FindPinsBySegmentationGPU(m_originPC, m_pinsPC);
 
-	FindPinsBySegmentation(m_originPC, m_pinsPC);
 	PinObject tmpPXYZI;
 	char* new_part = new char();
 	for (size_t ii = 0; ii < m_pinsPC->points.size(); ii++)

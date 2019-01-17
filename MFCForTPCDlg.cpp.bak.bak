@@ -234,14 +234,13 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	m_stc_St.SetWindowText(info_wstr);
 	PointCloud<PointXYZI>::Ptr pins;
 	QueryPerformanceCounter(&nst);
-	m_tpc.FindPinsBySegmentationGPU(cloud, pins);
+	m_tpc.FindPinsBySegmentation(cloud, pins);
 	QueryPerformanceCounter(&nend);
 	memset(info_str, 0, sizeof(info_str)/sizeof(char));
 	char* tmp_str=new char[1000];
 	sprintf(tmp_str, "Searching pins costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 	info_str = strcat(info_str, tmp_str);
-	info_wstr = A2W(info_str);
-	m_stc_St.SetWindowText(info_wstr);
+	m_stc_St.SetWindowText((LPCTSTR)(LPTSTR)info_str);
 	size_t ii = 0;
 	while (ii < pins->points.size() && ii < 5)
 	{
@@ -250,8 +249,7 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 		info_str = strcat(info_str, tmp_str);
 		ii++;
 	}
-	info_wstr = A2W(info_str);
-	m_stc_St.SetWindowText(info_wstr);
+	m_stc_St.SetWindowText((LPCTSTR)(LPTSTR)info_str);
 	m_btn_run.EnableWindow(TRUE);
 	m_btn_savedata.EnableWindow(TRUE);
 
@@ -271,18 +269,8 @@ void CMFCForTPCDlg::OnBnClickedBtnExit()
 	char* test = new char[1000];
 	sprintf(test, "test %f", 100.2);
 	delete[] test;
-	
-	//CDialogEx::OnOK();
-	Vector3f tmp(10.0f, 11.0f, 12.0f);
-	if ((tmp - Vector3f(10.0f-1e-6f, 10.0f, 11.0f)).cwiseSign() == Vector3f(1.0f, 1.0f, 1.0f))
-	{
-		TRACE("It is true.");
-	}
-	else
-	{
-		TRACE("It is false.");
-	}*/
-	CDialogEx::OnCancel();
+	*/
+	CDialogEx::OnOK();
 }
 
 int CMFCForTPCDlg::SaveXYZToPLYFile(vector<PointCloud<PointXYZ>::Ptr> in_pc, string ex_info)
@@ -349,6 +337,9 @@ int CMFCForTPCDlg::SaveCloudToFile(PointTPtr p_inpc, string ex_info)
 void CMFCForTPCDlg::SetSegParameters()
 {
 	CString cur_val;
+	m_edt_DownSamR.GetWindowTextW(cur_val);
+	m_tpc.SetDownSampleRaius(stof(cur_val.GetBuffer()));
+
 	m_edt_NumThds.GetWindowTextW(cur_val);
 	m_tpc.SetNumberOfThreads(stoi(cur_val.GetBuffer()));
 
@@ -401,14 +392,14 @@ void CMFCForTPCDlg::OnBnClickedBtnSavedata()
 void CMFCForTPCDlg::OnBnClickedButton2()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	CFileDialog fileopendlg(TRUE);
+	/*CFileDialog fileopendlg(TRUE);
 	CString filepath;
 	if (fileopendlg.DoModal() == IDOK)
 	{
 		filepath = fileopendlg.GetPathName();
 	}
-
-	long now1 = clock();
+	//char* filename;
+	//strcpy(filename, filepath);
 	std::ifstream t;
 	int length;
 	char* buffer;
@@ -420,19 +411,107 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	t.read(buffer, length);       // read the whole file into the buffer  
 	t.close();                    // close file handle  
 
-	
-	m_tpc.LoadTyrePC(buffer, length);
-	char* gpustr = new char[100];
-	sprintf(gpustr, "GPU running time: %.3f s\n", ((double)(clock() - now1)) / CLOCKS_PER_SEC);
+	string cur_str, in_str = buffer, tmpstr;
+	bool b_pcData = false;
+	int pos = 0;
+	PointXYZ cur_pt;
+	PointXYZRGB cur_rgb;
+	float x, y, z;
+	int r, g, b;
+	int line_pos = 0;
+	const char* t1 = " ";
+	const char* t2 = "\n";
+	string::iterator str_it = in_str.begin();
+	PointCloud<PointXYZ>::Ptr cloud=m_tpc.GetOriginalPC();
+	PointCloud<PointXYZRGB>::Ptr cloud_rgb=m_tpc.GetRGBPC();
 
-	long now2 = clock();
-	USES_CONVERSION;
-	char* filename = T2A(filepath);
-	m_tpc.LoadTyrePC(filename);
-	char* cpustr = new char[100];
-	sprintf(cpustr, "CPU runing time: %.3f s\n", ((double)(clock() - now2)) / CLOCKS_PER_SEC);
-	strcat(gpustr, cpustr);
-	MessageBoxA(this->GetSafeHwnd(), gpustr, "Run Result", 0);
+	for(pos=0;pos<length;pos++)//while (pos<length && str_it<in_str.end())
+	{
+		tmpstr = *str_it;
+		if (!b_pcData)
+		{
+			
+			if (tmpstr.compare(" ")==0|| tmpstr.compare("\n")==0)
+			{
+				if (cur_str != "")
+				{
+					cur_str.erase(0, cur_str.find_first_not_of(" "));
+					if (cur_str == "end_header")
+					{
+						b_pcData = true;
+					}
+					cur_str = "";
+				}
+			}
+			else
+			{
+				cur_str = cur_str + tmpstr;
+			}
+		}
+		else
+		{
+			if (tmpstr.compare(" ")==0 || tmpstr.compare("\n")==0)
+			{
+				if (cur_str != "")
+				{
+					cur_str.erase(0, cur_str.find_first_not_of(" "));
+					switch (line_pos)
+					{
+					case 0:
+						x = stof(cur_str);
+						break;
+					case 1:
+						y = stof(cur_str);
+						break;
+					case 2:
+						z = stof(cur_str);
+						break;
+					case 3:
+						r = stoi(cur_str);
+						break;
+					case 4:
+						g = stoi(cur_str);
+						break;
+					case 5:
+						b = stoi(cur_str);
+						break;
+					}
+					cur_str = "";
+					if (tmpstr.compare("\n")==0)
+					{
+						line_pos = 0;
+						cur_pt.x = x;
+						cur_pt.y = y;
+						cur_pt.z = z;
+						cloud->points.push_back(cur_pt);
+
+						cur_rgb.x = x;
+						cur_rgb.y = y;
+						cur_rgb.z = z;
+						cur_rgb.r = r;
+						cur_rgb.g = g;
+						cur_rgb.b = b;
+						cloud_rgb->points.push_back(cur_rgb);
+					}
+					else
+					{
+						line_pos++;
+					}
+				}
+			}
+			else
+			{
+				cur_str = cur_str + tmpstr;
+			}
+		}
+		//pos++;
+		str_it++;
+	}
+	vector<PinObject> res;
+	SetSegParameters();
+	m_tpc.FindPins(buffer, length, res);*/
+	//m_tpc.FindPinsMT(buffer, length, res);
+
 	/*CUDA test
 	CString cur_val;
 	m_edt_DownSamR.GetWindowTextW(cur_val);
@@ -485,7 +564,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	c = nullptr;
 	cg = nullptr;*/
 
-	/*USES_CONVERSION;
+	USES_CONVERSION;
 	CFileDialog fileopendlg(TRUE);
 	CString filepath;
 	bool b_loadfile = true;
@@ -533,7 +612,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 			QueryPerformanceCounter(&nst);
 			f_error = m_tpc.LoadTyrePC(pcfile);
 			QueryPerformanceCounter(&nend);
-			if (-1 == f_error)
+			if (0 > f_error)
 			{
 				MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
 				m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
@@ -572,7 +651,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		strcat(info_str, tmp_str);
 		info_wstr = A2W(info_str);
 		m_stc_St.SetWindowText(info_wstr);
-		strcpy(info_str, res_str);
+		strcpy(info_str, res_str);*/
 
 		long now2 = clock();
 		m_tpc.FindPointNormalsGPU();
@@ -620,5 +699,5 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	delete[] info_str;
 	delete[] tmp_str;
 	info_str = nullptr;
-	tmp_str = nullptr;*/
+	tmp_str = nullptr;
 }
