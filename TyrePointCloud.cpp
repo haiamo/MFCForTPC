@@ -109,6 +109,8 @@ int TyrePointCloud::FiltPins(vector<PointXYZI>& filted_pins)
 	vector<Vector3f>::iterator boxmin_it, boxmax_it;
 	Vector3f tmpMin(0.0f, 0.0f, 0.0f), tmpMax(0.0f, 0.0f, 0.0f), tmpCurPt(0.0f, 0.0f, 0.0f);
 	//Finding the outer box of the reference planes or cylinders.
+	box_min.reserve(m_refPlanes.size());
+	box_max.reserve(m_refPlanes.size());
 	for (ref_it = m_refPlanes.begin(); ref_it != m_refPlanes.end(); ref_it++)
 	{
 		for (size_t ii = 0; ii < (*ref_it)->points.size(); ii++)
@@ -272,6 +274,11 @@ PointCloud<Normal>::Ptr TyrePointCloud::GetGPUPointNormals()
 	return m_gpuPtNormals;
 }
 
+RangeImage::Ptr TyrePointCloud::GetRangeImage()
+{
+	return m_riPtr;
+}
+
 void TyrePointCloud::GetReferencePlanes(vector<PointCloud<PointXYZ>::Ptr>& out_ref)
 {
 	out_ref = m_refPlanes;
@@ -385,6 +392,129 @@ int TyrePointCloud::LoadTyrePC(string pcfile)
 						}
 					}
 				}
+			}
+		}
+		else if (0 == strcmp(file_type.data(), ".dat"))
+		{
+			ifstream input_file;
+			input_file.open(pcfile.data(), ios::binary);
+
+			if(input_file)
+			{
+				int dstOri = 0, plsOri = 0;
+				char* p;
+				PointXYZ tmpXYZ, point_3D;
+				double dst;
+				int tmpInt = 0, tmpRange = 0;
+				size_t jj = 0;
+				for (int i = 0; i < 1536; i++)//1536行数据
+				{
+					input_file.seekg(i * 30000);
+					for (int j = 0; j < 20000; j++)//20000个点每行,10000个Intensity,10000个Range
+					{
+						if (j == 10000)
+						{
+							jj = cloud->points.size() - 10000;
+						}
+
+						if (j < 10000)
+						{
+							p = (char*)&tmpInt;//读取Intensity(BYTE)
+							input_file.read(p, sizeof(char));
+							tmpXYZ.x = tmpInt;
+							tmpXYZ.y = 0.0f;
+							tmpXYZ.z = 0.0f;
+							cloud->points.push_back(tmpXYZ);
+						}
+						else
+						{
+							for (int m = 0; m < 2; m++)//读取Range(WORD)
+							{
+								p = (char*)&tmpRange;
+								input_file.read(p + m, sizeof(char));
+							}
+							cloud->points[jj].z = tmpRange;
+							jj++;
+						}
+					}
+				}
+				/*for (int i = 0; i < 4608; i++)        //600行数据
+				{
+					input_file.seekg( i * 10000);   //不读无效数据
+					for (int j = 0; j < 1250; j++)   //每行1000个点
+					{
+						int dst_temp = 0;            //距离
+						int pls_temp = 0;              //反射率
+						float theta, alpha;          //坐标变换的角度
+
+						for (int m = 0; m < 4; m++)       //读取距离
+						{
+							p = (char *)&dst_temp;
+							input_file.read(p + 3 - m, sizeof(char));
+						}
+						for (int m = 0; m < 4; m++)       //读取反射率
+						{
+							p = (char *)&pls_temp;
+							input_file.read(p + 3 - m, sizeof(char));
+						}
+						dstOri = dst_temp;
+						plsOri = pls_temp;
+
+						if (dstOri == -2147483648 || dstOri == 2147483647)
+							point_3D = tmpXYZ;
+						else
+						{
+							dst = dstOri / 10000.0;      //进行坐标变换
+							theta = (500 * M_PI - j*M_PI) / 1998;
+							alpha = -0.3 + i*0.001;
+							point_3D.x = dst*sin(theta);
+							point_3D.y = dst*cos(theta)*sin(alpha);
+							point_3D.z = -dst*cos(theta)*cos(alpha);
+						}
+						tmpXYZ = point_3D;
+						cloud->push_back(point_3D);//将点存入pointcloud
+					}
+				}*/
+				m_originPC = cloud;
+			/*ifstream input_file;
+			input_file.open(pcfile.data(), ios::binary);
+
+			if (input_file)
+			{
+				int x = 0, y = 0, z = 0, i = 0;
+				char* p;
+				PointXYZ tmpXYZ;
+
+				while (input_file.peek() != EOF)
+				{
+					//4 points in one line.
+					for (int ii = 0; ii < 4; ii++)
+					{
+						switch (ii)
+						{
+						case 0: p = (char*)&x; break;
+						case 1: p = (char*)&y; break;
+						case 2: p = (char*)&z; break;
+						case 3: p = (char*)&i; break;
+						}
+
+						for (int jj = 0; jj < 4; jj++)
+						{
+							input_file.read(p + 3 - jj, sizeof(char));
+						}
+					}
+					tmpXYZ.x = x;
+					tmpXYZ.y = y;
+					tmpXYZ.z = z;
+					cloud->points.push_back(tmpXYZ);
+				}
+
+				m_originPC = cloud;*/
+				return 0;
+			}
+			else
+			{
+				return LOAD_CHAR_ERROR;
 			}
 		}
 		else
@@ -641,13 +771,13 @@ int TyrePointCloud::FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gp
 	octree_device->build();
 
 	// Create two query points
-	std::vector<pcl::PointXYZ> query_host;
-	std::vector<float> radii;
-	for (size_t ii = 0; ii < cloud->points.size(); ii++)
-	{
-		query_host.push_back(cloud->points[ii]);
-		radii.push_back(m_distancethreshold);
-	}
+	std::vector<pcl::PointXYZ> query_host(cloud->points.begin(),cloud->points.end());
+	std::vector<float> radii(cloud->points.size(),m_distancethreshold);
+	//for (size_t ii = 0; ii < cloud->points.size(); ii++)
+	//{
+		//query_host.push_back(cloud->points[ii]);
+		//radii.push_back(m_distancethreshold);
+	//}
 
 	pcl::gpu::Octree::Queries queries_device;
 	queries_device.upload(query_host);
@@ -682,6 +812,8 @@ int TyrePointCloud::FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gp
 	Normal tmpNormal;
 	m_gpuPtNormals.reset(::new PointCloud<Normal>);
 	m_pointNormals.reset(::new PointCloud<Normal>);
+	m_gpuPtNormals->points.reserve(res_normals.size());
+	m_pointNormals->points.reserve(res_normals.size());
 	for (size_t ii = 0; ii < res_normals.size(); ii++)
 	{
 		tmpNormal.normal_x = res_normals[ii].x;
@@ -1149,11 +1281,7 @@ int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, P
 		// Write the planar inliers to disk
 		extract.filter(*cloud_plane);
 		m_refPlanes.push_back(cloud_plane);
-		for (size_t ii = 0; ii < cloud_plane->points.size(); ++ii)
-		{
-			tmpPt = cloud_plane->points[ii];
-			m_segbase->points.push_back(tmpPt);
-		}
+		m_segbase->points.insert(m_segbase->points.end(), cloud_plane->points.begin(), cloud_plane->points.end());
 
 		// Remove the planar inliers, extract the rest
 		extract.setNegative(true);
@@ -1163,7 +1291,7 @@ int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, P
 		cloud_plane.reset(::new PointCloud<PointXYZ>);
 		coefficients.reset(::new ModelCoefficients);
 		bNormalRenewed = FALSE;
-	} while (cloud_filtered->points.size() > m_inlierratio * nr_points && cloud_plane->points.size() < 0.1*nr_points && m_refPlanes.size() < 15);
+	} while (cloud_filtered->points.size() > m_inlierratio * nr_points && cloud_plane->points.size() < m_inlierratio*nr_points && m_refPlanes.size() < 15);
 
 	//pcl::gpu::Octree::PointCloud pt_device;
 	//pt_device.upload(cloud_filtered->points);
@@ -1197,6 +1325,8 @@ int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, P
 	Vector3d curpoint, curvector, pcaCent3d(pcaCentroid(0), pcaCentroid(1), pcaCentroid(2));
 	if (!cluster_indices.empty())
 	{
+		m_restClusters.clear();
+		m_restClusters.reserve(cluster_indices.size());
 		for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
 		{
 			pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_cluster(::new pcl::PointCloud<pcl::PointXYZI>);
@@ -1365,6 +1495,50 @@ int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
 		strcat(m_inCloud, new_part);
 	}
 	p_pc = m_inCloud;
+	return 0;
+}
+
+int TyrePointCloud::CovToRangeImage(vector<float> SesPos, float AngRes, float maxAngWid,
+	float maxAngHgt, float noiseLevel, float minRange,
+	int borderSize)
+{
+	PointCloud<PointXYZ>::Ptr pointCloud = GetOriginalPC();
+	float angularResolution = (float)(AngRes * (M_PI / 180.0f));
+	float maxAngleWidth = (float)(maxAngWid * (M_PI / 180.0f));
+	float maxAngleHeight = (float)(maxAngHgt * (M_PI / 180.0f));
+	//Eigen::Affine3f sensorPose = (Eigen::Affine3f)Eigen::Translation3f(SesPos[0], SesPos[1], SesPos[2]);
+	pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::LASER_FRAME;
+	pcl::RangeImage::Ptr rangeImage;
+	if (m_riPtr!=NULL)
+	{
+		rangeImage = m_riPtr;
+	}
+	else
+	{
+		m_riPtr.reset(::new RangeImage);
+		rangeImage = m_riPtr;
+	}
+	//rangeImage->createFromPointCloud(*pointCloud, angularResolution, maxAngleWidth, maxAngleHeight, sensorPose, coordinate_frame, noiseLevel, minRange, borderSize);
+	float viewPt[3] = { SesPos[0], SesPos[1], SesPos[2] };
+	pcl::PointCloud<PointWithViewpoint>::Ptr ptrPtVP(::new pcl::PointCloud<PointWithViewpoint>);
+	PointWithViewpoint tmpPtVP;
+	pcl::PointCloud<PointXYZ>::iterator itPt = pointCloud->begin();
+	for (; itPt < pointCloud->end(); itPt++)
+	{
+		tmpPtVP.x = itPt->x;
+		tmpPtVP.y = itPt->y;
+		tmpPtVP.z = itPt->z;
+		tmpPtVP.vp_x = viewPt[0];
+		tmpPtVP.vp_y = viewPt[1];
+		tmpPtVP.vp_z = viewPt[2];
+		ptrPtVP->points.push_back(tmpPtVP);
+	}
+	rangeImage->createFromPointCloudWithViewpoints(*ptrPtVP, angularResolution, maxAngleWidth, maxAngleHeight, coordinate_frame, noiseLevel, minRange, borderSize);
+	m_riPtr = rangeImage;
+
+	//float* ranges = rangeImage->getRangesArray();
+	//unsigned char* rgb_image = pcl::visualization::FloatImageUtils::getVisualImage(ranges, rangeImage->width, rangeImage->height);
+	//pcl::io::saveRgbPNGFile("saveRangeImageRGB.png", rgb_image, rangeImage->width, rangeImage->height);
 	return 0;
 }
 

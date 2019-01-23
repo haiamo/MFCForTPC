@@ -234,13 +234,14 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	m_stc_St.SetWindowText(info_wstr);
 	PointCloud<PointXYZI>::Ptr pins;
 	QueryPerformanceCounter(&nst);
-	m_tpc.FindPinsBySegmentation(cloud, pins);
+	m_tpc.FindPinsBySegmentationGPU(cloud, pins);
 	QueryPerformanceCounter(&nend);
 	memset(info_str, 0, sizeof(info_str)/sizeof(char));
 	char* tmp_str=new char[1000];
 	sprintf(tmp_str, "Searching pins costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 	info_str = strcat(info_str, tmp_str);
-	m_stc_St.SetWindowText((LPCTSTR)(LPTSTR)info_str);
+	info_wstr = A2W(info_str);
+	m_stc_St.SetWindowText(info_wstr);
 	size_t ii = 0;
 	while (ii < pins->points.size() && ii < 5)
 	{
@@ -249,7 +250,8 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 		info_str = strcat(info_str, tmp_str);
 		ii++;
 	}
-	m_stc_St.SetWindowText((LPCTSTR)(LPTSTR)info_str);
+	info_wstr = A2W(info_str);
+	m_stc_St.SetWindowText(info_wstr);
 	m_btn_run.EnableWindow(TRUE);
 	m_btn_savedata.EnableWindow(TRUE);
 
@@ -269,8 +271,17 @@ void CMFCForTPCDlg::OnBnClickedBtnExit()
 	char* test = new char[1000];
 	sprintf(test, "test %f", 100.2);
 	delete[] test;
-	*/
+	
 	//CDialogEx::OnOK();
+	Vector3f tmp(10.0f, 11.0f, 12.0f);
+	if ((tmp - Vector3f(10.0f-1e-6f, 10.0f, 11.0f)).cwiseSign() == Vector3f(1.0f, 1.0f, 1.0f))
+	{
+		TRACE("It is true.");
+	}
+	else
+	{
+		TRACE("It is false.");
+	}*/
 	CDialogEx::OnCancel();
 }
 
@@ -399,8 +410,8 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	{
 		filepath = fileopendlg.GetPathName();
 	}
-	//char* filename;
-	//strcpy(filename, filepath);
+
+	long now1 = clock();
 	std::ifstream t;
 	int length;
 	char* buffer;
@@ -412,9 +423,19 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	t.read(buffer, length);       // read the whole file into the buffer  
 	t.close();                    // close file handle  
 
-	m_tpc.LoadTyrePC(buffer, length);
 	
+	m_tpc.LoadTyrePC(buffer, length);
+	char* gpustr = new char[100];
+	sprintf(gpustr, "GPU running time: %.3f s\n", ((double)(clock() - now1)) / CLOCKS_PER_SEC);
 
+	long now2 = clock();
+	USES_CONVERSION;
+	char* filename = T2A(filepath);
+	m_tpc.LoadTyrePC(filename);
+	char* cpustr = new char[100];
+	sprintf(cpustr, "CPU runing time: %.3f s\n", ((double)(clock() - now2)) / CLOCKS_PER_SEC);
+	strcat(gpustr, cpustr);
+	MessageBoxA(this->GetSafeHwnd(), gpustr, "Run Result", 0);
 	/*CUDA test
 	CString cur_val;
 	m_edt_DownSamR.GetWindowTextW(cur_val);

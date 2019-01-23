@@ -38,6 +38,8 @@
 #include <pcl\gpu\containers\device_memory.hpp>
 #include <pcl\gpu\containers\device_array.hpp>
 #include <pcl\gpu\octree\octree.hpp>
+//#include <pcl\gpu\segmentation\impl\gpu_extract_clusters.hpp>
+//#include <pcl\gpu\segmentation\gpu_extract_clusters.h>
 #include <boost\shared_ptr.hpp>
 
 #include <ppl.h>
@@ -143,8 +145,8 @@ protected:
 
 	void InitCloudData();
 
-	int FiltePins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins);
-	int FiltePins(vector<PointXYZI>& filted_pins);
+	int FiltPins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins);
+	int FiltPins(vector<PointXYZI>& filted_pins);
 
 public:
 	PointCloud<PointXYZ>::Ptr GetOriginalPC();
@@ -202,7 +204,7 @@ public:
 		 threads(in): The number of threads for multiple threads methods proprety.
 	*/
 
-	int FindPointNormalsGPU();
+	int FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gpu::Octree::Ptr &in_tree, PointCloud<Normal>::Ptr &out_normal);
 
 	int FindPins(PointCloud<PointXYZI>::Ptr &out_pc);
 	/* Searching pins on tyre surface(override):
@@ -235,7 +237,9 @@ public:
 	     out_pc(out): Out point cloud pointer with the length of pins.
 	*/
 
-	int FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr &out_pc);
+	//int FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr &out_pc);
+
+	int FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr &out_pc);
 
 	int FindPins(char* p_pc, int length, vector<PinObject> & out_pc);
 	/* Find pins by input a char stream

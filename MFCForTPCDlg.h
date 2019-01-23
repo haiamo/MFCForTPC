@@ -10,8 +10,13 @@
 #include "TyrePointCloud.h"
 #include "afxcmn.h"
 #include "afxwin.h"
-#include <atlconv.h>
+#include "RangImagDlg.h"
 
+#include <pcl\visualization\common\float_image_utils.h>
+#include <pcl\io\png_io.h>
+#include <pcl\io\io.h>
+
+#include <atlconv.h>
 
 using namespace pcl;
 
@@ -71,6 +76,8 @@ public:
 
 	void SetSegParameters();
 
+	int LoadPointCloud();
+
 protected:
 	//User defined methods
 	void GetPathAndType(string &fpath, string &ftype);
@@ -78,8 +85,12 @@ protected:
 private:
 	//User defined members
 	TyrePointCloud m_tpc;
+	RangeImageProperties m_RIProp;
 public:
 	afx_msg void OnBnClickedBtnSavedata();
 	CButton m_btn_savedata;
 	afx_msg void OnBnClickedButton2();
+//	afx_msg void OnBnClickedButton1();
+	afx_msg void OnBnClickedRanimg();
+	afx_msg void OnBnClickedShowpc();
 };

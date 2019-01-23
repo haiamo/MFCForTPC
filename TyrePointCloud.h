@@ -33,6 +33,16 @@
 #include <pcl\segmentation\extract_clusters.h>
 #include <pcl\ModelCoefficients.h>
 
+#include <pcl\range_image\range_image.h>
+#include <pcl\range_image\range_image_planar.h>
+#include <pcl\range_image\range_image_spherical.h>
+
+#include <pcl\visualization\common\float_image_utils.h>
+#include <pcl\visualization\range_image_visualizer.h>
+#include <pcl\io\png_io.h>
+#include <pcl\io\io.h>
+#include <pcl\common\io.h>
+
 #include <pcl\gpu\features\features.hpp>
 #include <pcl\gpu\octree\device_format.hpp>
 #include <pcl\gpu\containers\device_memory.hpp>
@@ -66,6 +76,7 @@ enum TPCStatus
 	NULL_PC_PTR = -5,
 	EMPTY_POINT = -6,
 	EMPTY_CHAR_PTR = -7,
+	LOAD_CHAR_ERROR = -8,
 
 	//Estimating normals
 	NEGATIVE_R_K = -50,
@@ -143,17 +154,20 @@ protected:
 	map<int, vector<int>> m_clusterDic;//Key is the ID in refPlanes/refCoefs vector
 									   //value is the ID vector of restClusters
 
-	void InitCloudData();
+	pcl::RangeImage::Ptr m_riPtr;
 
 	int FiltPins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins);
 	int FiltPins(vector<PointXYZI>& filted_pins);
 
 public:
+	void InitCloudData();
+
 	PointCloud<PointXYZ>::Ptr GetOriginalPC();
 	PointCloud<PointXYZI>::Ptr GetPinsPC();
 	PointCloud<PointXYZRGB>::Ptr GetRGBPC();
 	PointCloud<Normal>::Ptr GetPointNormals();
 	PointCloud<Normal>::Ptr GetGPUPointNormals();
+	RangeImage::Ptr GetRangeImage();
 
 	//Get segementation references and clusters.
 	void GetReferencePlanes(vector<PointCloud<PointXYZ>::Ptr> &out_ref);
@@ -249,6 +263,9 @@ public:
 		 out_pc(out): A list of PinObjects, which have position(x,y,z) and the length(len).
 	*/
 
+	int CovToRangeImage(vector<float> SesPos, float AngRes = 1.0f, float maxAngWid = 360.0f,
+		float maxAngHgt = 180.0f, float noiseLevel = 0.0f, float minRange = 0.0f,
+		int borderSize = 1);
 };
 
 //GPU Host Interfaces:
