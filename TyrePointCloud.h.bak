@@ -110,8 +110,11 @@ public:
 private:
 	BOOL m_normalUserDefined;
 
+	//GPU Point Normal Searching Properties:
+	float m_searchradius;
+	int m_maxneighboranswers;
+	
 	//Segementation Properties:
-	float m_downsampleradius;
 	unsigned int m_numberofthreds;
 	double m_distancethreshold;
 	double m_normaldistanceweight;
@@ -162,7 +165,11 @@ public:
 
 public:
 	//Set parameters:
-	void SetDownSampleRaius(float dsr);
+	//Point Normal Searching
+	void SetSearchRadius(float radius);
+	void SetMaxNeighborAnswers(int maxans);
+
+	//Segmentation
 	void SetNumberOfThreads(unsigned int nt);
 	void SetDistanceThreshold(double dt);
 	void SetNormalDistanceWeight(double ndw);

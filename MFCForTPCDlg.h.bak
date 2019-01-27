@@ -6,14 +6,18 @@
 #undef min
 #undef max
 
+#include "stdafx.h"
 #include "TyrePointCloud.h"
 #include "afxcmn.h"
 #include "afxwin.h"
 #include <atlconv.h>
-#include "cudaMain.h"
+
 
 using namespace pcl;
 
+
+//GPU Device Interfaces:
+//int CharToValueDev(thrust::device_vector<string> in_str, pcl::gpu::PtrSz<PointXYZ>& out_pt);
 
 // CMFCForTPCDlg ¶Ô»°¿ò
 class CMFCForTPCDlg : public CDialogEx

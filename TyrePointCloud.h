@@ -66,6 +66,7 @@ enum TPCStatus
 	NULL_PC_PTR = -5,
 	EMPTY_POINT = -6,
 	EMPTY_CHAR_PTR = -7,
+	LOAD_CHAR_ERROR = -8,
 
 	//Estimating normals
 	NEGATIVE_R_K = -50,
@@ -84,6 +85,7 @@ struct PinObject
 
 enum PtRefType//Point reference type
 {
+	//_P is for pointer and _V for vector.
 	ORIGIN_P,
 	DOWNSAMPLE_P,
 	SEGEMENTBASE_P,
@@ -120,6 +122,8 @@ private:
 	double m_normaldistanceweight;
 	double m_inlierratio;
 	float m_clustertolerance;
+	double m_segmaxradius;
+	double m_segminradius;
 
 	PinObject m_pinsobj;
 
@@ -146,12 +150,15 @@ protected:
 	map<int, vector<int>> m_clusterDic;//Key is the ID in refPlanes/refCoefs vector
 									   //value is the ID vector of restClusters
 
-	void InitCloudData();
-
 	int FiltPins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins);
 	int FiltPins(vector<PointXYZI>& filted_pins);
 
 public:
+	void InitCloudData();
+	//Get and Set point clouds.
+	void SetOriginPC(PointCloud<PointXYZ>::Ptr in_pc);
+	void setOriginRGBPC(PointCloud<PointXYZRGB>::Ptr in_pc);
+
 	PointCloud<PointXYZ>::Ptr GetOriginalPC();
 	PointCloud<PointXYZI>::Ptr GetPinsPC();
 	PointCloud<PointXYZRGB>::Ptr GetRGBPC();
@@ -177,10 +184,19 @@ public:
 	void SetClusterTolerance(double ct);
 
 public:
-	int LoadTyrePC(string pcfile);
-	/* Loading tyre point clouds from file, which contains in .ply or .pcd file.
+	int LoadTyrePC(string pcfile, float xLB = 0.0f, float xUB = 1000.0f, float yStep=0.03f, float zLB=0.0f, float zUB=1000.0f, size_t width = 1536, size_t height = 10000);
+	/* Loading tyre point clouds from file, which contains in .ply, .pcd or .dat file.
 	   Parameters:
 	     pcfile(in): The input file directory of point clouds.
+		 NOTE: the following three parameters are only avalible for .dat file, the point size is width*height.
+		 xLB(in): The lower bound along x-axis.
+		 xUP(in): The upper bound along x-axis.
+		 yStep(in): The step length along y-axis.
+		 zLB(in): The lower bound along z-axis.
+		 zUP(in): The upper bound along z-axis.
+		 width(in): The width of a laser line in Range Image.
+		 height(in): The height of Range Image.
+
 	*/
 
 	int LoadTyrePC(char* p_pc, int length);
@@ -193,6 +209,8 @@ public:
 	int FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gpu::Octree::Ptr &in_tree, PointCloud<Normal>::Ptr &out_normal);
 
 	int FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr &out_pc);
+
+	int FindCharsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZ>::Ptr &out_pc);
 
 	int FindPins(char* p_pc, int length, vector<PinObject> & out_pc);
 	/* Find pins by input a char stream

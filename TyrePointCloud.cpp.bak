@@ -13,13 +13,16 @@ TyrePointCloud::TyrePointCloud()
 {
 	m_normalUserDefined = FALSE;
 
+	//GPU Point Normal Searching Properties:
+	m_searchradius = 500;
+	m_maxneighboranswers = 200;
+
 	//Segementation Properties:
-	m_downsampleradius = 300;
 	m_numberofthreds = 2;
-	m_distancethreshold = 300;
-	m_normaldistanceweight = 0.5;
+	m_distancethreshold = 500;
+	m_normaldistanceweight = 0.1;
 	m_inlierratio = 0.2;
-	m_clustertolerance = 1000;
+	m_clustertolerance = 300;
 
 	InitCloudData();
 }
@@ -287,9 +290,14 @@ void TyrePointCloud::GetRestClusters(vector<PointCloud<PointXYZI>::Ptr>& out_ref
 	out_ref = m_restClusters;
 }
 
-void TyrePointCloud::SetDownSampleRaius(float dsr)
+void TyrePointCloud::SetSearchRadius(float radius)
 {
-	m_downsampleradius = dsr;
+	m_searchradius = radius;
+}
+
+void TyrePointCloud::SetMaxNeighborAnswers(int maxans)
+{
+	m_maxneighboranswers = maxans;
 }
 
 void TyrePointCloud::SetNumberOfThreads(unsigned int nt)
@@ -524,7 +532,7 @@ int TyrePointCloud::FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gp
 	for (size_t ii = 0; ii < cloud->points.size(); ii++)
 	{
 		query_host.push_back(cloud->points[ii]);
-		radii.push_back(m_distancethreshold);
+		radii.push_back(m_searchradius);
 	}
 
 	pcl::gpu::Octree::Queries queries_device;
@@ -533,45 +541,20 @@ int TyrePointCloud::FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gp
 	pcl::gpu::Octree::Radiuses radii_device;
 	radii_device.upload(radii);
 
-	const int max_answers = 200;
-
 	// Output buffer on the device
-	pcl::gpu::NeighborIndices result_device(queries_device.size(), max_answers);
+	pcl::gpu::NeighborIndices result_device(queries_device.size(), m_maxneighboranswers);
 
 	// Do the actual search
-	octree_device->radiusSearch(queries_device, radii_device, max_answers, result_device);
+	octree_device->radiusSearch(queries_device, radii_device, m_maxneighboranswers, result_device);
 
 	std::vector<int> sizes, data;
 	result_device.sizes.download(sizes);
 	result_device.data.download(data);
 
 	pcl::gpu::DeviceArray<PointXYZ> normals;
-	pcl::gpu::DeviceArray<PointXYZ> normals1;
 	ne.setInputCloud(cloud_device);
-	ne.setRadiusSearch(m_distancethreshold, max_answers);
+	ne.setRadiusSearch(m_searchradius, m_maxneighboranswers);
 	ne.setViewPoint(0.0, 0.0, 0.0);
-	ne.compute(normals);
-	ne.computeNormals(cloud_device, result_device, normals1);
-	std::vector<PointXYZ> res_normals;
-	std::vector<PointXYZ> res_normals1;
-	normals.download(res_normals);
-	normals1.download(res_normals1);
-
-	Normal tmpNormal;
-	m_gpuPtNormals.reset(::new PointCloud<Normal>);
-	m_pointNormals.reset(::new PointCloud<Normal>);
-	for (size_t ii = 0; ii < res_normals.size(); ii++)
-	{
-		tmpNormal.normal_x = res_normals[ii].x;
-		tmpNormal.normal_y = res_normals[ii].y;
-		tmpNormal.normal_z = res_normals[ii].z;
-		m_gpuPtNormals->points.push_back(tmpNormal);
-
-		tmpNormal.normal_x = res_normals1[ii].x;
-		tmpNormal.normal_y = res_normals1[ii].y;
-		tmpNormal.normal_z = res_normals1[ii].z;
-		m_pointNormals->points.push_back(tmpNormal);
-	}
 	out_normal = m_gpuPtNormals;
 	return 0;
 }
