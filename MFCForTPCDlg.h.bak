@@ -10,8 +10,13 @@
 #include "TyrePointCloud.h"
 #include "afxcmn.h"
 #include "afxwin.h"
-#include <atlconv.h>
 
+#include <pcl\visualization\pcl_visualizer.h>
+#include <pcl\visualization\common\float_image_utils.h>
+#include <pcl\io\png_io.h>
+#include <pcl\io\io.h>
+
+#include <atlconv.h>
 
 using namespace pcl;
 
@@ -46,12 +51,25 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+	//Controls for Estimation
 	CEdit m_edt_ClTol;
 	CEdit m_edt_DownSamR;
 	CEdit m_edt_NormDisWt;
 	CEdit m_edt_InlR;
 	CEdit m_edt_NumThds;
 	CEdit m_edt_DisThrhd;
+
+	//Controls for Loading .dat file
+	CEdit m_edt_xLB;
+	CEdit m_edt_xUB;
+	CEdit m_edt_yStep;
+	CEdit m_edt_zLB;
+	CEdit m_edt_zUB;
+	CEdit m_edt_Width;
+	CEdit m_edt_Height;
+	CEdit m_edt_PCBeginID;
+	CEdit m_edt_PCEndID;
+
 	afx_msg void OnBnClickedBtnRun();
 	CStatic m_stc_FlPth;
 	CStatic m_stc_St;
@@ -71,6 +89,8 @@ public:
 
 	void SetSegParameters();
 
+	int LoadPointCloud();
+
 protected:
 	//User defined methods
 	void GetPathAndType(string &fpath, string &ftype);
@@ -78,8 +98,17 @@ protected:
 private:
 	//User defined members
 	TyrePointCloud m_tpc;
+	//RangeImageProperties m_RIProp;
+
+	bool m_bRanSeg = false;
 public:
 	afx_msg void OnBnClickedBtnSavedata();
 	CButton m_btn_savedata;
 	afx_msg void OnBnClickedButton2();
+//	afx_msg void OnBnClickedButton1();
+//	afx_msg void OnBnClickedRanimg();
+	afx_msg void OnBnClickedShowpc();
+	int m_RadioID;
+	afx_msg void OnBnClickedRadioPins();
+	afx_msg void OnBnClickedRadioChars();
 };

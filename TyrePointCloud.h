@@ -33,6 +33,10 @@
 #include <pcl\segmentation\extract_clusters.h>
 #include <pcl\ModelCoefficients.h>
 
+#include <pcl\segmentation\supervoxel_clustering.h>
+#include <pcl\segmentation\lccp_segmentation.h>
+#include <pcl\segmentation\cpc_segmentation.h>
+
 #include <pcl\gpu\features\features.hpp>
 #include <pcl\gpu\octree\device_format.hpp>
 #include <pcl\gpu\containers\device_memory.hpp>
@@ -152,6 +156,12 @@ protected:
 
 	int FiltPins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins);
 	int FiltPins(vector<PointXYZI>& filted_pins);
+	int SupervoxelClustering(pcl::PointCloud<PointXYZ>::Ptr in_pc,
+		std::map <uint32_t, pcl::Supervoxel<PointXYZ>::Ptr > &sv_cluster,
+		std::multimap<uint32_t, uint32_t>& sv_adj,
+		pcl::PointCloud<PointXYZL>::Ptr & lbl_pc,
+		float voxel_res = 0.03f, float seed_res = 0.09f, float color_imp = 0.0f,
+		float spatial_imp=0.6f, float normal_imp=1.0f);
 
 public:
 	void InitCloudData();
@@ -211,6 +221,13 @@ public:
 	int FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr &out_pc);
 
 	int FindCharsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZ>::Ptr &out_pc);
+
+	int FindCharsByLCCP(pcl::PointCloud<PointXYZ>::Ptr in_pc, pcl::PointCloud<PointXYZL>::Ptr &out_pc);
+	/* LCCP: Locally Convex Connected Patches
+	   This method has two steps: 1. Supervoxel Clustering, 2. Convex Connected Clustering.
+	*/
+
+	int FindCharsByCPC(pcl::PointCloud<PointXYZ>::Ptr in_pc, pcl::PointCloud<PointXYZL>::Ptr &out_pc);
 
 	int FindPins(char* p_pc, int length, vector<PinObject> & out_pc);
 	/* Find pins by input a char stream

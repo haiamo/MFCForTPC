@@ -91,7 +91,9 @@ BEGIN_MESSAGE_MAP(CMFCForTPCDlg, CDialogEx)
 //	ON_BN_CLICKED(IDC_RanImg, &CMFCForTPCDlg::OnBnClickedRanimg)
 	ON_BN_CLICKED(IDC_ShowPC, &CMFCForTPCDlg::OnBnClickedShowpc)
 	ON_BN_CLICKED(IDC_RADIO_Pins, &CMFCForTPCDlg::OnBnClickedRadioPins)
-	ON_BN_CLICKED(IDC_RADIO_Chars, &CMFCForTPCDlg::OnBnClickedRadioChars)
+	ON_BN_CLICKED(IDC_RADIO_Chars_Seg, &CMFCForTPCDlg::OnBnClickedRadioCharsSeg)
+	ON_BN_CLICKED(IDC_RADIO_Chars_LCCP, &CMFCForTPCDlg::OnBnClickedRadioCharsLccp)
+	ON_BN_CLICKED(IDC_RADIO_Chars_CPC, &CMFCForTPCDlg::OnBnClickedRadioCharsCpc)
 END_MESSAGE_MAP()
 
 
@@ -280,8 +282,12 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	CString beginID, endID;
 	m_edt_PCBeginID.GetWindowTextW(beginID);
 	m_edt_PCEndID.GetWindowTextW(endID);
-	cloud->points.insert(cloud->points.begin(), totalPC->points.begin()+stoi(beginID.GetBuffer()), totalPC->points.begin() + stoi(endID.GetBuffer()));
-	rgbCloud->points.insert(rgbCloud->points.begin(), totalRGB->points.begin() + stoi(beginID.GetBuffer()), totalRGB->points.begin() + stoi(endID.GetBuffer()));
+	cloud->points.insert(cloud->points.begin(), 
+		totalPC->points.begin()+stoi(beginID.GetBuffer()), 
+		totalPC->points.begin() + min(totalPC->points.size(),(size_t)stoi(endID.GetBuffer())));
+	rgbCloud->points.insert(rgbCloud->points.begin(), 
+		totalRGB->points.begin() + stoi(beginID.GetBuffer()), 
+		totalRGB->points.begin() + min(totalRGB->points.size(),(size_t)stoi(endID.GetBuffer())));
 	m_tpc.SetOriginPC(cloud);
 	m_tpc.setOriginRGBPC(rgbCloud);
 
@@ -290,45 +296,71 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	if (m_RadioID == 1)
 	{
 		str_len = sprintf(info_str + str_len, "Starting pin searching, please wait...\n");
-		LPCWSTR info_wstr = A2W(info_str);
-		m_stc_St.SetWindowText(info_wstr);
-		PointCloud<PointXYZI>::Ptr pins;
-		QueryPerformanceCounter(&nst);
-		m_tpc.FindPinsBySegmentationGPU(cloud, pins);
-		QueryPerformanceCounter(&nend);
-		memset(info_str, 0, sizeof(info_str)/sizeof(char));
-		
-		sprintf(tmp_str, "Searching pins costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
-		info_str = strcat(info_str, tmp_str);
-		info_wstr = A2W(info_str);
-		m_stc_St.SetWindowText(info_wstr);
-		size_t ii = 0;
-		while (ii < pins->points.size() && ii < 5)
-		{
-			memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
-			sprintf(tmp_str, "%.2f, %.2f, %.2f, %.2f\n",pins->points[ii].x, pins->points[ii].y, pins->points[ii].z, pins->points[ii].intensity);
-			info_str = strcat(info_str, tmp_str);
-			ii++;
-		}
-		info_wstr = A2W(info_str);
-		m_stc_St.SetWindowText(info_wstr);
-
 	}
-	else if (m_RadioID == 2)
+	else
 	{
 		str_len = sprintf(info_str + str_len, "Starting Characteristics searching, please wait...\n");
-		LPCWSTR info_wstr = A2W(info_str);
-		m_stc_St.SetWindowText(info_wstr);
-		PointCloud<PointXYZ>::Ptr chars;
-		QueryPerformanceCounter(&nst);
-		m_tpc.FindCharsBySegmentationGPU(cloud, chars);
-		QueryPerformanceCounter(&nend);
-		memset(info_str, 0, sizeof(info_str) / sizeof(char));
+	}
+		
+	LPCWSTR info_wstr = A2W(info_str);
+	m_stc_St.SetWindowText(info_wstr);
+	PointCloud<PointXYZI>::Ptr pins;
+	PointCloud<PointXYZ>::Ptr seg_chars;
+	PointCloud<PointXYZL>::Ptr lbl_chars;
+	QueryPerformanceCounter(&nst);
+	switch (m_RadioID)
+	{
+		case 1:
+			m_tpc.FindPinsBySegmentationGPU(cloud, pins);
+			break;
+		case 2:
+			m_tpc.FindCharsBySegmentationGPU(cloud, seg_chars);
+			break;
+		case 3:
+			m_tpc.FindCharsByLCCP(cloud, lbl_chars);
+			break;
+		case 4:
+			m_tpc.FindCharsByCPC(cloud, lbl_chars);
+			break;
+	}
+	QueryPerformanceCounter(&nend);
+	memset(info_str, 0, sizeof(info_str)/sizeof(char));
+		
+	if (m_RadioID == 1)
+	{
+		sprintf(tmp_str, "Searching pins costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+	}
+	else
+	{
 		sprintf(tmp_str, "Searching chars costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
-		info_str = strcat(info_str, tmp_str);
-		info_wstr = A2W(info_str);
-		m_stc_St.SetWindowText(info_wstr);
-		pcl::io::savePLYFile("chars.ply", *chars);
+	}
+		
+	info_str = strcat(info_str, tmp_str);
+	info_wstr = A2W(info_str);
+	m_stc_St.SetWindowText(info_wstr);
+	size_t ii = 0;
+	switch (m_RadioID)
+	{
+		case 1:
+			while (ii < pins->points.size() && ii < 5)
+			{
+				memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+				sprintf(tmp_str, "%.2f, %.2f, %.2f, %.2f\n", pins->points[ii].x, pins->points[ii].y, pins->points[ii].z, pins->points[ii].intensity);
+				info_str = strcat(info_str, tmp_str);
+				ii++;
+			}
+			info_wstr = A2W(info_str);
+			m_stc_St.SetWindowText(info_wstr);
+			break;
+		case 2:
+			pcl::io::savePLYFile("chars.ply", *seg_chars);
+			break;
+		case 3:
+			pcl::io::savePLYFile("chars_LCCP.ply", *lbl_chars);
+			break;
+		case 4:
+			pcl::io::savePLYFile("chars_CPC.ply", *lbl_chars);
+			break;
 	}
 
 	m_btn_run.EnableWindow(TRUE);
@@ -959,9 +991,22 @@ void CMFCForTPCDlg::OnBnClickedRadioPins()
 	m_RadioID = 1;
 }
 
-
-void CMFCForTPCDlg::OnBnClickedRadioChars()
+void CMFCForTPCDlg::OnBnClickedRadioCharsSeg()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	m_RadioID = 2;
+}
+
+
+void CMFCForTPCDlg::OnBnClickedRadioCharsLccp()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	m_RadioID = 3;
+}
+
+
+void CMFCForTPCDlg::OnBnClickedRadioCharsCpc()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	m_RadioID = 4;
 }
