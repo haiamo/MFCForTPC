@@ -78,6 +78,8 @@ BEGIN_MESSAGE_MAP(CMFCForTPCDlg, CDialogEx)
 	ON_BN_CLICKED(ID_BTN_Exit, &CMFCForTPCDlg::OnBnClickedBtnExit)
 	ON_BN_CLICKED(IDC_BTN_SaveData, &CMFCForTPCDlg::OnBnClickedBtnSavedata)
 	ON_BN_CLICKED(IDC_BUTTON2, &CMFCForTPCDlg::OnBnClickedButton2)
+	ON_BN_CLICKED(IDC_RanImg, &CMFCForTPCDlg::OnBnClickedRanimg)
+	ON_BN_CLICKED(IDC_ShowPC, &CMFCForTPCDlg::OnBnClickedShowpc)
 END_MESSAGE_MAP()
 
 
@@ -180,6 +182,7 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 {
 	m_btn_run.EnableWindow(FALSE);
 	m_btn_savedata.EnableWindow(FALSE);
+	m_tpc.InitCloudData();
 	CFileDialog fileopendlg(TRUE);
 	CString filepath;
 	if (fileopendlg.DoModal() == IDOK)
@@ -207,6 +210,7 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	{
 		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
 		m_stc_St.SetWindowText(L"Loading failed: empty file path");
+		return;
 	}
 	else
 	{
@@ -267,6 +271,7 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 void CMFCForTPCDlg::OnBnClickedBtnExit()
 {
 	// TODO: 在此添加控件通知处理程序代码
+
 	/*
 	char* test = new char[1000];
 	sprintf(test, "test %f", 100.2);
@@ -368,6 +373,64 @@ void CMFCForTPCDlg::SetSegParameters()
 	m_tpc.SetClusterTolerance(stof(cur_val.GetBuffer()));
 }
 
+int CMFCForTPCDlg::LoadPointCloud()
+{
+	CFileDialog fileopendlg(TRUE);
+	CString filepath, prefilepath;
+	m_stc_FlPth.GetWindowText(prefilepath);
+	if (fileopendlg.DoModal() == IDOK)
+	{
+		filepath = fileopendlg.GetPathName();
+		m_stc_FlPth.SetWindowText(filepath);
+	}
+	else
+	{
+		m_stc_FlPth.SetWindowText(L"");
+	}
+
+	if (prefilepath == filepath)
+	{
+		m_stc_St.SetWindowTextW(_T("The point cloud is the same."));
+		return 0;
+	}
+
+	// Load point cloud file
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	QueryPerformanceFrequency(&nfreq);
+	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
+	CString	cs_file;
+	string pcfile = "";
+	char* info_str = new char[1000];
+	int str_len = 0;
+	m_stc_FlPth.GetWindowTextW(cs_file);
+	USES_CONVERSION;
+	pcfile = CT2A(cs_file.GetBuffer());
+	if (0 == strcmp("", pcfile.data()))
+	{
+		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
+		m_stc_St.SetWindowText(L"Loading failed: empty file path");
+	}
+	else
+	{
+		int f_error = -1;
+
+		QueryPerformanceCounter(&nst);
+		f_error = m_tpc.LoadTyrePC(pcfile);
+		QueryPerformanceCounter(&nend);
+		if (-1 == f_error)
+		{
+			MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
+			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
+		}
+
+		str_len = sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+
+		LPCWSTR info_wch = A2W(info_str);
+		m_stc_St.SetWindowText(info_wch);
+	}
+	return 0;
+}
+
 void CMFCForTPCDlg::GetPathAndType(string & fpath, string & ftype)
 {
 	CString cs_file;
@@ -404,7 +467,36 @@ void CMFCForTPCDlg::OnBnClickedBtnSavedata()
 void CMFCForTPCDlg::OnBnClickedButton2()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	CFileDialog fileopendlg(TRUE);
+	pcl::PointCloud<PointXYZ>::Ptr Cld_ptr(::new pcl::PointCloud<PointXYZ>);
+	pcl::PointCloud<PointXYZ>::Ptr tmp_ptr(::new pcl::PointCloud<PointXYZ>);
+	pcl::PointXYZ tmpPt;
+	for (int ii = 0; ii < 3; ii++)
+	{
+		tmpPt.x = ii + 2;
+		tmpPt.y = ii*ii;
+		tmpPt.z = sin(ii);
+		tmp_ptr->points.push_back(tmpPt);
+		Cld_ptr->points.push_back(tmpPt);
+	}
+	Cld_ptr->points.insert(Cld_ptr->points.begin(), tmp_ptr->points.begin(), tmp_ptr->points.end());
+	TRACE("The size of Cloud is %ld.\n", Cld_ptr->points.size());
+	pcl::PointCloud<PointXYZ>::iterator it;
+	int ii = 0;
+	for (it=Cld_ptr->points.begin(); it < Cld_ptr->points.end(); it++)
+	{
+		TRACE("Cloud[%d] = (%f, %f, %f)\n", ii, it->x, it->y, it->z);
+		ii++;
+	}
+
+	TRACE("The size of tmp is %ld.\n", tmp_ptr->points.size());
+	ii = 0;
+	for (it = tmp_ptr->points.begin(); it < tmp_ptr->points.end(); it++)
+	{
+		TRACE("tmp[%d] = (%f, %f, %f)\n", ii, it->x, it->y, it->z);
+		ii++;
+	}
+
+	/*CFileDialog fileopendlg(TRUE);
 	CString filepath;
 	if (fileopendlg.DoModal() == IDOK)
 	{
@@ -435,7 +527,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	char* cpustr = new char[100];
 	sprintf(cpustr, "CPU runing time: %.3f s\n", ((double)(clock() - now2)) / CLOCKS_PER_SEC);
 	strcat(gpustr, cpustr);
-	MessageBoxA(this->GetSafeHwnd(), gpustr, "Run Result", 0);
+	MessageBoxA(this->GetSafeHwnd(), gpustr, "Run Result", 0);*/
 	/*CUDA test
 	CString cur_val;
 	m_edt_DownSamR.GetWindowTextW(cur_val);
@@ -624,4 +716,95 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	delete[] tmp_str;
 	info_str = nullptr;
 	tmp_str = nullptr;*/
+}
+
+
+void CMFCForTPCDlg::OnBnClickedRanimg()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	RangeImageProperties curProp;
+	LoadPointCloud();
+
+	RangImagDlg RIDlg;
+	RIDlg.SetRIProp(m_RIProp);
+	RIDlg.SetTPC(m_tpc);
+	RIDlg.DoModal();
+	RIDlg.GetRIProp(curProp);
+	m_RIProp = curProp;
+	
+	//m_tpc.CovToRangeImage(curProp.SenPos, curProp.AngRes, curProp.MaxAngWid,
+		//curProp.MaxAngHgt, curProp.NoiseLvl, curProp.MinRange, curProp.BorderSize);
+	//pcl::RangeImage::Ptr curRI = m_tpc.GetRangeImage();
+	//pcl::visualization::RangeImageVisualizer curRIV("Tyre Range Image");
+	//curRIV.showRangeImage(*curRI);
+	//float* ranges = curRI->getRangesArray();
+	//unsigned char* rgb_image = pcl::visualization::FloatImageUtils::getVisualImage(ranges, curRI->width, curRI->height);
+	//pcl::io::saveRgbPNGFile("saveRangeImageRGB.png", rgb_image, curRI->width, curRI->height);
+}
+
+
+void CMFCForTPCDlg::OnBnClickedShowpc()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CFileDialog fileopendlg(TRUE);
+	CString filepath;
+	if (fileopendlg.DoModal() == IDOK)
+	{
+		filepath = fileopendlg.GetPathName();
+		m_stc_FlPth.SetWindowText(filepath);
+	}
+	else
+	{
+		m_stc_FlPth.SetWindowText(L"");
+	}
+
+	// Load point cloud file
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	QueryPerformanceFrequency(&nfreq);
+	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
+	CString	cs_file;
+	string pcfile = "";
+	char* info_str = new char[1000];
+	int str_len = 0;
+	m_stc_FlPth.GetWindowTextW(cs_file);
+	USES_CONVERSION;
+	pcfile = CT2A(cs_file.GetBuffer());
+	if (0 == strcmp("", pcfile.data()))
+	{
+		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
+		m_stc_St.SetWindowText(L"Loading failed: empty file path");
+	}
+	else
+	{
+		int f_error = -1;
+
+		QueryPerformanceCounter(&nst);
+		f_error = m_tpc.LoadTyrePC(pcfile);
+		QueryPerformanceCounter(&nend);
+		if (-1 == f_error)
+		{
+			MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
+			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
+		}
+
+		str_len = sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+
+		LPCWSTR info_wch = A2W(info_str);
+		m_stc_St.SetWindowText(info_wch);
+	}
+
+	cloud = m_tpc.GetOriginalPC();
+	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+	viewer->setBackgroundColor(0, 0, 0);
+	viewer->addPointCloud<pcl::PointXYZ>(cloud, "sample cloud");
+	viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "sample cloud");
+	//viewer->addCoordinateSystem(1.0);
+	viewer->initCameraParameters();
+
+	
+	while (!viewer->wasStopped())
+	{
+		viewer->spinOnce();
+		pcl_sleep(0.01);
+	}
 }

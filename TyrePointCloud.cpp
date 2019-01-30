@@ -398,16 +398,122 @@ int TyrePointCloud::LoadTyrePC(string pcfile)
 		{
 			ifstream input_file;
 			input_file.open(pcfile.data(), ios::binary);
-
+			cloud->points.reserve(1536 * 10000);
 			if(input_file)
 			{
 				int dstOri = 0, plsOri = 0;
-				char* p;
+				char* p,*curP,*preP;
+				vector<int> p_f(32,0);
 				PointXYZ tmpXYZ, point_3D;
 				double dst;
 				int tmpInt = 0, tmpRange = 0;
 				size_t jj = 0;
-				for (int i = 0; i < 1536; i++)//1536行数据
+				int sign = 1, n = 0, cur_bit=0;
+				float factor = 1.0f, cur_fl = 1.0f, step =0.0f;
+
+				unsigned int value, dpt1, dpt2, dpt3, dpt4;
+				//Get a 32bit char, then convert it to float:
+				//float: (sign)*1.dec*2^(n)
+				while (input_file.peek() != EOF)
+				{
+					p = (char*)&cur_fl;
+					input_file.read(p, 4);
+					value = *(unsigned int*)p;
+					dpt1 = 255 & (value >> 24);
+					dpt2 = 255 & (value >> 16);
+					dpt3 = 255 & (value >> 8);
+					dpt4 = 255 & value;
+					char str[9];
+					sprintf(str, "%02x%02x%02x%02x", dpt1, dpt2, dpt3, dpt4);
+					//str[8] = 0;
+					//sscanf(str, "%x", &cur_fl);
+					TRACE("value, dpt1, dpt2, dpt3, dpt4, str = %#08X, %#02X,%#02X,%#02X,%#02X,%#08X\n", value, dpt1, dpt2, dpt3, dpt4, str);
+					TRACE("The %ld-th hex and float values are (%#08X,%#08X,%#08X,%#08X, %f).\n",jj, p,*p,&cur_fl,cur_fl, cur_fl);
+					if (jj % 1535 == 0)
+					{
+						step += 10.0f;
+					}
+					if (jj < 1536 * 10000)
+					{
+						tmpXYZ.x = cur_fl;
+						tmpXYZ.y = step;
+						tmpXYZ.z = 0.0f;
+						cloud->points.push_back(tmpXYZ);
+					}
+					else
+					{
+						cloud->points[jj - 1536 * 10000].z = cur_fl;
+					}
+					cur_fl = 0.0f;
+					jj++;
+					/*for (int ii = 0; ii < 32; ii++)
+					{
+						input_file.read(p, sizeof(char));
+						switch (*p)
+						{
+							case '0':cur_bit = 0; break;
+							case '1':cur_bit = 1; break;
+						}
+						p_f[ii] = cur_bit;
+					}
+					for (int ii = 0; ii < 4; ii++)
+					{
+						switch (*p)
+						{
+						case '0':break;
+						case '1': p_f[ii + 3] = 1; break;
+						case '2': p_f[ii + 2] = 1; break;
+						case '3': p_f[ii + 3] = 1; p_f[ii + 2] = 1; break;
+						case '4': p_f[ii + 1] = 1; break;
+						case '5': p_f[ii + 3] = 1; p_f[ii + 1] = 1; break;
+						case '6': p_f[ii + 2] = 1; p_f[ii + 1] = 1; break;
+						case '7': p_f[ii + 3] = 1; p_f[ii + 2] = 1; p_f[ii + 1] = 1; break;
+						case '8': p_f[ii] = 1; break;
+						case '9': p_f[ii + 3] = 1; p_f[ii] = 1; break;
+						case 'A': p_f[ii + 2] = 1; p_f[ii] = 1; break;
+						case 'B': p_f[ii + 3] = 1; p_f[ii + 2] = 1; p_f[ii] = 1; break;
+						case 'C': p_f[ii + 1] = 1; p_f[ii] = 1; break;
+						case 'D': p_f[ii + 3] = 1; p_f[ii + 1] = 1; p_f[ii] = 1; break;
+						case 'E': p_f[ii + 2] = 1; p_f[ii + 1] = 1; p_f[ii] = 1; break;
+						case 'F': p_f[ii + 3] = 1; p_f[ii + 2] = 1; p_f[ii + 1] = 1; p_f[ii] = 1; break;
+						}
+					}
+					factor = 1.0f; cur_fl = 1.0f;
+					cur_bit = 0; sign = 1; n = 0;
+					jj = 0;
+					if (jj == 0)
+					{
+						if (p_f[0] < 0.5)
+						{
+							sign = 1.0f;
+						}
+						else
+						{
+							sign = -1.0f;
+						}
+					}
+					for (jj = 1; jj < 32; jj++)
+					{
+						cur_bit = p_f[jj];
+						if (jj >= 1 && jj <= 8)
+						{
+							n = n * 2 + cur_bit * 2;
+						}
+
+						if (jj == 8)
+						{
+							n = n - 127;
+							factor = (2 ^ n)*1.0f;
+						}
+
+						if (jj >= 9 && jj <= 31)
+						{
+							factor *= 0.1;
+							cur_fl = cur_fl + factor*cur_bit;
+						}
+					}*/
+				}
+				/*for (int i = 0; i < 1536; i++)//1536行数据
 				{
 					input_file.seekg(i * 30000);
 					for (int j = 0; j < 20000; j++)//20000个点每行,10000个Intensity,10000个Range
@@ -438,7 +544,7 @@ int TyrePointCloud::LoadTyrePC(string pcfile)
 						}
 					}
 				}
-				/*for (int i = 0; i < 4608; i++)        //600行数据
+				for (int i = 0; i < 4608; i++)        //600行数据
 				{
 					input_file.seekg( i * 10000);   //不读无效数据
 					for (int j = 0; j < 1250; j++)   //每行1000个点
@@ -476,6 +582,7 @@ int TyrePointCloud::LoadTyrePC(string pcfile)
 					}
 				}*/
 				m_originPC = cloud;
+				//pcl::io::savePLYFile("DatToPly.ply", *cloud);
 			/*ifstream input_file;
 			input_file.open(pcfile.data(), ios::binary);
 
@@ -809,22 +916,18 @@ int TyrePointCloud::FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gp
 	normals.download(res_normals);
 	normals1.download(res_normals1);
 
-	Normal tmpNormal;
 	m_gpuPtNormals.reset(::new PointCloud<Normal>);
 	m_pointNormals.reset(::new PointCloud<Normal>);
-	m_gpuPtNormals->points.reserve(res_normals.size());
-	m_pointNormals->points.reserve(res_normals.size());
-	for (size_t ii = 0; ii < res_normals.size(); ii++)
+	pcl::Normal tmpNorm;
+	//m_gpuPtNormals->points.insert(m_gpuPtNormals->points.begin(), res_normals.begin(), res_normals.end());
+	//m_pointNormals->points.insert(m_pointNormals->points.begin(), res_normals.begin(), res_normals.end());
+	for (auto it = res_normals.begin(); it < res_normals.end(); it++)
 	{
-		tmpNormal.normal_x = res_normals[ii].x;
-		tmpNormal.normal_y = res_normals[ii].y;
-		tmpNormal.normal_z = res_normals[ii].z;
-		m_gpuPtNormals->points.push_back(tmpNormal);
-
-		tmpNormal.normal_x = res_normals1[ii].x;
-		tmpNormal.normal_y = res_normals1[ii].y;
-		tmpNormal.normal_z = res_normals1[ii].z;
-		m_pointNormals->points.push_back(tmpNormal);
+		tmpNorm.normal_x = it->x;
+		tmpNorm.normal_y = it->y;
+		tmpNorm.normal_z = it->z;
+		m_gpuPtNormals->points.push_back(tmpNorm);
+		m_pointNormals->points.push_back(tmpNorm);
 	}
 	out_normal = m_gpuPtNormals;
 	return 0;
@@ -1358,9 +1461,11 @@ int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, P
 
 	KdTreeFLANN<PointXYZ> kdtree;
 	kdtree.setInputCloud(m_originPC);
-	int k = 15;
+	int k = 30;
 	vector<int> pointID(k);
 	vector<float> pointSqrDis(k);
+	m_pinsPC->points.clear();
+	m_pinsPC->points.reserve(filted_pins.size()*k);
 	for (vector<PointXYZI>::iterator ii = filted_pins.begin(); ii < filted_pins.end(); ++ii)
 	{
 		m_pinsPC->points.push_back(*ii);
@@ -1378,7 +1483,7 @@ int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, P
 				m_pinsPC->points.push_back(tmpPti);
 
 				m_rgbPC->points[pointID[jj]].r = 255;
-				m_rgbPC->points[pointID[jj]].g = 255;
+				m_rgbPC->points[pointID[jj]].g = 0;
 				m_rgbPC->points[pointID[jj]].b = 0;
 			}
 		}
