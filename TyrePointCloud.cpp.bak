@@ -254,6 +254,42 @@ int TyrePointCloud::FiltPins(vector<PointXYZI>& filted_pins)
 	return 0;
 }
 
+int TyrePointCloud::SupervoxelClustering(pcl::PointCloud<PointXYZ>::Ptr in_pc, 
+	std::map<uint32_t, pcl::Supervoxel<PointXYZ>::Ptr>& sv_cluster, 
+	std::multimap<uint32_t, uint32_t>& sv_adj, 
+	pcl::PointCloud<PointXYZL>::Ptr & lbl_pc,
+	float voxel_res, float seed_res, float color_imp,
+	float spatial_imp, float normal_imp)
+{
+	if (!in_pc)
+	{
+		return NULL_PC_PTR;
+	}
+	lbl_pc.reset(::new PointCloud<PointXYZL>);
+
+	//Supervoxel generator
+	pcl::SupervoxelClustering<pcl::PointXYZ> super(voxel_res, seed_res);
+	//It is related the shape of point cloud.
+	//if (disable_transform)
+	super.setUseSingleCameraTransform(false);
+	//Input PC and parameters.
+	super.setInputCloud(in_pc);
+	super.setColorImportance(color_imp);
+	super.setSpatialImportance(spatial_imp);
+	super.setNormalImportance(normal_imp);
+	//Output supervoxel, which is a map between ID and Point Cloud pointer.
+	std::map <uint32_t, pcl::Supervoxel<PointXYZ>::Ptr > supervoxel_clusters;
+	super.extract(supervoxel_clusters);
+	std::multimap<uint32_t, uint32_t> supervoxel_adjacency;
+	super.getSupervoxelAdjacency(supervoxel_adjacency);
+
+	sv_cluster = supervoxel_clusters;
+	sv_adj = supervoxel_adjacency;
+	lbl_pc = super.getLabeledCloud();
+
+	return 0;
+}
+
 void TyrePointCloud::SetOriginPC(PointCloud<PointXYZ>::Ptr in_pc)
 {
 	m_originPC = in_pc;
@@ -444,7 +480,7 @@ int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float yStep,
 					if (jj < width * height)
 					{
 						tmpXYZ.x = xLB + (jj % width) * (xUB - xLB) / width;
-						tmpXYZ.y = step;
+						tmpXYZ.y = 0.0f;//step;
 						tmpXYZ.z = cur_fl;
 						cloud->points.push_back(tmpXYZ);
 						tmpRGB.x = tmpXYZ.x;
@@ -838,6 +874,12 @@ int TyrePointCloud::FindCharsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, 
 	{
 		return NULL_PC_PTR;
 	}
+	/*vector<int> PtIDs;
+	PtIDs.reserve(in_pc->points.size());
+	for (int ii = 0; ii < in_pc->points.size(); ii++)
+	{
+		PtIDs.push_back(ii);
+	}*/
 	out_pc.reset(::new PointCloud<PointXYZ>);
 
 	int error = 0;
@@ -892,6 +934,7 @@ int TyrePointCloud::FindCharsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, 
 
 	BOOL bNormalRenewed = TRUE;
 	pcl::ExtractIndices<pcl::PointXYZ> extract;
+	//vector<int> NormIDs;
 	do
 	{
 		// Segment the largest planar component from the remaining cloud
@@ -900,6 +943,15 @@ int TyrePointCloud::FindCharsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, 
 		{
 			oct.reset(new pcl::gpu::Octree());
 			FindPointNormalsGPU(cloud_filtered, oct, cur_normal);
+			/*NormIDs.clear();
+			NormIDs.reserve(PtIDs.size() - allinliers->indices.size());
+			std::sort(allinliers->indices.begin(), allinliers->indices.end());
+			set_difference(PtIDs.begin(),PtIDs.end(), allinliers->indices.begin(), allinliers->indices.end(), inserter(NormIDs,NormIDs.begin()));
+			cur_normal->points.clear();
+			for (vector<int>::iterator it = NormIDs.begin(); it < NormIDs.end(); it++)
+			{
+				cur_normal->points.push_back(m_gpuPtNormals->points.at((size_t)*it));
+			}*/
 		}
 		seg.setInputNormals(cur_normal);
 		seg.segment(*inliers, *coefficients);
@@ -942,6 +994,154 @@ int TyrePointCloud::FindCharsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, 
 	extract.setIndices(allinliers);
 	extract.setNegative(true);
 	extract.filter(*out_pc);
+
+	pcl::PointXYZI tmpPtI;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr char_ptr(::new PointCloud<PointXYZI>);
+	char_ptr->points.reserve(out_pc->points.size());
+	for (pcl::PointCloud<PointXYZ>::iterator it = out_pc->points.begin(); it < out_pc->points.end(); it++)
+	{
+		tmpPtI.x = it->x;
+		tmpPtI.y = it->y;
+		tmpPtI.z = it->z;
+		tmpPtI.intensity = 0.0f;
+		char_ptr->points.push_back(tmpPtI);
+	}
+	m_restClusters.push_back(char_ptr);
+	return 0;
+}
+
+int TyrePointCloud::FindCharsByLCCP(pcl::PointCloud<PointXYZ>::Ptr in_pc, pcl::PointCloud<PointXYZL>::Ptr & out_pc)
+{
+	if (!in_pc)
+	{
+		return NULL_PC_PTR;
+	}
+	out_pc.reset(::new PointCloud<PointXYZL>);
+
+	//Supervoxel Clustering
+	//Set parameters
+	float voxel_resolution = 0.03f;
+	float seed_resolution = 0.09f;
+	float color_importance = 0.0f;
+	float spatial_importance = 0.6f;
+	float normal_importance = 1.0f;
+
+	std::map <uint32_t, pcl::Supervoxel<PointXYZ>::Ptr > supervoxel_clusters;
+	std::multimap<uint32_t, uint32_t> supervoxel_adjacency;
+	pcl::PointCloud<pcl::PointXYZL>::Ptr lccp_labeled_cloud;
+	SupervoxelClustering(in_pc, supervoxel_clusters, supervoxel_adjacency, lccp_labeled_cloud);
+
+	//Convex Conected Clustering
+	//LCCP parameters:
+	float concavity_tolerance_threshold = 0.2f, smoothness_threshold = 0.2f;
+	uint32_t k_factor_arg = 10, min_segment_size_arg = 0;
+	bool bool_use_sanity_criterion_arg = false, bool_use_smoothness_check_arg=false;
+
+	//LCCP Segementation
+	pcl::LCCPSegmentation<PointXYZ> seg;
+	//Input Supervoxel results.
+	seg.setInputSupervoxels(supervoxel_clusters, supervoxel_adjacency);
+	//CC(Convexcity Criterion)
+	seg.setConcavityToleranceThreshold(concavity_tolerance_threshold);
+	//CC k neighbors
+	seg.setKFactor(k_factor_arg);
+	seg.setSmoothnessCheck(bool_use_smoothness_check_arg, voxel_resolution, seed_resolution, smoothness_threshold);
+	//SC(Sanity Criterion)
+	seg.setSanityCheck(bool_use_sanity_criterion_arg);
+	seg.setMinSegmentSize(min_segment_size_arg);
+	seg.segment();
+	seg.relabelCloud(*lccp_labeled_cloud);
+	out_pc = lccp_labeled_cloud;
+
+	//Converting labeled cloud into cluster clouds.
+	vector<uint32_t> labels;
+	vector<uint32_t>::iterator lbl_it;
+	labels.reserve(lccp_labeled_cloud->points.size());
+	PointXYZI curPtI;
+	pcl::PointCloud<PointXYZI>::Ptr curPCPtr;
+	for (PointCloud<PointXYZL>::iterator it = lccp_labeled_cloud->points.begin(); it < lccp_labeled_cloud->points.end(); it++)
+	{
+		lbl_it = find(labels.begin(), labels.end(), it->label);
+		if (lbl_it == labels.end() || labels.size()<1)//Con't find current label
+		{
+			labels.push_back(it->label);
+			curPCPtr.reset(::new pcl::PointCloud<PointXYZI>);
+			curPtI.x = it->x; 
+			curPtI.y = it->y; 
+			curPtI.z = it->z;
+			curPCPtr->points.push_back(curPtI);
+			m_restClusters.push_back(curPCPtr);
+		}
+		else//Current label exits.
+		{
+			curPCPtr = m_restClusters[distance(labels.begin(),lbl_it)];
+			curPtI.x = it->x; 
+			curPtI.y = it->y; 
+			curPtI.z = it->z;
+			curPCPtr->push_back(curPtI);
+		}
+	}
+
+	return 0;
+}
+
+int TyrePointCloud::FindCharsByCPC(pcl::PointCloud<PointXYZ>::Ptr in_pc, pcl::PointCloud<PointXYZL>::Ptr & out_pc)
+{
+	if (!in_pc)
+	{
+		return NULL_PC_PTR;
+	}
+	out_pc.reset(::new PointCloud<PointXYZL>);
+
+	//Supervoxel Clustering
+	//Set parameters
+	float voxel_resolution = 0.03f;
+	float seed_resolution = 0.09f;
+	float color_importance = 0.0f;
+	float spatial_importance = 0.6f;
+	float normal_importance = 1.0f;
+
+	std::map <uint32_t, pcl::Supervoxel<PointXYZ>::Ptr > supervoxel_clusters;
+	std::multimap<uint32_t, uint32_t> supervoxel_adjacency;
+	pcl::PointCloud<pcl::PointXYZL>::Ptr cpc_labeled_cloud;
+	SupervoxelClustering(in_pc, supervoxel_clusters, supervoxel_adjacency, cpc_labeled_cloud);
+	pcl::CPCSegmentation<PointXYZ> seg;
+	seg.setInputSupervoxels(supervoxel_clusters, supervoxel_adjacency);
+	//CPC Parameters:
+	seg.setCutting(20, 0, 0.18, true, true, false);
+	seg.setRANSACIterations(10000);
+	seg.segment();
+	seg.relabelCloud(*cpc_labeled_cloud);
+	out_pc = cpc_labeled_cloud;
+	//Converting labeled cloud into cluster clouds.
+	vector<uint32_t> labels;
+	vector<uint32_t>::iterator lbl_it;
+	labels.reserve(cpc_labeled_cloud->points.size());
+	PointXYZI curPtI;
+	pcl::PointCloud<PointXYZI>::Ptr curPCPtr;
+	for (PointCloud<PointXYZL>::iterator it = cpc_labeled_cloud->points.begin(); it < cpc_labeled_cloud->points.end(); it++)
+	{
+		lbl_it = find(labels.begin(), labels.end(), it->label);
+		if (lbl_it == labels.end() || labels.size()<1)//Con't find current label
+		{
+			labels.push_back(it->label);
+			curPCPtr.reset(::new pcl::PointCloud<PointXYZI>);
+			curPtI.x = it->x;
+			curPtI.y = it->y;
+			curPtI.z = it->z;
+			curPCPtr->points.push_back(curPtI);
+			m_restClusters.push_back(curPCPtr);
+		}
+		else//Current label exits.
+		{
+			curPCPtr = m_restClusters[distance(labels.begin(), lbl_it)];
+			curPtI.x = it->x;
+			curPtI.y = it->y;
+			curPtI.z = it->z;
+			curPCPtr->push_back(curPtI);
+		}
+	}
+
 	return 0;
 }
 

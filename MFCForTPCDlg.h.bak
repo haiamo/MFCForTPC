@@ -110,5 +110,7 @@ public:
 	afx_msg void OnBnClickedShowpc();
 	int m_RadioID;
 	afx_msg void OnBnClickedRadioPins();
-	afx_msg void OnBnClickedRadioChars();
+	afx_msg void OnBnClickedRadioCharsSeg();
+	afx_msg void OnBnClickedRadioCharsLccp();
+	afx_msg void OnBnClickedRadioCharsCpc();
 };
