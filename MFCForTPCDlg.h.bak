@@ -86,6 +86,8 @@ private:
 	//User defined members
 	TyrePointCloud m_tpc;
 	RangeImageProperties m_RIProp;
+
+	bool m_bRanSeg = false;
 public:
 	afx_msg void OnBnClickedBtnSavedata();
 	CButton m_btn_savedata;

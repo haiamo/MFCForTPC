@@ -13,13 +13,18 @@ TyrePointCloud::TyrePointCloud()
 {
 	m_normalUserDefined = FALSE;
 
+	//GPU Point Normal Searching Properties:
+	m_searchradius = 0.09;
+	m_maxneighboranswers = 200;
+
 	//Segementation Properties:
-	m_downsampleradius = 300;
 	m_numberofthreds = 2;
-	m_distancethreshold = 300;
-	m_normaldistanceweight = 0.5;
+	m_distancethreshold = 0.09;
+	m_normaldistanceweight = 0.1;
 	m_inlierratio = 0.2;
-	m_clustertolerance = 1000;
+	m_clustertolerance = 0.09;
+	m_segmaxradius = 1000;
+	m_segminradius = 0;
 
 	InitCloudData();
 }
@@ -249,6 +254,139 @@ int TyrePointCloud::FiltPins(vector<PointXYZI>& filted_pins)
 	return 0;
 }
 
+int TyrePointCloud::SupervoxelClustering(pcl::PointCloud<PointXYZ>::Ptr in_pc, 
+	std::map<uint32_t, pcl::Supervoxel<PointXYZ>::Ptr>& sv_cluster, 
+	std::multimap<uint32_t, uint32_t>& sv_adj, 
+	pcl::PointCloud<PointXYZL>::Ptr & lbl_pc,
+	float voxel_res, float seed_res, float color_imp,
+	float spatial_imp, float normal_imp)
+{
+	if (!in_pc)
+	{
+		return NULL_PC_PTR;
+	}
+	lbl_pc.reset(::new PointCloud<PointXYZL>);
+
+	//Supervoxel generator
+	pcl::SupervoxelClustering<pcl::PointXYZ> super(voxel_res, seed_res);
+	//It is related the shape of point cloud.
+	//if (disable_transform)
+	super.setUseSingleCameraTransform(false);
+	//Input PC and parameters.
+	super.setInputCloud(in_pc);
+	super.setColorImportance(color_imp);
+	super.setSpatialImportance(spatial_imp);
+	super.setNormalImportance(normal_imp);
+	//Output supervoxel, which is a map between ID and Point Cloud pointer.
+	std::map <uint32_t, pcl::Supervoxel<PointXYZ>::Ptr > supervoxel_clusters;
+	super.extract(supervoxel_clusters);
+	std::multimap<uint32_t, uint32_t> supervoxel_adjacency;
+	super.getSupervoxelAdjacency(supervoxel_adjacency);
+
+	sv_cluster = supervoxel_clusters;
+	sv_adj = supervoxel_adjacency;
+	lbl_pc = super.getLabeledCloud();
+
+	return 0;
+}
+
+int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc, int min_inliers, int max_it, double modelthreshold, int closepts)
+{
+	//Preparation for parameters
+	//Current this function will fit cubic line in 2D point cloud, which shows y=a*x^3+b*x^2+c*x+d
+	vector<double> bestPara(4),candPara(4);
+	double bestError = 0.0, candError = 0.0;
+	vector<int> bestInliers(min_inliers), hypoInliers(min_inliers), candInliers(in_pc->points.size()), outliers, allIds;
+	vector<int>::iterator OutIdIt,candIDit;
+	double bestErr = HUGE_VAL;
+	int cur_it;
+	allIds.reserve(in_pc->points.size());
+	for (size_t tt = 0; tt < in_pc->points.size(); tt++)
+	{
+		allIds.push_back(tt);
+	}
+
+	//Loop of outer iteration
+	while (cur_it < max_it)
+	{
+		//min_inliers randomly selected points from input data
+		srand((unsigned int)time(0));
+		for (int ii = 0; ii < min_inliers; ii++)
+		{
+			hypoInliers[ii] = rand() % in_pc->points.size();
+		}
+
+		outliers = allIds;
+		candIDit = hypoInliers.begin();
+		OutIdIt =outliers.begin();
+		while (OutIdIt < outliers.end())
+		{
+			if (candIDit < hypoInliers.end())
+			{
+				if (*OutIdIt == *candIDit)
+				{
+					OutIdIt = outliers.erase(OutIdIt);
+					++candIDit;
+				}
+				else
+				{
+					++OutIdIt;
+				}
+			}
+			else
+			{
+				break;
+			}
+		}
+		//Get model parameters fitted to candInliers by Least Squares 
+		//Get candPara
+
+		//Filtering inliers and outliers.
+		candInliers.clear();
+		candInliers.reserve(outliers.size());
+		OutIdIt = outliers.begin();
+		while(OutIdIt < outliers.end())
+		{
+			//Calculating the distance between the current point and the model.
+			//...
+			if (true)//Filtering inliers and outliers by the model.
+			{
+				candInliers.push_back(*OutIdIt);
+				OutIdIt = outliers.erase(OutIdIt);
+			}
+			else
+			{
+				++OutIdIt;
+			}
+		}
+
+		if (candInliers.size() > closepts)
+		{
+			//Get better model(candPara) by fitting candInliers and InitialInliers using Least Squares
+			//Calculate candError...
+			if (candError < bestError)
+			{
+				bestPara = candPara;
+				bestError = candError;
+				bestInliers = candInliers;
+			}
+		}
+		cur_it++;
+	}//End of outer iteration
+
+	return 0;
+}
+
+void TyrePointCloud::SetOriginPC(PointCloud<PointXYZ>::Ptr in_pc)
+{
+	m_originPC = in_pc;
+}
+
+void TyrePointCloud::setOriginRGBPC(PointCloud<PointXYZRGB>::Ptr in_pc)
+{
+	m_rgbPC = in_pc;
+}
+
 PointCloud<PointXYZ>::Ptr TyrePointCloud::GetOriginalPC()
 {
 	return m_originPC;
@@ -294,9 +432,14 @@ void TyrePointCloud::GetRestClusters(vector<PointCloud<PointXYZI>::Ptr>& out_ref
 	out_ref = m_restClusters;
 }
 
-void TyrePointCloud::SetDownSampleRaius(float dsr)
+void TyrePointCloud::SetSearchRadius(float radius)
 {
-	m_downsampleradius = dsr;
+	m_searchradius = radius;
+}
+
+void TyrePointCloud::SetMaxNeighborAnswers(int maxans)
+{
+	m_maxneighboranswers = maxans;
 }
 
 void TyrePointCloud::SetNumberOfThreads(unsigned int nt)
@@ -324,7 +467,7 @@ void TyrePointCloud::SetClusterTolerance(double ct)
 	m_clustertolerance = ct;
 }
 
-int TyrePointCloud::LoadTyrePC(string pcfile)
+int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float yStep, float zLB, float zUB, size_t width, size_t height)
 {
 	InitCloudData();
 	PointCloud<PointXYZRGB>::Ptr cloudrgb(::new PointCloud<PointXYZRGB>);
@@ -398,225 +541,57 @@ int TyrePointCloud::LoadTyrePC(string pcfile)
 		{
 			ifstream input_file;
 			input_file.open(pcfile.data(), ios::binary);
-			cloud->points.reserve(1536 * 10000);
+			cloud->points.reserve(width * height);
+			cloudrgb->points.reserve(width*height);
+			m_segmaxradius = sqrt((xUB - xLB)*(xUB - xLB) + yStep*height*yStep*height + (zUB - zLB)*(zUB - zLB));
+			m_segminradius = min(abs(xUB - xLB) / width, yStep);
 			if(input_file)
 			{
-				int dstOri = 0, plsOri = 0;
-				char* p,*curP,*preP;
-				vector<int> p_f(32,0);
-				PointXYZ tmpXYZ, point_3D;
-				double dst;
-				int tmpInt = 0, tmpRange = 0;
+				char* p;
+				PointXYZ tmpXYZ;
+				PointXYZRGB tmpRGB;
 				size_t jj = 0;
-				int sign = 1, n = 0, cur_bit=0;
-				float factor = 1.0f, cur_fl = 1.0f, step =0.0f;
+				float cur_fl = 1.0f, step=0.0f;
 
-				unsigned int value, dpt1, dpt2, dpt3, dpt4;
 				//Get a 32bit char, then convert it to float:
-				//float: (sign)*1.dec*2^(n)
 				while (input_file.peek() != EOF)
 				{
 					p = (char*)&cur_fl;
-					input_file.read(p, 4);
-					value = *(unsigned int*)p;
-					dpt1 = 255 & (value >> 24);
-					dpt2 = 255 & (value >> 16);
-					dpt3 = 255 & (value >> 8);
-					dpt4 = 255 & value;
-					char str[9];
-					sprintf(str, "%02x%02x%02x%02x", dpt1, dpt2, dpt3, dpt4);
-					//str[8] = 0;
-					//sscanf(str, "%x", &cur_fl);
-					TRACE("value, dpt1, dpt2, dpt3, dpt4, str = %#08X, %#02X,%#02X,%#02X,%#02X,%#08X\n", value, dpt1, dpt2, dpt3, dpt4, str);
-					TRACE("The %ld-th hex and float values are (%#08X,%#08X,%#08X,%#08X, %f).\n",jj, p,*p,&cur_fl,cur_fl, cur_fl);
-					if (jj % 1535 == 0)
+					input_file.read(p, sizeof(float));
+					if (jj % width == 0)
 					{
-						step += 10.0f;
+						step += yStep;
 					}
-					if (jj < 1536 * 10000)
+
+					if (cur_fl<zLB || cur_fl>zUB)
 					{
-						tmpXYZ.x = cur_fl;
-						tmpXYZ.y = step;
-						tmpXYZ.z = 0.0f;
+						jj++;
+						continue;
+					}
+
+					if (jj < width * height)
+					{
+						tmpXYZ.x = xLB + (jj % width) * (xUB - xLB) / width;
+						tmpXYZ.y = 0.0f;//step;
+						tmpXYZ.z = cur_fl;
 						cloud->points.push_back(tmpXYZ);
+						tmpRGB.x = tmpXYZ.x;
+						tmpRGB.y = tmpXYZ.y;
+						tmpRGB.z = tmpXYZ.z;
+						tmpRGB.r = 200;
+						tmpRGB.g = 200;
+						tmpRGB.b = 200;
+						cloudrgb->points.push_back(tmpRGB);
 					}
 					else
 					{
-						cloud->points[jj - 1536 * 10000].z = cur_fl;
+						break;
 					}
 					cur_fl = 0.0f;
 					jj++;
-					/*for (int ii = 0; ii < 32; ii++)
-					{
-						input_file.read(p, sizeof(char));
-						switch (*p)
-						{
-							case '0':cur_bit = 0; break;
-							case '1':cur_bit = 1; break;
-						}
-						p_f[ii] = cur_bit;
-					}
-					for (int ii = 0; ii < 4; ii++)
-					{
-						switch (*p)
-						{
-						case '0':break;
-						case '1': p_f[ii + 3] = 1; break;
-						case '2': p_f[ii + 2] = 1; break;
-						case '3': p_f[ii + 3] = 1; p_f[ii + 2] = 1; break;
-						case '4': p_f[ii + 1] = 1; break;
-						case '5': p_f[ii + 3] = 1; p_f[ii + 1] = 1; break;
-						case '6': p_f[ii + 2] = 1; p_f[ii + 1] = 1; break;
-						case '7': p_f[ii + 3] = 1; p_f[ii + 2] = 1; p_f[ii + 1] = 1; break;
-						case '8': p_f[ii] = 1; break;
-						case '9': p_f[ii + 3] = 1; p_f[ii] = 1; break;
-						case 'A': p_f[ii + 2] = 1; p_f[ii] = 1; break;
-						case 'B': p_f[ii + 3] = 1; p_f[ii + 2] = 1; p_f[ii] = 1; break;
-						case 'C': p_f[ii + 1] = 1; p_f[ii] = 1; break;
-						case 'D': p_f[ii + 3] = 1; p_f[ii + 1] = 1; p_f[ii] = 1; break;
-						case 'E': p_f[ii + 2] = 1; p_f[ii + 1] = 1; p_f[ii] = 1; break;
-						case 'F': p_f[ii + 3] = 1; p_f[ii + 2] = 1; p_f[ii + 1] = 1; p_f[ii] = 1; break;
-						}
-					}
-					factor = 1.0f; cur_fl = 1.0f;
-					cur_bit = 0; sign = 1; n = 0;
-					jj = 0;
-					if (jj == 0)
-					{
-						if (p_f[0] < 0.5)
-						{
-							sign = 1.0f;
-						}
-						else
-						{
-							sign = -1.0f;
-						}
-					}
-					for (jj = 1; jj < 32; jj++)
-					{
-						cur_bit = p_f[jj];
-						if (jj >= 1 && jj <= 8)
-						{
-							n = n * 2 + cur_bit * 2;
-						}
-
-						if (jj == 8)
-						{
-							n = n - 127;
-							factor = (2 ^ n)*1.0f;
-						}
-
-						if (jj >= 9 && jj <= 31)
-						{
-							factor *= 0.1;
-							cur_fl = cur_fl + factor*cur_bit;
-						}
-					}*/
 				}
-				/*for (int i = 0; i < 1536; i++)//1536行数据
-				{
-					input_file.seekg(i * 30000);
-					for (int j = 0; j < 20000; j++)//20000个点每行,10000个Intensity,10000个Range
-					{
-						if (j == 10000)
-						{
-							jj = cloud->points.size() - 10000;
-						}
-
-						if (j < 10000)
-						{
-							p = (char*)&tmpInt;//读取Intensity(BYTE)
-							input_file.read(p, sizeof(char));
-							tmpXYZ.x = tmpInt;
-							tmpXYZ.y = 0.0f;
-							tmpXYZ.z = 0.0f;
-							cloud->points.push_back(tmpXYZ);
-						}
-						else
-						{
-							for (int m = 0; m < 2; m++)//读取Range(WORD)
-							{
-								p = (char*)&tmpRange;
-								input_file.read(p + m, sizeof(char));
-							}
-							cloud->points[jj].z = tmpRange;
-							jj++;
-						}
-					}
-				}
-				for (int i = 0; i < 4608; i++)        //600行数据
-				{
-					input_file.seekg( i * 10000);   //不读无效数据
-					for (int j = 0; j < 1250; j++)   //每行1000个点
-					{
-						int dst_temp = 0;            //距离
-						int pls_temp = 0;              //反射率
-						float theta, alpha;          //坐标变换的角度
-
-						for (int m = 0; m < 4; m++)       //读取距离
-						{
-							p = (char *)&dst_temp;
-							input_file.read(p + 3 - m, sizeof(char));
-						}
-						for (int m = 0; m < 4; m++)       //读取反射率
-						{
-							p = (char *)&pls_temp;
-							input_file.read(p + 3 - m, sizeof(char));
-						}
-						dstOri = dst_temp;
-						plsOri = pls_temp;
-
-						if (dstOri == -2147483648 || dstOri == 2147483647)
-							point_3D = tmpXYZ;
-						else
-						{
-							dst = dstOri / 10000.0;      //进行坐标变换
-							theta = (500 * M_PI - j*M_PI) / 1998;
-							alpha = -0.3 + i*0.001;
-							point_3D.x = dst*sin(theta);
-							point_3D.y = dst*cos(theta)*sin(alpha);
-							point_3D.z = -dst*cos(theta)*cos(alpha);
-						}
-						tmpXYZ = point_3D;
-						cloud->push_back(point_3D);//将点存入pointcloud
-					}
-				}*/
 				m_originPC = cloud;
-				//pcl::io::savePLYFile("DatToPly.ply", *cloud);
-			/*ifstream input_file;
-			input_file.open(pcfile.data(), ios::binary);
-
-			if (input_file)
-			{
-				int x = 0, y = 0, z = 0, i = 0;
-				char* p;
-				PointXYZ tmpXYZ;
-
-				while (input_file.peek() != EOF)
-				{
-					//4 points in one line.
-					for (int ii = 0; ii < 4; ii++)
-					{
-						switch (ii)
-						{
-						case 0: p = (char*)&x; break;
-						case 1: p = (char*)&y; break;
-						case 2: p = (char*)&z; break;
-						case 3: p = (char*)&i; break;
-						}
-
-						for (int jj = 0; jj < 4; jj++)
-						{
-							input_file.read(p + 3 - jj, sizeof(char));
-						}
-					}
-					tmpXYZ.x = x;
-					tmpXYZ.y = y;
-					tmpXYZ.z = z;
-					cloud->points.push_back(tmpXYZ);
-				}
-
-				m_originPC = cloud;*/
+				m_rgbPC = cloudrgb;
 				return 0;
 			}
 			else
@@ -722,19 +697,6 @@ int TyrePointCloud::LoadTyrePC(char * p_pc, int length)
 			{
 				line_width = cur_str.length();
 				width = line_width * 2;
-				break;
-				/*if (hID == 0)
-				{
-					width = line_width;
-				}
-				if (line_width > 0 && line_width<width*2)
-				{
-					if (line_width > width)
-					{
-						width = line_width;
-					}
-				}
-				hID++;*/
 			}
 		}
 
@@ -892,406 +854,37 @@ int TyrePointCloud::FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gp
 	pcl::gpu::Octree::Radiuses radii_device;
 	radii_device.upload(radii);
 
-	const int max_answers = 200;
-
 	// Output buffer on the device
-	pcl::gpu::NeighborIndices result_device(queries_device.size(), max_answers);
+	pcl::gpu::NeighborIndices result_device(queries_device.size(), m_maxneighboranswers);
 
 	// Do the actual search
-	octree_device->radiusSearch(queries_device, radii_device, max_answers, result_device);
+	octree_device->radiusSearch(queries_device, radii_device, m_maxneighboranswers, result_device);
 
 	std::vector<int> sizes, data;
 	result_device.sizes.download(sizes);
 	result_device.data.download(data);
 
 	pcl::gpu::DeviceArray<PointXYZ> normals;
-	pcl::gpu::DeviceArray<PointXYZ> normals1;
 	ne.setInputCloud(cloud_device);
-	ne.setRadiusSearch(m_distancethreshold, max_answers);
+	ne.setRadiusSearch(m_searchradius, m_maxneighboranswers);
 	ne.setViewPoint(0.0, 0.0, 0.0);
-	ne.compute(normals);
-	ne.computeNormals(cloud_device, result_device, normals1);
+	//ne.compute(normals);
+	ne.computeNormals(cloud_device, result_device, normals);
 	std::vector<PointXYZ> res_normals;
-	std::vector<PointXYZ> res_normals1;
 	normals.download(res_normals);
-	normals1.download(res_normals1);
 
 	m_gpuPtNormals.reset(::new PointCloud<Normal>);
-	m_pointNormals.reset(::new PointCloud<Normal>);
-	pcl::Normal tmpNorm;
-	//m_gpuPtNormals->points.insert(m_gpuPtNormals->points.begin(), res_normals.begin(), res_normals.end());
-	//m_pointNormals->points.insert(m_pointNormals->points.begin(), res_normals.begin(), res_normals.end());
-	for (auto it = res_normals.begin(); it < res_normals.end(); it++)
+	pcl::Normal tmpNormal;
+	for (size_t ii = 0; ii < res_normals.size(); ii++)
 	{
-		tmpNorm.normal_x = it->x;
-		tmpNorm.normal_y = it->y;
-		tmpNorm.normal_z = it->z;
-		m_gpuPtNormals->points.push_back(tmpNorm);
-		m_pointNormals->points.push_back(tmpNorm);
+		tmpNormal.normal_x = res_normals[ii].x;
+		tmpNormal.normal_y = res_normals[ii].y;
+		tmpNormal.normal_z = res_normals[ii].z;
+		m_gpuPtNormals->points.push_back(tmpNormal);
 	}
 	out_normal = m_gpuPtNormals;
 	return 0;
 }
-
-int TyrePointCloud::FindPins(PointCloud<PointXYZI>::Ptr &out_pc)
-{
-	int error =0;
-	if (!m_normalUserDefined)
-	{
-		error = FindPointNormals();
-		if (error < 0)
-		{
-			return error;
-		}
-	}
-	
-	error = FindPins(m_originPC, out_pc);
-	return error;
-}
-
-int TyrePointCloud::FindPins(string pcfile, PointCloud<PointXYZI>::Ptr & out_pc)
-{
-	int error = 0;
-	error = LoadTyrePC(pcfile);
-	if (error < 0)
-	{
-		return error;
-	}
-	if (!m_normalUserDefined)
-	{
-		error = FindPointNormals();
-		if (error < 0)
-		{
-			return error;
-		}
-	}
-	
-	error = FindPins(m_originPC, out_pc);
-	return error;
-}
-
-int TyrePointCloud::FindPins(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr & out_pc)
-{
-	int error = 0;
-	if (!m_normalUserDefined)
-	{
-		error = FindPointNormals();
-		if (error < 0)
-		{
-			return error;
-		}
-	}
-	//Calculate the eigen vectors by PCA.
-	Vector4f pcaCentroid;
-	compute3DCentroid(*in_pc, pcaCentroid);
-	Matrix3f covariance;
-	computeCovarianceMatrixNormalized(*in_pc, pcaCentroid, covariance);
-	SelfAdjointEigenSolver<Matrix3f> eigen_solver(covariance, ComputeEigenvectors);
-	Matrix3f eigenVecotorsPCA = eigen_solver.eigenvectors();
-	Vector3f eigenValuesPCA = eigen_solver.eigenvalues();
-
-	//Compute pins' postions and lengths.
-	PointCloud<Normal>::Ptr cur_normals = GetPointNormals();
-	if (!m_rgbPC)
-	{
-		m_rgbPC.reset(::new PointCloud<PointXYZRGB>);
-	}
-
-	if (!m_candPins)
-	{
-		m_candPins.reset(::new PointCloud<PointXYZI>);
-	}
-	PointXYZRGB tmprgb;
-	PointXYZI tmpi;
-	Vector3d mineigenVector(eigenVecotorsPCA(0, 0), eigenVecotorsPCA(0, 1), eigenVecotorsPCA(0, 2));
-	Vector3d normalPtr, pcaCent3d(pcaCentroid(0), pcaCentroid(1), pcaCentroid(2)), curpoint, curvector;
-	vector<double> angles(cur_normals->points.size());
-	vector<size_t> ppoinID;
-	double cur_angle = 0.0, cur_depth = 0.0;
-	for (size_t ii = 0; ii < cur_normals->points.size(); ++ii)
-	{
-		normalPtr = Vector3d(cur_normals->points[ii].normal_x, cur_normals->points[ii].normal_y, cur_normals->points[ii].normal_z);
-		curpoint = Vector3d(in_pc->points[ii].x, in_pc->points[ii].y, in_pc->points[ii].z);
-		curvector = curpoint - pcaCent3d;
-		tmprgb.x = in_pc->points[ii].x;
-		tmprgb.y = in_pc->points[ii].y;
-		tmprgb.z = in_pc->points[ii].z;
-
-		if (normalPtr.norm() < ACCURACY || _isnan(normalPtr[0]) || _isnan(normalPtr[1]) || _isnan(normalPtr[2]))
-		{
-			continue;
-		}
-		cur_angle = acos((normalPtr.dot(mineigenVector)) / (normalPtr.norm()*mineigenVector.norm())) / M_PI * 180;
-		angles[ii] = cur_angle;
-		if (cur_angle > 80 && cur_angle < 100)
-		{
-			ppoinID.push_back(ii);
-			tmprgb.r = 255;
-			tmprgb.g = 0;
-			tmprgb.b = 0;
-			cur_depth = curvector.dot(mineigenVector);
-			if (cur_depth<0)
-			{
-				tmpi.x = in_pc->points[ii].x;
-				tmpi.y = in_pc->points[ii].y;
-				tmpi.z = in_pc->points[ii].z;
-				tmpi.intensity = cur_depth;
-				m_candPins->push_back(tmpi);
-			}
-		}
-		else
-		{
-			tmprgb.r = 0;
-			tmprgb.g = 0;
-			tmprgb.b = 255;
-			tmpi.intensity = 0.0;
-		}
-		m_rgbPC->points.push_back(tmprgb);
-	}
-	//out_pc = m_candPins;
-
-	//Filting pins' postions and length.
-	vector<PointXYZI> pins;
-	FiltPins(mineigenVector, pins);
-
-	if (!m_pinsPC)
-	{
-		m_pinsPC.reset(::new PointCloud<PointXYZI>);
-	}
-
-	for (vector<PointXYZI>::iterator ii = pins.begin(); ii < pins.end(); ++ii)
-	{
-		m_pinsPC->points.push_back(*ii);
-	}
-	out_pc = m_pinsPC;
-	return 0;
-}
-
-int TyrePointCloud::FindPins(PointCloud<PointXYZ>::Ptr in_pc, int neighbors, double radius, int folder, int threads, PointCloud<PointXYZI>::Ptr & out_pc)
-{
-	FindPointNormals(neighbors, radius, folder, threads);
-	FindPins(in_pc, out_pc);
-	return 0;
-}
-
-/*int TyrePointCloud::FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr & out_pc)
-{
-	if (!in_pc)
-	{
-		return NULL_PC_PTR;
-	}
-	out_pc.reset(::new PointCloud<PointXYZI>);
-
-	int error = 0;
-	if (!m_normalUserDefined)
-	{
-		error = FindPointNormals();
-		if (error < 0)
-		{
-			return error;
-		}
-	}
-	//Calculate the eigen vectors by PCA.
-	Vector4f pcaCentroid;
-	compute3DCentroid(*in_pc, pcaCentroid);
-	Matrix3f covariance;
-	computeCovarianceMatrixNormalized(*in_pc, pcaCentroid, covariance);
-	SelfAdjointEigenSolver<Matrix3f> eigen_solver(covariance, ComputeEigenvectors);
-	Matrix3f eigenVecotorsPCA = eigen_solver.eigenvectors();
-	Vector3f eigenValuesPCA = eigen_solver.eigenvalues();
-
-	PointCloud<Normal>::Ptr cur_normals = GetPointNormals();
-
-	Vector3d mineigenVector(eigenVecotorsPCA(0, 0), eigenVecotorsPCA(0, 1), eigenVecotorsPCA(0, 2));
-
-	//Downsample the dataset, Needed?
-	pcl::VoxelGrid<pcl::PointXYZ> vg;
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(::new pcl::PointCloud<pcl::PointXYZ>);
-	
-	if (m_downsampleradius > 0)
-	{
-		vg.setInputCloud(m_originPC);
-		vg.setLeafSize(m_downsampleradius, m_downsampleradius, m_downsampleradius);
-		vg.filter(*cloud_filtered);
-	}
-	else
-	{
-		cloud_filtered = m_originPC;
-	}
-	m_downsample = cloud_filtered;
-
-	// Estimate point normals
-	pcl::NormalEstimationOMP<PointXYZ, pcl::Normal> ne;
-	PointCloud<Normal>::Ptr cur_normal(::new PointCloud<Normal>);
-	pcl::search::KdTree<PointXYZ>::Ptr tree(::new pcl::search::KdTree<PointXYZ>());
-	ne.setNumberOfThreads(m_numberofthreds);
-	ne.setSearchMethod(tree);
-	ne.setInputCloud(cloud_filtered);
-	ne.setKSearch(50);
-	if (!m_pointNormals)
-	{
-		m_pointNormals.reset(::new PointCloud<Normal>);
-	}
-	ne.compute(*cur_normal);
-	m_pointNormals = cur_normal;
-
-
-	// Create the segmentation object for the planar model and set all the parameters
-	//pcl::SACSegmentation<pcl::PointXYZ> seg;
-	pcl::SACSegmentationFromNormals<PointXYZ, Normal>seg;
-	pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-	pcl::ModelCoefficients::Ptr coefficients(::new pcl::ModelCoefficients);
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane(::new pcl::PointCloud<pcl::PointXYZ>());
-	seg.setOptimizeCoefficients(true);
-	seg.setModelType(pcl::SacModel::SACMODEL_PLANE);
-	seg.setMethodType(pcl::SAC_RANSAC);
-	seg.setMaxIterations(10000);
-	seg.setDistanceThreshold(m_distancethreshold);
-	seg.setRadiusLimits(0, 100000);
-	seg.setInputNormals(cur_normal);
-	seg.setNormalDistanceWeight(m_normaldistanceweight);
-
-
-	PointCloud<PointXYZ>::Ptr cloud_f(::new PointCloud<PointXYZ>);
-	int i = 0, nr_points = (int)cloud_filtered->points.size();
-	PointXYZ tmpPt;
-	if (!m_segbase)
-	{
-		m_segbase.reset(::new PointCloud<PointXYZ>);
-	}
-	BOOL bNormalRenewed = TRUE;
-	do//while (cloud_filtered->points.size() > m_inlierratio * nr_points)
-	{
-		// Segment the largest planar component from the remaining cloud
-		seg.setInputCloud(cloud_filtered);
-		if (!bNormalRenewed)
-		{
-			ne.setSearchMethod(tree);
-			ne.setInputCloud(cloud_filtered);
-			ne.compute(*cur_normal);
-		}
-		seg.setInputNormals(cur_normal);
-		seg.segment(*inliers, *coefficients);
-		m_refCoefs.push_back(coefficients);
-		if (inliers->indices.size() <0.5*nr_points)
-		{
-			if (seg.getModelType() == SACMODEL_PLANE)
-			{
-				seg.setModelType(SACMODEL_CYLINDER);
-			}
-			else if (seg.getModelType() == SACMODEL_CYLINDER)
-			{
-				seg.setModelType(SACMODEL_PLANE);
-			}
-		}
-
-		// Extract the planar inliers from the input cloud
-		pcl::ExtractIndices<pcl::PointXYZ> extract;
-		extract.setInputCloud(cloud_filtered);
-		extract.setIndices(inliers);
-		extract.setNegative(false);
-
-		// Write the planar inliers to disk
-		extract.filter(*cloud_plane);
-		m_refPlanes.push_back(cloud_plane);
-		for (size_t ii = 0; ii < cloud_plane->points.size(); ++ii)
-		{
-			tmpPt = cloud_plane->points[ii];
-			m_segbase->points.push_back(tmpPt);
-		}
-
-		// Remove the planar inliers, extract the rest
-		extract.setNegative(true);
-		extract.filter(*cloud_f);
-		cloud_filtered = cloud_f;
-		cur_normal.reset(::new PointCloud<Normal>);
-		tree.reset(::new pcl::search::KdTree<PointXYZ>);
-		cloud_plane.reset(::new PointCloud<PointXYZ>);
-		coefficients.reset(::new ModelCoefficients);
-		bNormalRenewed = FALSE;
-	} while (cloud_filtered->points.size() > m_inlierratio * nr_points && cloud_plane->points.size() < 0.1*nr_points && m_refPlanes.size() < 15);
-	
-	// Creating the KdTree object for the search method of the extraction
-	//pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(::new pcl::search::KdTree<pcl::PointXYZ>);
-	tree->setInputCloud(cloud_filtered);
-
-	std::vector<pcl::PointIndices> cluster_indices;
-	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-	ec.setClusterTolerance(m_clustertolerance); 
-	ec.setMinClusterSize(100);
-	ec.setMaxClusterSize(25000);
-	ec.setSearchMethod(tree);
-	ec.setInputCloud(cloud_filtered);
-	ec.extract(cluster_indices);
-	m_restIndices = cluster_indices;
-
-	if (!m_candPins)
-	{
-		m_candPins.reset(::new PointCloud<PointXYZI>);
-	}
-	PointXYZI tmpPti;
-	Vector3d curpoint, curvector, pcaCent3d(pcaCentroid(0), pcaCentroid(1), pcaCentroid(2));
-	if (!cluster_indices.empty())
-	{
-		for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end(); ++it)
-		{
-			pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_cluster(::new pcl::PointCloud<pcl::PointXYZI>);
-			for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); pit++)
-			{
-				tmpPt = cloud_filtered->points[*pit];
-				tmpPti.x = tmpPt.x;
-				tmpPti.y = tmpPt.y;
-				tmpPti.z = tmpPt.z;
-				curpoint = Vector3d(tmpPt.x, tmpPt.y, tmpPt.z);
-				curvector = curpoint - pcaCent3d;
-				tmpPti.intensity = curvector.dot(mineigenVector);
-				m_candPins->points.push_back(tmpPti);
-				cloud_cluster->points.push_back(tmpPti);
-			}
-			m_restClusters.push_back(cloud_cluster);
-		}
-	}
-
-	//Filtering pins with their neighbors.
-	vector<PointXYZI> filted_pins;
-	//FiltePins(mineigenVector, filted_pins);
-	FiltePins(filted_pins);
-
-	if (!m_pinsPC)
-	{
-		m_pinsPC.reset(::new PointCloud<PointXYZI>);
-	}
-
-	KdTreeFLANN<PointXYZ> kdtree;
-	kdtree.setInputCloud(m_originPC);
-	int k = 15;
-	vector<int> pointID(k);
-	vector<float> pointSqrDis(k);
-	for (vector<PointXYZI>::iterator ii = filted_pins.begin(); ii < filted_pins.end(); ++ii)
-	{
-		m_pinsPC->points.push_back(*ii);
-		tmpPt.x = ii->x;
-		tmpPt.y = ii->y;
-		tmpPt.z = ii->z;
-		if (kdtree.nearestKSearch(tmpPt, k, pointID, pointSqrDis) > 0)
-		{
-			for (size_t jj = 0; jj < pointID.size(); jj++)
-			{
-				tmpPti.x = m_originPC->points[pointID[jj]].x;
-				tmpPti.y = m_originPC->points[pointID[jj]].y;
-				tmpPti.z = m_originPC->points[pointID[jj]].z;
-				tmpPti.intensity = ii->intensity;
-				m_pinsPC->points.push_back(tmpPti);
-
-				m_rgbPC->points[pointID[jj]].r = 255;
-				m_rgbPC->points[pointID[jj]].g = 255;
-				m_rgbPC->points[pointID[jj]].b = 0;
-			}
-		}
-	}
-	out_pc = m_pinsPC;
-	return 0;
-}*/
 
 int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr & out_pc)
 {
@@ -1326,7 +919,7 @@ int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, P
 
 	//Downsample the dataset, Needed?
 	pcl::VoxelGrid<pcl::PointXYZ> vg;
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered = m_originPC;
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered = in_pc;
 
 	// Create the segmentation object for the planar model and set all the parameters
 	pcl::SACSegmentationFromNormals<PointXYZ, Normal>seg;
@@ -1338,7 +931,7 @@ int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, P
 	seg.setMethodType(pcl::SAC_RANSAC);
 	seg.setMaxIterations(10000);
 	seg.setDistanceThreshold(m_distancethreshold);
-	seg.setRadiusLimits(0, 100000);
+	seg.setRadiusLimits(m_segminradius, m_segmaxradius);
 	seg.setInputNormals(cur_normal);
 	seg.setNormalDistanceWeight(m_normaldistanceweight);
 
@@ -1394,26 +987,15 @@ int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, P
 		cloud_plane.reset(::new PointCloud<PointXYZ>);
 		coefficients.reset(::new ModelCoefficients);
 		bNormalRenewed = FALSE;
-	} while (cloud_filtered->points.size() > m_inlierratio * nr_points && cloud_plane->points.size() < m_inlierratio*nr_points && m_refPlanes.size() < 15);
-
-	//pcl::gpu::Octree::PointCloud pt_device;
-	//pt_device.upload(cloud_filtered->points);
-	//oct->setCloud(pt_device);
+	} while (cloud_filtered->points.size() > m_inlierratio * nr_points && m_refPlanes.size() < 15);//&& cloud_plane->points.size() < m_inlierratio*nr_points
 
 	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(::new pcl::search::KdTree<pcl::PointXYZ>);
 	tree->setInputCloud(cloud_filtered);
 
 	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
 	std::vector<pcl::PointIndices> cluster_indices;
-	/*pcl::gpu::DeviceArray<PointXYZ> dev_pc;
-	vector<PointXYZ> host_pc;
-	for (size_t ii = 0; ii < cloud_filtered->points.size(); ii++)
-	{
-		host_pc.push_back(cloud_filtered->points[ii]);
-	}
-	dev_pc.upload(host_pc);*/
 	ec.setClusterTolerance(m_clustertolerance);
-	ec.setMinClusterSize(100);
+	ec.setMinClusterSize(0);
 	ec.setMaxClusterSize(25000);
 	ec.setSearchMethod(tree);
 	ec.setInputCloud(cloud_filtered);
@@ -1460,8 +1042,8 @@ int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, P
 	}
 
 	KdTreeFLANN<PointXYZ> kdtree;
-	kdtree.setInputCloud(m_originPC);
-	int k = 30;
+	kdtree.setInputCloud(in_pc);
+	int k = m_maxneighboranswers;
 	vector<int> pointID(k);
 	vector<float> pointSqrDis(k);
 	m_pinsPC->points.clear();
@@ -1482,9 +1064,9 @@ int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, P
 				tmpPti.intensity = ii->intensity;
 				m_pinsPC->points.push_back(tmpPti);
 
-				m_rgbPC->points[pointID[jj]].r = 255;
+				m_rgbPC->points[pointID[jj]].r = 0;
 				m_rgbPC->points[pointID[jj]].g = 0;
-				m_rgbPC->points[pointID[jj]].b = 0;
+				m_rgbPC->points[pointID[jj]].b = 255;
 			}
 		}
 	}
@@ -1492,101 +1074,289 @@ int TyrePointCloud::FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, P
 	return 0;
 }
 
-int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
+int TyrePointCloud::FindCharsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZ>::Ptr & out_pc)
 {
-	string cur_str;
-	bool b_pcData = false;
-	int pos = 0;
-	PointXYZ cur_pt;
-	PointXYZRGB cur_rgb;
-	float x, y, z;
-	int r, g, b;
-	int line_pos = 0;
-	const char* t1 = " ";
-	const char* t2 = "\n";
-	m_inCloud = p_pc;
-	while (pos<length)
+	if (!in_pc)
 	{
-		if (!b_pcData)
-		{
-			if (*p_pc==*t1 || *p_pc==*t2)
-			{
-				if (cur_str!="")
-				{
-					cur_str.erase(0, cur_str.find_first_not_of(" "));
-					if (cur_str == "end_header")
-					{
-						b_pcData = true;
-					}
-					cur_str = "";
-				}
-			}
-			else
-			{
-				cur_str = cur_str + *p_pc;
-			}
-		}
-		else
-		{
-			if (*p_pc == *t1 || *p_pc == *t2)
-			{
-				if (cur_str!="")
-				{
-					cur_str.erase(0, cur_str.find_first_not_of(" "));
-					switch (line_pos)
-					{
-					case 0:
-						x = stof(cur_str);
-						break;
-					case 1:
-						y = stof(cur_str);
-						break;
-					case 2:
-						z = stof(cur_str);
-						break;
-					case 3:
-						r = stoi(cur_str);
-						break;
-					case 4:
-						g = stoi(cur_str);
-						break;
-					case 5:
-						b = stoi(cur_str);
-						break;
-					}
-					cur_str = "";
-					if (*p_pc==*t2)
-					{
-						line_pos = 0;
-						cur_pt.x = x;
-						cur_pt.y = y;
-						cur_pt.z = z;
-						m_originPC->points.push_back(cur_pt);
+		return NULL_PC_PTR;
+	}
+	/*vector<int> PtIDs;
+	PtIDs.reserve(in_pc->points.size());
+	for (int ii = 0; ii < in_pc->points.size(); ii++)
+	{
+		PtIDs.push_back(ii);
+	}*/
+	out_pc.reset(::new PointCloud<PointXYZ>);
 
-						cur_rgb.x = x;
-						cur_rgb.y = y;
-						cur_rgb.z = z;
-						cur_rgb.r = r;
-						cur_rgb.g = g;
-						cur_rgb.b = b;
-						m_rgbPC->points.push_back(cur_rgb);
-					}
-					else
-					{
-						line_pos++;
-					}
-				}
-			}
-			else
-			{
-				cur_str = cur_str + *p_pc;
-			}
+	int error = 0;
+	// Estimate point normals
+	PointCloud<Normal>::Ptr cur_normal(::new PointCloud<Normal>);
+	pcl::gpu::Octree::Ptr oct(new pcl::gpu::Octree());
+	if (!m_normalUserDefined)
+	{
+		error = FindPointNormalsGPU(in_pc, oct, cur_normal);
+		if (error < 0)
+		{
+			return error;
 		}
-		p_pc++;
-		pos++;
+		m_gpuPtNormals = cur_normal;
+	}
+	//Calculate the eigen vectors by PCA.
+	Vector4f pcaCentroid;
+	compute3DCentroid(*in_pc, pcaCentroid);
+	Matrix3f covariance;
+	computeCovarianceMatrixNormalized(*in_pc, pcaCentroid, covariance);
+	SelfAdjointEigenSolver<Matrix3f> eigen_solver(covariance, ComputeEigenvectors);
+	Matrix3f eigenVecotorsPCA = eigen_solver.eigenvectors();
+	Vector3f eigenValuesPCA = eigen_solver.eigenvalues();
+	Vector3d mineigenVector(eigenVecotorsPCA(0, 0), eigenVecotorsPCA(0, 1), eigenVecotorsPCA(0, 2));
+
+	//Downsample the dataset, Needed?
+	pcl::VoxelGrid<pcl::PointXYZ> vg;
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered = in_pc;
+
+	// Create the segmentation object for the planar model and set all the parameters
+	pcl::SACSegmentationFromNormals<PointXYZ, Normal>seg;
+	pcl::PointIndices::Ptr inliers(::new pcl::PointIndices), allinliers(::new pcl::PointIndices);
+	pcl::ModelCoefficients::Ptr coefficients(::new pcl::ModelCoefficients);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane(::new pcl::PointCloud<pcl::PointXYZ>());
+	seg.setOptimizeCoefficients(true);
+	seg.setModelType(pcl::SacModel::SACMODEL_PLANE);
+	seg.setMethodType(pcl::SAC_RANSAC);
+	seg.setMaxIterations(10000);
+	seg.setDistanceThreshold(m_distancethreshold);
+	seg.setRadiusLimits(m_segminradius, m_segmaxradius);
+	seg.setInputNormals(cur_normal);
+	seg.setNormalDistanceWeight(m_normaldistanceweight);
+
+
+	PointCloud<PointXYZ>::Ptr cloud_f(::new PointCloud<PointXYZ>);
+	size_t i = 0, nr_points = cloud_filtered->points.size();
+	PointXYZ tmpPt;
+	if (!m_segbase)
+	{
+		m_segbase.reset(::new PointCloud<PointXYZ>);
 	}
 
+	BOOL bNormalRenewed = TRUE;
+	pcl::ExtractIndices<pcl::PointXYZ> extract;
+	//vector<int> NormIDs;
+	do
+	{
+		// Segment the largest planar component from the remaining cloud
+		seg.setInputCloud(cloud_filtered);
+		if (!bNormalRenewed)
+		{
+			oct.reset(new pcl::gpu::Octree());
+			FindPointNormalsGPU(cloud_filtered, oct, cur_normal);
+			/*NormIDs.clear();
+			NormIDs.reserve(PtIDs.size() - allinliers->indices.size());
+			std::sort(allinliers->indices.begin(), allinliers->indices.end());
+			set_difference(PtIDs.begin(),PtIDs.end(), allinliers->indices.begin(), allinliers->indices.end(), inserter(NormIDs,NormIDs.begin()));
+			cur_normal->points.clear();
+			for (vector<int>::iterator it = NormIDs.begin(); it < NormIDs.end(); it++)
+			{
+				cur_normal->points.push_back(m_gpuPtNormals->points.at((size_t)*it));
+			}*/
+		}
+		seg.setInputNormals(cur_normal);
+		seg.segment(*inliers, *coefficients);
+		allinliers->indices.insert(allinliers->indices.end(), inliers->indices.begin(), inliers->indices.end());
+		m_refCoefs.push_back(coefficients);
+		if (inliers->indices.size() <0.5*nr_points)
+		{
+			if (seg.getModelType() == SACMODEL_PLANE)
+			{
+				seg.setModelType(SACMODEL_CYLINDER);
+			}
+			else if (seg.getModelType() == SACMODEL_CYLINDER)
+			{
+				seg.setModelType(SACMODEL_PLANE);
+			}
+		}
+
+		// Extract the planar inliers from the input cloud
+
+		extract.setInputCloud(cloud_filtered);
+		extract.setIndices(inliers);
+		extract.setNegative(false);
+
+		// Write the planar inliers to disk
+		extract.filter(*cloud_plane);
+		m_refPlanes.push_back(cloud_plane);
+		m_segbase->points.insert(m_segbase->points.end(), cloud_plane->points.begin(), cloud_plane->points.end());
+
+		// Remove the planar inliers, extract the rest
+		extract.setNegative(true);
+		extract.filter(*cloud_f);
+		cloud_filtered = cloud_f;
+		cur_normal.reset(::new PointCloud<Normal>);
+		cloud_plane.reset(::new PointCloud<PointXYZ>);
+		coefficients.reset(::new ModelCoefficients);
+		bNormalRenewed = FALSE;
+	} while (cloud_filtered->points.size() > m_inlierratio * nr_points && m_refPlanes.size() < 15);//&& cloud_plane->points.size() < m_inlierratio*nr_points
+
+	extract.setInputCloud(in_pc);
+	extract.setIndices(allinliers);
+	extract.setNegative(true);
+	extract.filter(*out_pc);
+
+	pcl::PointXYZI tmpPtI;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr char_ptr(::new PointCloud<PointXYZI>);
+	char_ptr->points.reserve(out_pc->points.size());
+	for (pcl::PointCloud<PointXYZ>::iterator it = out_pc->points.begin(); it < out_pc->points.end(); it++)
+	{
+		tmpPtI.x = it->x;
+		tmpPtI.y = it->y;
+		tmpPtI.z = it->z;
+		tmpPtI.intensity = 0.0f;
+		char_ptr->points.push_back(tmpPtI);
+	}
+	m_restClusters.push_back(char_ptr);
+	return 0;
+}
+
+int TyrePointCloud::FindCharsByLCCP(pcl::PointCloud<PointXYZ>::Ptr in_pc, pcl::PointCloud<PointXYZL>::Ptr & out_pc)
+{
+	if (!in_pc)
+	{
+		return NULL_PC_PTR;
+	}
+	out_pc.reset(::new PointCloud<PointXYZL>);
+
+	//Supervoxel Clustering
+	//Set parameters
+	float voxel_resolution = 0.03f;
+	float seed_resolution = 0.09f;
+	float color_importance = 0.0f;
+	float spatial_importance = 0.6f;
+	float normal_importance = 1.0f;
+
+	std::map <uint32_t, pcl::Supervoxel<PointXYZ>::Ptr > supervoxel_clusters;
+	std::multimap<uint32_t, uint32_t> supervoxel_adjacency;
+	pcl::PointCloud<pcl::PointXYZL>::Ptr lccp_labeled_cloud;
+	SupervoxelClustering(in_pc, supervoxel_clusters, supervoxel_adjacency, lccp_labeled_cloud);
+
+	//Convex Conected Clustering
+	//LCCP parameters:
+	float concavity_tolerance_threshold = 0.2f, smoothness_threshold = 0.2f;
+	uint32_t k_factor_arg = 10, min_segment_size_arg = 0;
+	bool bool_use_sanity_criterion_arg = false, bool_use_smoothness_check_arg=false;
+
+	//LCCP Segementation
+	pcl::LCCPSegmentation<PointXYZ> seg;
+	//Input Supervoxel results.
+	seg.setInputSupervoxels(supervoxel_clusters, supervoxel_adjacency);
+	//CC(Convexcity Criterion)
+	seg.setConcavityToleranceThreshold(concavity_tolerance_threshold);
+	//CC k neighbors
+	seg.setKFactor(k_factor_arg);
+	seg.setSmoothnessCheck(bool_use_smoothness_check_arg, voxel_resolution, seed_resolution, smoothness_threshold);
+	//SC(Sanity Criterion)
+	seg.setSanityCheck(bool_use_sanity_criterion_arg);
+	seg.setMinSegmentSize(min_segment_size_arg);
+	seg.segment();
+	seg.relabelCloud(*lccp_labeled_cloud);
+	out_pc = lccp_labeled_cloud;
+
+	//Converting labeled cloud into cluster clouds.
+	vector<uint32_t> labels;
+	vector<uint32_t>::iterator lbl_it;
+	labels.reserve(lccp_labeled_cloud->points.size());
+	PointXYZI curPtI;
+	pcl::PointCloud<PointXYZI>::Ptr curPCPtr;
+	for (PointCloud<PointXYZL>::iterator it = lccp_labeled_cloud->points.begin(); it < lccp_labeled_cloud->points.end(); it++)
+	{
+		lbl_it = find(labels.begin(), labels.end(), it->label);
+		if (lbl_it == labels.end() || labels.size()<1)//Con't find current label
+		{
+			labels.push_back(it->label);
+			curPCPtr.reset(::new pcl::PointCloud<PointXYZI>);
+			curPtI.x = it->x; 
+			curPtI.y = it->y; 
+			curPtI.z = it->z;
+			curPCPtr->points.push_back(curPtI);
+			m_restClusters.push_back(curPCPtr);
+		}
+		else//Current label exits.
+		{
+			curPCPtr = m_restClusters[distance(labels.begin(),lbl_it)];
+			curPtI.x = it->x; 
+			curPtI.y = it->y; 
+			curPtI.z = it->z;
+			curPCPtr->push_back(curPtI);
+		}
+	}
+
+	return 0;
+}
+
+int TyrePointCloud::FindCharsByCPC(pcl::PointCloud<PointXYZ>::Ptr in_pc, pcl::PointCloud<PointXYZL>::Ptr & out_pc)
+{
+	if (!in_pc)
+	{
+		return NULL_PC_PTR;
+	}
+	out_pc.reset(::new PointCloud<PointXYZL>);
+
+	//Supervoxel Clustering
+	//Set parameters
+	float voxel_resolution = 0.03f;
+	float seed_resolution = 0.09f;
+	float color_importance = 0.0f;
+	float spatial_importance = 0.6f;
+	float normal_importance = 1.0f;
+
+	std::map <uint32_t, pcl::Supervoxel<PointXYZ>::Ptr > supervoxel_clusters;
+	std::multimap<uint32_t, uint32_t> supervoxel_adjacency;
+	pcl::PointCloud<pcl::PointXYZL>::Ptr cpc_labeled_cloud;
+	SupervoxelClustering(in_pc, supervoxel_clusters, supervoxel_adjacency, cpc_labeled_cloud);
+	pcl::CPCSegmentation<PointXYZ> seg;
+	seg.setInputSupervoxels(supervoxel_clusters, supervoxel_adjacency);
+	//CPC Parameters:
+	seg.setCutting(20, 0, 0.18, true, true, false);
+	seg.setRANSACIterations(10000);
+	seg.segment();
+	seg.relabelCloud(*cpc_labeled_cloud);
+	out_pc = cpc_labeled_cloud;
+	//Converting labeled cloud into cluster clouds.
+	vector<uint32_t> labels;
+	vector<uint32_t>::iterator lbl_it;
+	labels.reserve(cpc_labeled_cloud->points.size());
+	PointXYZI curPtI;
+	pcl::PointCloud<PointXYZI>::Ptr curPCPtr;
+	for (PointCloud<PointXYZL>::iterator it = cpc_labeled_cloud->points.begin(); it < cpc_labeled_cloud->points.end(); it++)
+	{
+		lbl_it = find(labels.begin(), labels.end(), it->label);
+		if (lbl_it == labels.end() || labels.size()<1)//Con't find current label
+		{
+			labels.push_back(it->label);
+			curPCPtr.reset(::new pcl::PointCloud<PointXYZI>);
+			curPtI.x = it->x;
+			curPtI.y = it->y;
+			curPtI.z = it->z;
+			curPCPtr->points.push_back(curPtI);
+			m_restClusters.push_back(curPCPtr);
+		}
+		else//Current label exits.
+		{
+			curPCPtr = m_restClusters[distance(labels.begin(), lbl_it)];
+			curPtI.x = it->x;
+			curPtI.y = it->y;
+			curPtI.z = it->z;
+			curPCPtr->push_back(curPtI);
+		}
+	}
+
+	return 0;
+}
+
+int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
+{
+	LoadTyrePC(p_pc, length);
+
 	FindPinsBySegmentationGPU(m_originPC, m_pinsPC);
+
 	PinObject tmpPXYZI;
 	char* new_part = new char();
 	for (size_t ii = 0; ii < m_pinsPC->points.size(); ii++)

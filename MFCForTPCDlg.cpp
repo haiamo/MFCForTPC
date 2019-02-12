@@ -51,6 +51,7 @@ END_MESSAGE_MAP()
 
 CMFCForTPCDlg::CMFCForTPCDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_MFCFORTPC_DIALOG, pParent)
+	, m_RadioID(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -68,6 +69,15 @@ void CMFCForTPCDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_STC_Status, m_stc_St);
 	DDX_Control(pDX, IDC_BTN_Run, m_btn_run);
 	DDX_Control(pDX, IDC_BTN_SaveData, m_btn_savedata);
+	DDX_Control(pDX, IDC_EDIT_xLB, m_edt_xLB);
+	DDX_Control(pDX, IDC_EDIT_xUB, m_edt_xUB);
+	DDX_Control(pDX, IDC_EDIT_yStep, m_edt_yStep);
+	DDX_Control(pDX, IDC_EDIT_zLB, m_edt_zLB);
+	DDX_Control(pDX, IDC_EDIT_zUB, m_edt_zUB);
+	DDX_Control(pDX, IDC_EDIT_Width, m_edt_Width);
+	DDX_Control(pDX, IDC_EDIT_Height, m_edt_Height);
+	DDX_Control(pDX, IDC_EDIT_PCBeginID, m_edt_PCBeginID);
+	DDX_Control(pDX, IDC_EDIT_PCEndID, m_edt_PCEndID);
 }
 
 BEGIN_MESSAGE_MAP(CMFCForTPCDlg, CDialogEx)
@@ -78,8 +88,13 @@ BEGIN_MESSAGE_MAP(CMFCForTPCDlg, CDialogEx)
 	ON_BN_CLICKED(ID_BTN_Exit, &CMFCForTPCDlg::OnBnClickedBtnExit)
 	ON_BN_CLICKED(IDC_BTN_SaveData, &CMFCForTPCDlg::OnBnClickedBtnSavedata)
 	ON_BN_CLICKED(IDC_BUTTON2, &CMFCForTPCDlg::OnBnClickedButton2)
-	ON_BN_CLICKED(IDC_RanImg, &CMFCForTPCDlg::OnBnClickedRanimg)
+//	ON_BN_CLICKED(IDC_RanImg, &CMFCForTPCDlg::OnBnClickedRanimg)
 	ON_BN_CLICKED(IDC_ShowPC, &CMFCForTPCDlg::OnBnClickedShowpc)
+	ON_BN_CLICKED(IDC_RADIO_Pins, &CMFCForTPCDlg::OnBnClickedRadioPins)
+	ON_BN_CLICKED(IDC_RADIO_Chars_Seg, &CMFCForTPCDlg::OnBnClickedRadioCharsSeg)
+	ON_BN_CLICKED(IDC_RADIO_Chars_LCCP, &CMFCForTPCDlg::OnBnClickedRadioCharsLccp)
+	ON_BN_CLICKED(IDC_RADIO_Chars_CPC, &CMFCForTPCDlg::OnBnClickedRadioCharsCpc)
+	ON_BN_CLICKED(IDC_BTN_LoadAndSave, &CMFCForTPCDlg::OnBnClickedBtnLoadandsave)
 END_MESSAGE_MAP()
 
 
@@ -115,12 +130,23 @@ BOOL CMFCForTPCDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	m_edt_DownSamR.SetWindowText(_T("300"));
+	m_edt_DownSamR.SetWindowText(_T("0.09"));
 	m_edt_NumThds.SetWindowText(_T("2"));
-	m_edt_DisThrhd.SetWindowText(_T("500"));
-	m_edt_NormDisWt.SetWindowText(_T("0.2"));
-	m_edt_InlR.SetWindowText(_T("0.05"));
-	m_edt_ClTol.SetWindowText(_T("300"));
+	m_edt_DisThrhd.SetWindowText(_T("0.09"));
+	m_edt_NormDisWt.SetWindowText(_T("0.1"));
+	m_edt_InlR.SetWindowText(_T("0.1"));
+	m_edt_ClTol.SetWindowText(_T("0.09"));
+
+	m_edt_xLB.SetWindowText(_T("102.176"));
+	m_edt_xUB.SetWindowText(_T("144.275"));
+	m_edt_yStep.SetWindowText(_T("0.09"));
+	m_edt_zLB.SetWindowText(_T("60.1541"));
+	m_edt_zUB.SetWindowText(_T("144.275"));
+	m_edt_Width.SetWindowText(_T("1536"));
+	m_edt_Height.SetWindowText(_T("10000"));
+	
+	m_edt_PCBeginID.SetWindowText(_T("0"));
+	m_edt_PCEndID.SetWindowText(_T("10000"));
 
 	m_btn_savedata.EnableWindow(FALSE);
 
@@ -218,9 +244,27 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	else
 	{
 		int f_error = -1;
+		CString xlb, xub, ystep, zlb, zub, width, height;
+		float xmin, xmax, ys, zmin, zmax;
+		size_t w, h;
 		
+		m_edt_xLB.GetWindowTextW(xlb);
+		xmin = stof(xlb.GetBuffer());
+		m_edt_xUB.GetWindowTextW(xub);
+		xmax = stof(xub.GetBuffer());
+		m_edt_yStep.GetWindowTextW(ystep);
+		ys = stof(ystep.GetBuffer());
+		m_edt_zLB.GetWindowTextW(zlb);
+		zmin = stof(zlb.GetBuffer());
+		m_edt_zUB.GetWindowTextW(zub);
+		zmax = stof(zub.GetBuffer());
+		m_edt_Width.GetWindowTextW(width);
+		w = stoi(width.GetBuffer());
+		m_edt_Height.GetWindowTextW(height);
+		h = stoi(height.GetBuffer());
+
 		QueryPerformanceCounter(&nst);
-		f_error = m_tpc.LoadTyrePC(pcfile);
+		f_error = m_tpc.LoadTyrePC(pcfile, xmin, xmax, ys, zmin, zmax, w, h);
 		QueryPerformanceCounter(&nend);
 		if (-1 == f_error)
 		{
@@ -233,38 +277,100 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 		LPCWSTR info_wch = A2W(info_str);
 		m_stc_St.SetWindowText(info_wch);
 	}
-	cloud = m_tpc.GetOriginalPC();
+	PointCloud<PointXYZ>::Ptr totalPC = m_tpc.GetOriginalPC();
+	PointCloud<PointXYZRGB>::Ptr totalRGB = m_tpc.GetRGBPC();
+	PointCloud<PointXYZRGB>::Ptr rgbCloud(::new pcl::PointCloud<PointXYZRGB>);
+	CString beginID, endID;
+	m_edt_PCBeginID.GetWindowTextW(beginID);
+	m_edt_PCEndID.GetWindowTextW(endID);
+	cloud->points.insert(cloud->points.begin(), 
+		totalPC->points.begin()+stoi(beginID.GetBuffer()), 
+		totalPC->points.begin() + min(totalPC->points.size(),(size_t)stoi(endID.GetBuffer())));
+	rgbCloud->points.insert(rgbCloud->points.begin(), 
+		totalRGB->points.begin() + stoi(beginID.GetBuffer()), 
+		totalRGB->points.begin() + min(totalRGB->points.size(),(size_t)stoi(endID.GetBuffer())));
+	m_tpc.SetOriginPC(cloud);
+	m_tpc.setOriginRGBPC(rgbCloud);
 
 	SetSegParameters();
-	str_len = sprintf(info_str + str_len, "Starting pin searching, please wait...\n");
+	char* tmp_str = new char[1000];
+	if (m_RadioID == 1)
+	{
+		str_len = sprintf(info_str + str_len, "Starting pin searching, please wait...\n");
+	}
+	else
+	{
+		str_len = sprintf(info_str + str_len, "Starting Characteristics searching, please wait...\n");
+	}
+		
 	LPCWSTR info_wstr = A2W(info_str);
 	m_stc_St.SetWindowText(info_wstr);
 	PointCloud<PointXYZI>::Ptr pins;
+	PointCloud<PointXYZ>::Ptr seg_chars;
+	PointCloud<PointXYZL>::Ptr lbl_chars;
 	QueryPerformanceCounter(&nst);
-	m_tpc.FindPinsBySegmentationGPU(cloud, pins);
+	switch (m_RadioID)
+	{
+		case 1:
+			m_tpc.FindPinsBySegmentationGPU(cloud, pins);
+			break;
+		case 2:
+			m_tpc.FindCharsBySegmentationGPU(cloud, seg_chars);
+			break;
+		case 3:
+			m_tpc.FindCharsByLCCP(cloud, lbl_chars);
+			break;
+		case 4:
+			m_tpc.FindCharsByCPC(cloud, lbl_chars);
+			break;
+	}
 	QueryPerformanceCounter(&nend);
 	memset(info_str, 0, sizeof(info_str)/sizeof(char));
-	char* tmp_str=new char[1000];
-	sprintf(tmp_str, "Searching pins costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+		
+	if (m_RadioID == 1)
+	{
+		sprintf(tmp_str, "Searching pins costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+	}
+	else
+	{
+		sprintf(tmp_str, "Searching chars costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+	}
+		
 	info_str = strcat(info_str, tmp_str);
 	info_wstr = A2W(info_str);
 	m_stc_St.SetWindowText(info_wstr);
 	size_t ii = 0;
-	while (ii < pins->points.size() && ii < 5)
+	switch (m_RadioID)
 	{
-		memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
-		sprintf(tmp_str, "%.2f, %.2f, %.2f, %.2f\n",pins->points[ii].x, pins->points[ii].y, pins->points[ii].z, pins->points[ii].intensity);
-		info_str = strcat(info_str, tmp_str);
-		ii++;
+		case 1:
+			while (ii < pins->points.size() && ii < 5)
+			{
+				memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+				sprintf(tmp_str, "%.2f, %.2f, %.2f, %.2f\n", pins->points[ii].x, pins->points[ii].y, pins->points[ii].z, pins->points[ii].intensity);
+				info_str = strcat(info_str, tmp_str);
+				ii++;
+			}
+			info_wstr = A2W(info_str);
+			m_stc_St.SetWindowText(info_wstr);
+			break;
+		case 2:
+			pcl::io::savePLYFile("chars.ply", *seg_chars);
+			break;
+		case 3:
+			pcl::io::savePLYFile("chars_LCCP.ply", *lbl_chars);
+			break;
+		case 4:
+			pcl::io::savePLYFile("chars_CPC.ply", *lbl_chars);
+			break;
 	}
-	info_wstr = A2W(info_str);
-	m_stc_St.SetWindowText(info_wstr);
+
 	m_btn_run.EnableWindow(TRUE);
 	m_btn_savedata.EnableWindow(TRUE);
 
 	//Pointers clearation.
-	delete[] tmp_str;
+
 	delete[] info_str;
+	delete[] tmp_str;
 	tmp_str = nullptr;
 	info_str = nullptr;
 	cloud.reset();
@@ -333,9 +439,16 @@ int CMFCForTPCDlg::SaveCloudToFile(vector<PointTPtr> p_inpc, string ex_info)
 	string savepath, ftype;
 	GetPathAndType(savepath, ftype);
 	int fe = 0, res = 0;
+	bool bIsBin = false;
+	if (ftype == "dat")
+	{
+		bIsBin = true;
+		ftype = "ply";
+	}
 	for (vector<PointTPtr>::iterator it = p_inpc.begin(); it < p_inpc.end(); it++)
 	{
-		fe = pcl::io::savePLYFile(savepath + "_" + to_string(int(it - p_inpc.begin())) + "_" + ex_info + "." + ftype, **it);
+
+		fe = pcl::io::savePLYFile(savepath + "_" + to_string(int(it - p_inpc.begin())) + "_" + ex_info + "." + ftype, **it, bIsBin);
 		if (fe < 0)
 		{
 			res += fe;
@@ -350,7 +463,13 @@ int CMFCForTPCDlg::SaveCloudToFile(PointTPtr p_inpc, string ex_info)
 	string savepath, ftype;
 	GetPathAndType(savepath, ftype);
 	int fe = 0;
-	fe=pcl::io::savePLYFile(savepath + "_" + ex_info + "." + ftype, *p_inpc);
+	bool bIsBin = false;
+	if (ftype == "dat")
+	{
+		bIsBin = true;
+		ftype = "ply";
+	}
+	fe = pcl::io::savePLYFile(savepath + "_" + ex_info + "." + ftype, *p_inpc, bIsBin);
 	return 0;
 }
 
@@ -358,7 +477,8 @@ void CMFCForTPCDlg::SetSegParameters()
 {
 	CString cur_val;
 	m_edt_DownSamR.GetWindowTextW(cur_val);
-	m_tpc.SetDownSampleRaius(stof(cur_val.GetBuffer()));
+	//m_tpc.SetDownSampleRaius(stof(cur_val.GetBuffer()));
+	m_tpc.SetSearchRadius(stof(cur_val.GetBuffer()));
 
 	m_edt_NumThds.GetWindowTextW(cur_val);
 	m_tpc.SetNumberOfThreads(stoi(cur_val.GetBuffer()));
@@ -457,12 +577,12 @@ void CMFCForTPCDlg::OnBnClickedBtnSavedata()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	vector<PointCloud<PointXYZ>::Ptr> refPlanes;
-	vector<PointCloud<PointXYZI>::Ptr> restClusters;
-	PointCloud<PointXYZI>::Ptr pins=m_tpc.GetPinsPC();
 	m_tpc.GetReferencePlanes(refPlanes);
-	m_tpc.GetRestClusters(restClusters);
 	SaveCloudToFile(refPlanes, "refPl");
+	vector<PointCloud<PointXYZI>::Ptr> restClusters;
+	m_tpc.GetRestClusters(restClusters);
 	SaveCloudToFile(restClusters, "restCl");
+	PointCloud<PointXYZI>::Ptr pins=m_tpc.GetPinsPC();
 	vector<PointCloud<PointXYZI>::Ptr> vecPins;
 	vecPins.push_back(pins);
 	SaveCloudToFile(vecPins, "Pins");
@@ -728,10 +848,10 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 }
 
 
-void CMFCForTPCDlg::OnBnClickedRanimg()
+/*void CMFCForTPCDlg::OnBnClickedRanimg()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	RangeImageProperties curProp;
+	//RangeImageProperties curProp;
 	LoadPointCloud();
 
 	RangImagDlg RIDlg;
@@ -749,12 +869,15 @@ void CMFCForTPCDlg::OnBnClickedRanimg()
 	//float* ranges = curRI->getRangesArray();
 	//unsigned char* rgb_image = pcl::visualization::FloatImageUtils::getVisualImage(ranges, curRI->width, curRI->height);
 	//pcl::io::saveRgbPNGFile("saveRangeImageRGB.png", rgb_image, curRI->width, curRI->height);
-}
+}*/
 
 
 void CMFCForTPCDlg::OnBnClickedShowpc()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	CString xlb, xub, ystep, zlb, zub, width, height;
+	float xmin, xmax, ys, zmin, zmax;
+	size_t w, h;
 	if (!m_bRanSeg)
 	{
 		CFileDialog fileopendlg(TRUE);
@@ -788,9 +911,25 @@ void CMFCForTPCDlg::OnBnClickedShowpc()
 		else
 		{
 			int f_error = -1;
+			
+			m_edt_xLB.GetWindowTextW(xlb);
+			xmin = stof(xlb.GetBuffer());
+			m_edt_xUB.GetWindowTextW(xub);
+			xmax = stof(xub.GetBuffer());
+			m_edt_yStep.GetWindowTextW(ystep);
+			ys = stof(ystep.GetBuffer());
+			m_edt_zLB.GetWindowTextW(zlb);
+			zmin = stof(zlb.GetBuffer());
+			m_edt_zUB.GetWindowTextW(zub);
+			zmax = stof(zub.GetBuffer());
+			m_edt_Width.GetWindowTextW(width);
+			w = stoi(width.GetBuffer());
+			m_edt_Height.GetWindowTextW(height);
+			h = stoi(height.GetBuffer());
+
 
 			QueryPerformanceCounter(&nst);
-			f_error = m_tpc.LoadTyrePC(pcfile);
+			f_error = m_tpc.LoadTyrePC(pcfile,xmin,xmax,ys,zmin,zmax,w,h);
 			QueryPerformanceCounter(&nend);
 			if (-1 == f_error)
 			{
@@ -805,11 +944,24 @@ void CMFCForTPCDlg::OnBnClickedShowpc()
 		}
 	}
 
-	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
-	cloud = m_tpc.GetOriginalPC();
+	PointCloud<PointXYZ>::Ptr tmpcloud(::new PointCloud<PointXYZ>),cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
+	tmpcloud = m_tpc.GetOriginalPC();
+	size_t beginID, endID;
+	CString cur_val;
+	m_edt_PCBeginID.GetWindowTextW(cur_val);
+	beginID = stoll(cur_val.GetBuffer());
+	m_edt_PCEndID.GetWindowTextW(cur_val);
+	endID = stoll(cur_val.GetBuffer());
+	cloud->points.insert(cloud->points.begin(), tmpcloud->points.begin() + beginID, tmpcloud->points.begin() + min(endID,tmpcloud->points.size()));
+
 	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+	//pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> ClrCloud(cloud, 155, 155, 155);
 	viewer->setBackgroundColor(0, 0, 0);
-	viewer->addPointCloud<pcl::PointXYZ>(cloud, "sample cloud");
+	Eigen::Vector4f centroid;
+	pcl::compute3DCentroid(*cloud, centroid);
+	int vp;
+	viewer->createViewPort(0,0, centroid(0), centroid(1), vp);
+	viewer->addPointCloud<pcl::PointXYZ>(cloud, "sample cloud",vp);
 	if (m_bRanSeg)
 	{
 		vector<ModelCoefficients::Ptr> curCoefs;
@@ -827,9 +979,9 @@ void CMFCForTPCDlg::OnBnClickedShowpc()
 		}
 	}
 	//viewer->addArrow(cloud->points[0], cloud->points[cloud->points.size() - 1], 255, 0, 0);
-	viewer->addLine(cloud->points[0], cloud->points[cloud->points.size() - 1], 255.0, 0.0, 0.0);
+	viewer->addLine(cloud->points[0], cloud->points[cloud->points.size() - 1], 155.0, 155.0, 155.0);
 	viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "sample cloud");
-	//viewer->addCoordinateSystem(1.0);
+	viewer->addCoordinateSystem(1.0);
 	viewer->initCameraParameters();
 
 	
@@ -838,4 +990,128 @@ void CMFCForTPCDlg::OnBnClickedShowpc()
 		viewer->spinOnce();
 		pcl_sleep(0.01);
 	}
+}
+
+
+void CMFCForTPCDlg::OnBnClickedRadioPins()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	m_RadioID = 1;
+}
+
+void CMFCForTPCDlg::OnBnClickedRadioCharsSeg()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	m_RadioID = 2;
+}
+
+
+void CMFCForTPCDlg::OnBnClickedRadioCharsLccp()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	m_RadioID = 3;
+}
+
+
+void CMFCForTPCDlg::OnBnClickedRadioCharsCpc()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	m_RadioID = 4;
+}
+
+
+void CMFCForTPCDlg::OnBnClickedBtnLoadandsave()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	
+	CFileDialog fileopendlg(TRUE);
+	CString filepath;
+		
+	if (fileopendlg.DoModal() == IDOK)
+	{
+		filepath = fileopendlg.GetPathName();
+		m_stc_FlPth.SetWindowText(filepath);
+	}
+	else
+	{
+		m_stc_FlPth.SetWindowText(L"");
+	}
+
+	// Load point cloud file
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	QueryPerformanceFrequency(&nfreq);
+	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
+	CString	cs_file;
+	string pcfile = "";
+	char* info_str = new char[1000];
+	int str_len = 0;
+	m_stc_FlPth.GetWindowTextW(cs_file);
+	USES_CONVERSION;
+	pcfile = CT2A(cs_file.GetBuffer());
+	if (0 == strcmp("", pcfile.data()))
+	{
+		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
+		m_stc_St.SetWindowText(L"Loading failed: empty file path");
+		m_btn_run.EnableWindow(TRUE);
+		m_btn_savedata.EnableWindow(TRUE);
+		return;
+	}
+	else if(0 != strcmp(m_preFilePath.data(), pcfile.data()))
+	{
+		m_tpc.InitCloudData();
+		m_preFilePath = pcfile;
+		int f_error = -1;
+		CString xlb, xub, ystep, zlb, zub, width, height;
+		float xmin, xmax, ys, zmin, zmax;
+		size_t w, h;
+
+		m_edt_xLB.GetWindowTextW(xlb);
+		xmin = stof(xlb.GetBuffer());
+		m_edt_xUB.GetWindowTextW(xub);
+		xmax = stof(xub.GetBuffer());
+		m_edt_yStep.GetWindowTextW(ystep);
+		ys = stof(ystep.GetBuffer());
+		m_edt_zLB.GetWindowTextW(zlb);
+		zmin = stof(zlb.GetBuffer());
+		m_edt_zUB.GetWindowTextW(zub);
+		zmax = stof(zub.GetBuffer());
+		m_edt_Width.GetWindowTextW(width);
+		w = stoi(width.GetBuffer());
+		m_edt_Height.GetWindowTextW(height);
+		h = stoi(height.GetBuffer());
+
+		QueryPerformanceCounter(&nst);
+		f_error = m_tpc.LoadTyrePC(pcfile, xmin, xmax, ys, zmin, zmax, w, h);
+		QueryPerformanceCounter(&nend);
+		if (-1 == f_error)
+		{
+			MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
+			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
+		}
+
+		str_len = sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+
+		LPCWSTR info_wch = A2W(info_str);
+		m_stc_St.SetWindowText(info_wch);
+	}
+	str_len = sprintf(info_str + str_len, "Start save point cloud into ply file.\n");
+	LPCWSTR info_wch = A2W(info_str);
+	m_stc_St.SetWindowText(info_wch);
+	QueryPerformanceCounter(&nst);
+	PointCloud<PointXYZ>::Ptr totalPC = m_tpc.GetOriginalPC();
+	CString beginID, endID;
+	m_edt_PCBeginID.GetWindowTextW(beginID);
+	m_edt_PCEndID.GetWindowTextW(endID);
+	size_t begPT = 0, endPT = 0;
+	begPT = max(0, stoi(beginID.GetBuffer()));
+	endPT = max((size_t)begPT + 10000, min(totalPC->points.size(), (size_t)stoi(endID.GetBuffer())));
+	cloud->points.insert(cloud->points.begin(),
+		totalPC->points.begin() + begPT,
+		totalPC->points.begin() + endPT);
+	SaveCloudToFile(cloud, "origin");
+	QueryPerformanceCounter(&nend);
+
+	str_len = sprintf(info_str, "Save file costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+	info_wch = A2W(info_str);
+	m_stc_St.SetWindowText(info_wch);
 }

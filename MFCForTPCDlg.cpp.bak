@@ -180,6 +180,7 @@ HCURSOR CMFCForTPCDlg::OnQueryDragIcon()
 
 void CMFCForTPCDlg::OnBnClickedBtnRun()
 {
+	m_bRanSeg = true;
 	m_btn_run.EnableWindow(FALSE);
 	m_btn_savedata.EnableWindow(FALSE);
 	m_tpc.InitCloudData();
@@ -210,6 +211,8 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 	{
 		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
 		m_stc_St.SetWindowText(L"Loading failed: empty file path");
+		m_btn_run.EnableWindow(TRUE);
+		m_btn_savedata.EnableWindow(TRUE);
 		return;
 	}
 	else
@@ -455,12 +458,18 @@ void CMFCForTPCDlg::OnBnClickedBtnSavedata()
 	// TODO: 在此添加控件通知处理程序代码
 	vector<PointCloud<PointXYZ>::Ptr> refPlanes;
 	vector<PointCloud<PointXYZI>::Ptr> restClusters;
+	PointCloud<PointXYZI>::Ptr pins=m_tpc.GetPinsPC();
 	m_tpc.GetReferencePlanes(refPlanes);
 	m_tpc.GetRestClusters(restClusters);
 	SaveCloudToFile(refPlanes, "refPl");
 	SaveCloudToFile(restClusters, "restCl");
-	//SaveXYZToPLYFile(refPlanes, "refPl");
-	//SaveXYZIToPLYFile(restClusters, "restCl");
+	vector<PointCloud<PointXYZI>::Ptr> vecPins;
+	vecPins.push_back(pins);
+	SaveCloudToFile(vecPins, "Pins");
+	PointCloud<PointXYZRGB>::Ptr RGBCld = m_tpc.GetRGBPC();
+	vector<PointCloud<PointXYZRGB>::Ptr> vecRGB;
+	vecRGB.push_back(RGBCld);
+	SaveCloudToFile(vecRGB, "RGB");
 }
 
 
@@ -746,57 +755,79 @@ void CMFCForTPCDlg::OnBnClickedRanimg()
 void CMFCForTPCDlg::OnBnClickedShowpc()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	CFileDialog fileopendlg(TRUE);
-	CString filepath;
-	if (fileopendlg.DoModal() == IDOK)
+	if (!m_bRanSeg)
 	{
-		filepath = fileopendlg.GetPathName();
-		m_stc_FlPth.SetWindowText(filepath);
-	}
-	else
-	{
-		m_stc_FlPth.SetWindowText(L"");
-	}
-
-	// Load point cloud file
-	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
-	QueryPerformanceFrequency(&nfreq);
-	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
-	CString	cs_file;
-	string pcfile = "";
-	char* info_str = new char[1000];
-	int str_len = 0;
-	m_stc_FlPth.GetWindowTextW(cs_file);
-	USES_CONVERSION;
-	pcfile = CT2A(cs_file.GetBuffer());
-	if (0 == strcmp("", pcfile.data()))
-	{
-		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
-		m_stc_St.SetWindowText(L"Loading failed: empty file path");
-	}
-	else
-	{
-		int f_error = -1;
-
-		QueryPerformanceCounter(&nst);
-		f_error = m_tpc.LoadTyrePC(pcfile);
-		QueryPerformanceCounter(&nend);
-		if (-1 == f_error)
+		CFileDialog fileopendlg(TRUE);
+		CString filepath;
+		if (fileopendlg.DoModal() == IDOK)
 		{
-			MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
-			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
+			filepath = fileopendlg.GetPathName();
+			m_stc_FlPth.SetWindowText(filepath);
+		}
+		else
+		{
+			m_stc_FlPth.SetWindowText(L"");
 		}
 
-		str_len = sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+		// Load point cloud file
+		LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+		QueryPerformanceFrequency(&nfreq);
+		
+		CString	cs_file;
+		string pcfile = "";
+		char* info_str = new char[1000];
+		int str_len = 0;
+		m_stc_FlPth.GetWindowTextW(cs_file);
+		USES_CONVERSION;
+		pcfile = CT2A(cs_file.GetBuffer());
+		if (0 == strcmp("", pcfile.data()))
+		{
+			MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
+			m_stc_St.SetWindowText(L"Loading failed: empty file path");
+		}
+		else
+		{
+			int f_error = -1;
 
-		LPCWSTR info_wch = A2W(info_str);
-		m_stc_St.SetWindowText(info_wch);
+			QueryPerformanceCounter(&nst);
+			f_error = m_tpc.LoadTyrePC(pcfile);
+			QueryPerformanceCounter(&nend);
+			if (-1 == f_error)
+			{
+				MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
+				m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
+			}
+
+			str_len = sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+
+			LPCWSTR info_wch = A2W(info_str);
+			m_stc_St.SetWindowText(info_wch);
+		}
 	}
 
+	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
 	cloud = m_tpc.GetOriginalPC();
 	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
 	viewer->setBackgroundColor(0, 0, 0);
 	viewer->addPointCloud<pcl::PointXYZ>(cloud, "sample cloud");
+	if (m_bRanSeg)
+	{
+		vector<ModelCoefficients::Ptr> curCoefs;
+		m_tpc.GetReferenceCoefficients(curCoefs);
+		for (size_t CoefIt = 0; CoefIt < curCoefs.size(); CoefIt++)
+		{
+			if (curCoefs[CoefIt]->values.size() == 4)
+			{
+				viewer->addPlane(*curCoefs[CoefIt]);
+			}
+			else if (curCoefs[CoefIt]->values.size() == 7)
+			{
+				viewer->addCylinder(*curCoefs[CoefIt]);
+			}
+		}
+	}
+	//viewer->addArrow(cloud->points[0], cloud->points[cloud->points.size() - 1], 255, 0, 0);
+	viewer->addLine(cloud->points[0], cloud->points[cloud->points.size() - 1], 255.0, 0.0, 0.0);
 	viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "sample cloud");
 	//viewer->addCoordinateSystem(1.0);
 	viewer->initCameraParameters();
