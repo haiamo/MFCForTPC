@@ -115,4 +115,5 @@ public:
 	afx_msg void OnBnClickedRadioCharsLccp();
 	afx_msg void OnBnClickedRadioCharsCpc();
 	afx_msg void OnBnClickedBtnLoadandsave();
+	afx_msg void OnBnClickedRadioCharsBls();
 };

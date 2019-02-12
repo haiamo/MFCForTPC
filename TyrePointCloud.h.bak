@@ -11,6 +11,8 @@
 #define ACCURACY 10e-6
 
 #include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sstream>
 
 #include "cudaMain.h"
@@ -36,6 +38,10 @@
 #include <pcl\range_image\range_image.h>
 #include <pcl\range_image\range_image_planar.h>
 #include <pcl\range_image\range_image_spherical.h>
+
+#include <pcl\segmentation\supervoxel_clustering.h>
+#include <pcl\segmentation\lccp_segmentation.h>
+#include <pcl\segmentation\cpc_segmentation.h>
 
 #include <pcl\visualization\common\float_image_utils.h>
 #include <pcl\visualization\range_image_visualizer.h>
@@ -95,6 +101,7 @@ struct PinObject
 
 enum PtRefType//Point reference type
 {
+	//_P is for pointer and _V for vector.
 	ORIGIN_P,
 	DOWNSAMPLE_P,
 	SEGEMENTBASE_P,
@@ -121,13 +128,18 @@ public:
 private:
 	BOOL m_normalUserDefined;
 
+	//GPU Point Normal Searching Properties:
+	float m_searchradius;
+	int m_maxneighboranswers;
+	
 	//Segementation Properties:
-	float m_downsampleradius;
 	unsigned int m_numberofthreds;
 	double m_distancethreshold;
 	double m_normaldistanceweight;
 	double m_inlierratio;
 	float m_clustertolerance;
+	double m_segmaxradius;
+	double m_segminradius;
 
 	PinObject m_pinsobj;
 
@@ -158,9 +170,24 @@ protected:
 
 	int FiltPins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins);
 	int FiltPins(vector<PointXYZI>& filted_pins);
+	int SupervoxelClustering(pcl::PointCloud<PointXYZ>::Ptr in_pc,
+		std::map <uint32_t, pcl::Supervoxel<PointXYZ>::Ptr > &sv_cluster,
+		std::multimap<uint32_t, uint32_t>& sv_adj,
+		pcl::PointCloud<PointXYZL>::Ptr & lbl_pc,
+		float voxel_res = 0.03f, float seed_res = 0.09f, float color_imp = 0.0f,
+		float spatial_imp=0.6f, float normal_imp=1.0f);
+
+	int Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc,//Set of data points
+		int min_inliers,//Minimum number of data points required to estimate model parameters
+		int max_it,//Maximum iterators
+		double modelthreshold,//Threshold value to determine data points that are fit well by model
+		int closepts);//The number of close data points required to assert that a model fits well by data
 
 public:
 	void InitCloudData();
+	//Get and Set point clouds.
+	void SetOriginPC(PointCloud<PointXYZ>::Ptr in_pc);
+	void setOriginRGBPC(PointCloud<PointXYZRGB>::Ptr in_pc);
 
 	PointCloud<PointXYZ>::Ptr GetOriginalPC();
 	PointCloud<PointXYZI>::Ptr GetPinsPC();
@@ -176,7 +203,11 @@ public:
 
 public:
 	//Set parameters:
-	void SetDownSampleRaius(float dsr);
+	//Point Normal Searching
+	void SetSearchRadius(float radius);
+	void SetMaxNeighborAnswers(int maxans);
+
+	//Segmentation
 	void SetNumberOfThreads(unsigned int nt);
 	void SetDistanceThreshold(double dt);
 	void SetNormalDistanceWeight(double ndw);
@@ -184,11 +215,19 @@ public:
 	void SetClusterTolerance(double ct);
 
 public:
-	int LoadTyrePC(string pcfile);
-	/* Loading tyre point clouds from file, which contains in .ply or .pcd file.
+	int LoadTyrePC(string pcfile, float xLB = 0.0f, float xUB = 1000.0f, float yStep=0.03f, float zLB=0.0f, float zUB=1000.0f, size_t width = 1536, size_t height = 10000);
+	/* Loading tyre point clouds from file, which contains in .ply, .pcd or .dat file.
 	   Parameters:
 	     pcfile(in): The input file directory of point clouds.
-	*/
+		 NOTE: the following three parameters are only avalible for .dat file, the point size is width*height.
+		 xLB(in): The lower bound along x-axis.
+		 xUP(in): The upper bound along x-axis.
+		 yStep(in): The step length along y-axis.
+		 zLB(in): The lower bound along z-axis.
+		 zUP(in): The upper bound along z-axis.
+		 width(in): The width of a laser line in Range Image.
+		 height(in): The height of Range Image.
+		 */
 
 	int LoadTyrePC(PointCloud<PointXYZ>::Ptr in_cloud);
 	/* Loading tyre point clouds from an exist cloud.
@@ -220,40 +259,16 @@ public:
 
 	int FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gpu::Octree::Ptr &in_tree, PointCloud<Normal>::Ptr &out_normal);
 
-	int FindPins(PointCloud<PointXYZI>::Ptr &out_pc);
-	/* Searching pins on tyre surface(override):
-	   Parameters:
-	     out_pc(out): Out point cloud pointer with the length of pins.
-	*/
-
-	int FindPins(string pcfile, PointCloud<PointXYZI>::Ptr &out_pc);
-	/* Searching pins on tyre surface(override):
-	   Parameters:
-	     pcfile(in): Input the point cloud from the directory.
-	     out_pc(out): Out point cloud pointer with the length of pins.
-	*/
-
-	int FindPins(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr &out_pc);
-	/* Searching pins on tyre surface(override):
-	   Parameters:
-	     in_pc(in): Input point cloud pointer.
-	     out_pc(out): Out point cloud pointer with the length of pins.
-	*/
-
-	int FindPins(PointCloud<PointXYZ>::Ptr in_pc, int neighbors, double radius, int folder, int threads, PointCloud<PointXYZI>::Ptr &out_pc);
-	/* Searching pins on tyre surface(override):
-	   Parameters:
-	     in_pc(in): Input point cloud pointer.
-		 neighbor(in): K-neighbors for searching normals.
-		 radius(in): Searching radius for point normals method.
-		 folder(in): Normal searching indices folder, which is the 1/folder of points.
-		 threads(in): The number of threads, which will be used in the multiple threads normal searching method.
-	     out_pc(out): Out point cloud pointer with the length of pins.
-	*/
-
-	//int FindPinsBySegmentation(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr &out_pc);
-
 	int FindPinsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZI>::Ptr &out_pc);
+
+	int FindCharsBySegmentationGPU(PointCloud<PointXYZ>::Ptr in_pc, PointCloud<PointXYZ>::Ptr &out_pc);
+
+	int FindCharsByLCCP(pcl::PointCloud<PointXYZ>::Ptr in_pc, pcl::PointCloud<PointXYZL>::Ptr &out_pc);
+	/* LCCP: Locally Convex Connected Patches
+	   This method has two steps: 1. Supervoxel Clustering, 2. Convex Connected Clustering.
+	*/
+
+	int FindCharsByCPC(pcl::PointCloud<PointXYZ>::Ptr in_pc, pcl::PointCloud<PointXYZL>::Ptr &out_pc);
 
 	int FindPins(char* p_pc, int length, vector<PinObject> & out_pc);
 	/* Find pins by input a char stream

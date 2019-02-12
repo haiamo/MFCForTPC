@@ -290,7 +290,7 @@ int TyrePointCloud::SupervoxelClustering(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	return 0;
 }
 
-int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc, int min_inliers, int max_it, double modelthreshold, int closepts)
+int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXYZ>::Ptr in_pc, int min_inliers, int max_it, double modelthreshold, int closepts)
 {
 	//Preparation for parameters
 	//Current this function will fit cubic line in 2D point cloud, which shows y=a*x^3+b*x^2+c*x+d
@@ -299,7 +299,7 @@ int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc, i
 	vector<int> bestInliers(min_inliers), hypoInliers(min_inliers), candInliers(in_pc->points.size()), outliers, allIds;
 	vector<int>::iterator OutIdIt,candIDit;
 	double bestErr = HUGE_VAL;
-	int cur_it;
+	int cur_it = 0;
 	allIds.reserve(in_pc->points.size());
 	for (size_t tt = 0; tt < in_pc->points.size(); tt++)
 	{
@@ -315,6 +315,7 @@ int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc, i
 		{
 			hypoInliers[ii] = rand() % in_pc->points.size();
 		}
+		sort(hypoInliers.begin(), hypoInliers.end());
 
 		outliers = allIds;
 		candIDit = hypoInliers.begin();
@@ -326,11 +327,11 @@ int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc, i
 				if (*OutIdIt == *candIDit)
 				{
 					OutIdIt = outliers.erase(OutIdIt);
-					++candIDit;
+					candIDit++;
 				}
 				else
 				{
-					++OutIdIt;
+					OutIdIt++;
 				}
 			}
 			else
@@ -339,8 +340,7 @@ int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc, i
 			}
 		}
 		//Get model parameters fitted to candInliers by Least Squares 
-		//Get candPara
-
+		PolyFit2D(hypoInliers, 3, candPara);
 		//Filtering inliers and outliers.
 		candInliers.clear();
 		candInliers.reserve(outliers.size());
@@ -348,7 +348,7 @@ int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc, i
 		while(OutIdIt < outliers.end())
 		{
 			//Calculating the distance between the current point and the model.
-			//...
+			//
 			if (true)//Filtering inliers and outliers by the model.
 			{
 				candInliers.push_back(*OutIdIt);
@@ -362,9 +362,14 @@ int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc, i
 
 		if (candInliers.size() > closepts)
 		{
-			//Get better model(candPara) by fitting candInliers and InitialInliers using Least Squares
-			//Calculate candError...
-			if (candError < bestError)
+			//Get better model(candPara) by fitting candInliers and hypoInliers using Least Squares
+			candInliers.insert(candInliers.end(), hypoInliers.begin(), hypoInliers.end());
+			candError = PolyFit2D(candInliers, 3, candPara);
+			if (cur_it == 0)
+			{
+				bestErr = candError;
+			}
+			else if (candError < bestError)
 			{
 				bestPara = candPara;
 				bestError = candError;
@@ -375,6 +380,43 @@ int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc, i
 	}//End of outer iteration
 
 	return 0;
+}
+
+double TyrePointCloud::PolyFit2D(vector<int> in_pcID, int order, vector<double>& out_paras)
+{
+	Eigen::VectorXd xvals(in_pcID.size()), yvals(in_pcID.size());
+	Eigen::MatrixXd A(in_pcID.size(),order+1);
+	pcl::PointCloud<PointXYZ>::Ptr cloud = m_originPC;
+	int curID = 0, rowi = 0;
+	while (rowi < in_pcID.size())
+	{
+		curID = in_pcID[rowi];
+		xvals[rowi] = cloud->points[curID].x;
+		yvals[rowi] = cloud->points[curID].z;
+		A(rowi, 0) = 1.0;
+		for (int coli = 0; coli < order; coli++)
+		{
+			A(rowi, 1 + coli) = A(rowi, coli)*xvals[rowi];
+		}
+		rowi++;
+	}
+	auto Q = A.householderQr();
+	Eigen::VectorXd beta = Q.solve(yvals);
+	out_paras.clear();
+	out_paras.reserve(beta.size());
+	for (Eigen::Index ii = 0; ii < beta.size(); ii++)
+	{
+		out_paras.push_back(beta(ii));
+	}
+	Eigen::VectorXd errVec(in_pcID.size());
+	errVec = A*beta - yvals;
+	double errVal = errVec.norm();
+	return errVal;
+}
+
+double TyrePointCloud::PointToModelDistance(int ptID, vector<double> model_paras)
+{
+	return 0.0;
 }
 
 void TyrePointCloud::SetOriginPC(PointCloud<PointXYZ>::Ptr in_pc)
