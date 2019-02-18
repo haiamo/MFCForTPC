@@ -177,13 +177,17 @@ protected:
 		float voxel_res = 0.03f, float seed_res = 0.09f, float color_imp = 0.0f,
 		float spatial_imp=0.6f, float normal_imp=1.0f);
 
-	int Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc,//Set of data points
+	double PolyFit2D(vector<int> in_pcID, int order, vector<double> &out_paras);
+
+	double PointToModelDistance(int ptID, vector<double> model_paras);
+
+public:
+	int Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXYZ>::Ptr in_pc,//Set of data points
 		int min_inliers,//Minimum number of data points required to estimate model parameters
 		int max_it,//Maximum iterators
 		double modelthreshold,//Threshold value to determine data points that are fit well by model
 		int closepts);//The number of close data points required to assert that a model fits well by data
 
-public:
 	void InitCloudData();
 	//Get and Set point clouds.
 	void SetOriginPC(PointCloud<PointXYZ>::Ptr in_pc);

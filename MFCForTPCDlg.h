@@ -6,6 +6,8 @@
 #undef min
 #undef max
 
+#define randRange(b,a) ((a)+((b)-(a))*1.0/RAND_MAX*rand()*1.0)
+
 #include "stdafx.h"
 #include "TyrePointCloud.h"
 #include "afxcmn.h"
@@ -116,4 +118,5 @@ public:
 	afx_msg void OnBnClickedRadioCharsCpc();
 	afx_msg void OnBnClickedBtnLoadandsave();
 	afx_msg void OnBnClickedRadioCharsBls();
+	afx_msg void OnBnClickedBtnRunAlldata();
 };

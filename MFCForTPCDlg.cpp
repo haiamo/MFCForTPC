@@ -96,6 +96,7 @@ BEGIN_MESSAGE_MAP(CMFCForTPCDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RADIO_Chars_CPC, &CMFCForTPCDlg::OnBnClickedRadioCharsCpc)
 	ON_BN_CLICKED(IDC_BTN_LoadAndSave, &CMFCForTPCDlg::OnBnClickedBtnLoadandsave)
 	ON_BN_CLICKED(IDC_RADIO_Chars_BLS, &CMFCForTPCDlg::OnBnClickedRadioCharsBls)
+	ON_BN_CLICKED(IDC_BTN_Run_AllData, &CMFCForTPCDlg::OnBnClickedBtnRunAlldata)
 END_MESSAGE_MAP()
 
 
@@ -132,9 +133,9 @@ BOOL CMFCForTPCDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 	m_edt_DownSamR.SetWindowText(_T("0.09"));
-	m_edt_NumThds.SetWindowText(_T("2"));
+	m_edt_NumThds.SetWindowText(_T("1000"));
 	m_edt_DisThrhd.SetWindowText(_T("0.09"));
-	m_edt_NormDisWt.SetWindowText(_T("0.1"));
+	m_edt_NormDisWt.SetWindowText(_T("4"));
 	m_edt_InlR.SetWindowText(_T("0.1"));
 	m_edt_ClTol.SetWindowText(_T("0.09"));
 
@@ -273,35 +274,35 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
 		}
 		
-		str_len = sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+		str_len = std::sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 		
 		LPCWSTR info_wch = A2W(info_str);
 		m_stc_St.SetWindowText(info_wch);
 	}
 	PointCloud<PointXYZ>::Ptr totalPC = m_tpc.GetOriginalPC();
-	PointCloud<PointXYZRGB>::Ptr totalRGB = m_tpc.GetRGBPC();
-	PointCloud<PointXYZRGB>::Ptr rgbCloud(::new pcl::PointCloud<PointXYZRGB>);
+	//PointCloud<PointXYZRGB>::Ptr totalRGB = m_tpc.GetRGBPC();
+	//PointCloud<PointXYZRGB>::Ptr rgbCloud(::new pcl::PointCloud<PointXYZRGB>);
 	CString beginID, endID;
 	m_edt_PCBeginID.GetWindowTextW(beginID);
 	m_edt_PCEndID.GetWindowTextW(endID);
 	cloud->points.insert(cloud->points.begin(), 
 		totalPC->points.begin()+stoi(beginID.GetBuffer()), 
 		totalPC->points.begin() + min(totalPC->points.size(),(size_t)stoi(endID.GetBuffer())));
-	rgbCloud->points.insert(rgbCloud->points.begin(), 
-		totalRGB->points.begin() + stoi(beginID.GetBuffer()), 
-		totalRGB->points.begin() + min(totalRGB->points.size(),(size_t)stoi(endID.GetBuffer())));
+	//rgbCloud->points.insert(rgbCloud->points.begin(), 
+		//totalRGB->points.begin() + stoi(beginID.GetBuffer()), 
+		//totalRGB->points.begin() + min(totalRGB->points.size(),(size_t)stoi(endID.GetBuffer())));
 	m_tpc.SetOriginPC(cloud);
-	m_tpc.setOriginRGBPC(rgbCloud);
+	//m_tpc.setOriginRGBPC(rgbCloud);
 
 	SetSegParameters();
 	char* tmp_str = new char[1000];
 	if (m_RadioID == 1)
 	{
-		str_len = sprintf(info_str + str_len, "Starting pin searching, please wait...\n");
+		str_len = std::sprintf(info_str + str_len, "Starting pin searching, please wait...\n");
 	}
 	else
 	{
-		str_len = sprintf(info_str + str_len, "Starting Characteristics searching, please wait...\n");
+		str_len = std::sprintf(info_str + str_len, "Starting Characteristics searching, please wait...\n");
 	}
 		
 	LPCWSTR info_wstr = A2W(info_str);
@@ -325,19 +326,24 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 			m_tpc.FindCharsByCPC(cloud, lbl_chars);
 			break;
 		case 5:
-			m_tpc.Get2DBaseLineBYRANSAC(cloud, 10, 100000, 0.1, cloud->points.size()*0.5);
+			CString iters,threshold, inilerRatio, order;
+			m_edt_NumThds.GetWindowTextW(iters);
+			m_edt_DisThrhd.GetWindowTextW(threshold);
+			m_edt_InlR.GetWindowTextW(inilerRatio);
+			m_edt_NormDisWt.GetWindowTextW(order);
+			m_tpc.Get2DBaseLineBYRANSAC(cloud, 50, stoi(iters.GetBuffer()), stoi(order.GetBuffer()),stof(threshold.GetBuffer()), (int)cloud->points.size()*stof(inilerRatio.GetBuffer()));
 			break;
 	}
 	QueryPerformanceCounter(&nend);
-	memset(info_str, 0, sizeof(info_str)/sizeof(char));
+	std::memset(info_str, 0, sizeof(info_str)/sizeof(char));
 		
 	if (m_RadioID == 1)
 	{
-		sprintf(tmp_str, "Searching pins costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+		std::sprintf(tmp_str, "Searching pins costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 	}
 	else
 	{
-		sprintf(tmp_str, "Searching chars costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+		std::sprintf(tmp_str, "Searching chars costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 	}
 		
 	info_str = strcat(info_str, tmp_str);
@@ -349,8 +355,8 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 		case 1:
 			while (ii < pins->points.size() && ii < 5)
 			{
-				memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
-				sprintf(tmp_str, "%.2f, %.2f, %.2f, %.2f\n", pins->points[ii].x, pins->points[ii].y, pins->points[ii].z, pins->points[ii].intensity);
+				std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+				std::sprintf(tmp_str, "%.2f, %.2f, %.2f, %.2f\n", pins->points[ii].x, pins->points[ii].y, pins->points[ii].z, pins->points[ii].intensity);
 				info_str = strcat(info_str, tmp_str);
 				ii++;
 			}
@@ -365,6 +371,12 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 			break;
 		case 4:
 			pcl::io::savePLYFile("chars_CPC.ply", *lbl_chars);
+			break;
+		case 5:
+			pcl::PointCloud<PointXYZ>::Ptr segPC = m_tpc.GetSegPC();
+			pcl::PointCloud<PointXYZ>::Ptr restPC = m_tpc.GetRestPC();
+			SaveCloudToFile(segPC, "BaseLine");
+			SaveCloudToFile(restPC, "RestPC");
 			break;
 	}
 
@@ -550,7 +562,7 @@ int CMFCForTPCDlg::LoadPointCloud()
 			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
 		}
 
-		str_len = sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+		str_len = std::sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 
 		LPCWSTR info_wch = A2W(info_str);
 		m_stc_St.SetWindowText(info_wch);
@@ -600,7 +612,70 @@ void CMFCForTPCDlg::OnBnClickedBtnSavedata()
 void CMFCForTPCDlg::OnBnClickedButton2()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	pcl::PointCloud<PointXYZ>::Ptr Cld_ptr(::new pcl::PointCloud<PointXYZ>);
+
+	double *xvals, *yvals, *paras,*dists;
+	size_t pcsize = 50000;
+	xvals = (double*)malloc(sizeof(double) * pcsize);
+	yvals = (double*)malloc(sizeof(double) * pcsize);
+	paras = (double*)malloc(sizeof(double) * 4);
+	dists = (double*)malloc(sizeof(double) * pcsize);
+	//memset(dists, -1.0, sizeof(double)*pcsize);
+	paras[0] = 1.0;
+	paras[1] = 1.0;
+	paras[2] = 1.0;
+	paras[3] = 1.0;
+	double tmpRand = 0.0, tmpRand1 = 0.0;
+	pcl::PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);
+	vector<int> pcIDs;
+	vector<double> xVec, yVec;
+	srand((unsigned int)time(0));
+	PointXYZ tmpPt;
+	for (int ii = 0; ii < pcsize; ii++)
+	{
+		
+		tmpRand = (double)randRange(15,10);
+		//xvals[ii] = tmpRand+(double)randRange(0.5,-0.5);
+		//yvals[ii] = tmpRand*tmpRand+(double)randRange(1.5,-1.5);
+		xVec.push_back(tmpRand);// +(double)randRange(0.05, -0.05));
+		yVec.push_back(tmpRand*tmpRand*tmpRand*tmpRand*3.5 + 20.0*tmpRand*tmpRand*tmpRand + 15.0*tmpRand*tmpRand + 2.5*tmpRand + 10.0 +(double)randRange(0.05, -0.05));
+		dists[ii] = -1.0;
+		cloud->points.push_back(PointXYZ(xVec[ii], 0.0, yVec[ii]));
+		pcIDs.push_back(ii);
+	}
+
+	for (int ii = 0; ii < 100000; ii++)
+	{
+		cloud->points.push_back(PointXYZ((double)randRange(50, -10), 0.0, (double)randRange(3500000, 4000)));
+	}
+	pcl::io::savePLYFile("TestData.ply", *cloud);
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+
+	m_tpc.SetOriginPC(cloud);
+	vector<double> outPara;
+	//paras=(double*)malloc(sizeof(double)*pcsize);
+	m_tpc.PolyFit2D(pcIDs, 4, outPara);
+	TRACE("The fitted function is y=%fx^4+%fx^3+%fx^2+%fx+%f.\n", outPara[4], outPara[3], outPara[2], outPara[1], outPara[0]);
+
+	/*QueryPerformanceFrequency(&nfreq);
+	QueryPerformanceCounter(&nst);
+	GetPCIntercept(xvals, yvals, pcsize, paras,4, dists);
+	QueryPerformanceCounter(&nend);
+	TRACE("GPU series computing costs %f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+
+	QueryPerformanceCounter(&nst);
+	GetPCInterceptAsynch(xvals, yvals, pcsize, paras, 4, dists);
+	QueryPerformanceCounter(&nend);
+	TRACE("GPU asynchoronous computing costs %f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);*/
+	free(xvals);
+	xvals = NULL;
+	free(yvals);
+	yvals = NULL;
+	free(paras);
+	paras = NULL;
+	free(dists);
+	dists = NULL;
+
+	/*pcl::PointCloud<PointXYZ>::Ptr Cld_ptr(::new pcl::PointCloud<PointXYZ>);
 	pcl::PointCloud<PointXYZ>::Ptr tmp_ptr(::new pcl::PointCloud<PointXYZ>);
 	pcl::PointXYZ tmpPt;
 	for (int ii = 0; ii < 3; ii++)
@@ -627,7 +702,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	{
 		TRACE("tmp[%d] = (%f, %f, %f)\n", ii, it->x, it->y, it->z);
 		ii++;
-	}
+	}*/
 
 	/*CFileDialog fileopendlg(TRUE);
 	CString filepath;
@@ -941,7 +1016,7 @@ void CMFCForTPCDlg::OnBnClickedShowpc()
 				m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
 			}
 
-			str_len = sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+			str_len = std::sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 
 			LPCWSTR info_wch = A2W(info_str);
 			m_stc_St.SetWindowText(info_wch);
@@ -1093,12 +1168,12 @@ void CMFCForTPCDlg::OnBnClickedBtnLoadandsave()
 			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
 		}
 
-		str_len = sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+		str_len = std::sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 
 		LPCWSTR info_wch = A2W(info_str);
 		m_stc_St.SetWindowText(info_wch);
 	}
-	str_len = sprintf(info_str + str_len, "Start save point cloud into ply file.\n");
+	str_len = std::sprintf(info_str + str_len, "Start save point cloud into ply file.\n");
 	LPCWSTR info_wch = A2W(info_str);
 	m_stc_St.SetWindowText(info_wch);
 	QueryPerformanceCounter(&nst);
@@ -1115,7 +1190,7 @@ void CMFCForTPCDlg::OnBnClickedBtnLoadandsave()
 	SaveCloudToFile(cloud, "origin");
 	QueryPerformanceCounter(&nend);
 
-	str_len = sprintf(info_str, "Save file costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+	str_len = std::sprintf(info_str, "Save file costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 	info_wch = A2W(info_str);
 	m_stc_St.SetWindowText(info_wch);
 }
@@ -1125,4 +1200,170 @@ void CMFCForTPCDlg::OnBnClickedRadioCharsBls()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	m_RadioID = 5;
+}
+
+
+void CMFCForTPCDlg::OnBnClickedBtnRunAlldata()
+{
+	m_bRanSeg = true;
+	m_btn_run.EnableWindow(FALSE);
+	m_btn_savedata.EnableWindow(FALSE);
+	m_tpc.InitCloudData();
+	CFileDialog fileopendlg(TRUE);
+	CString filepath;
+	if (fileopendlg.DoModal() == IDOK)
+	{
+		filepath = fileopendlg.GetPathName();
+		m_stc_FlPth.SetWindowText(filepath);
+	}
+	else
+	{
+		m_stc_FlPth.SetWindowText(L"");
+	}
+
+	// Load point cloud file
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	QueryPerformanceFrequency(&nfreq);
+	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
+	CString	cs_file;
+	string pcfile = "";
+	char* info_str = new char[1000];
+	int str_len = 0;
+	m_stc_FlPth.GetWindowTextW(cs_file);
+	USES_CONVERSION;
+	pcfile = CT2A(cs_file.GetBuffer());
+	if (0 == strcmp("", pcfile.data()))
+	{
+		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
+		m_stc_St.SetWindowText(L"Loading failed: empty file path");
+		m_btn_run.EnableWindow(TRUE);
+		m_btn_savedata.EnableWindow(TRUE);
+		return;
+	}
+	else
+	{
+		int f_error = -1;
+		CString xlb, xub, ystep, zlb, zub, width, height;
+		float xmin, xmax, ys, zmin, zmax;
+		size_t w, h;
+
+		m_edt_xLB.GetWindowTextW(xlb);
+		xmin = stof(xlb.GetBuffer());
+		m_edt_xUB.GetWindowTextW(xub);
+		xmax = stof(xub.GetBuffer());
+		m_edt_yStep.GetWindowTextW(ystep);
+		ys = stof(ystep.GetBuffer());
+		m_edt_zLB.GetWindowTextW(zlb);
+		zmin = stof(zlb.GetBuffer());
+		m_edt_zUB.GetWindowTextW(zub);
+		zmax = stof(zub.GetBuffer());
+		m_edt_Width.GetWindowTextW(width);
+		w = stoi(width.GetBuffer());
+		m_edt_Height.GetWindowTextW(height);
+		h = stoi(height.GetBuffer());
+
+		QueryPerformanceCounter(&nst);
+		f_error = m_tpc.LoadTyrePC(pcfile, xmin, xmax, ys, zmin, zmax, w, h);
+		QueryPerformanceCounter(&nend);
+		if (-1 == f_error)
+		{
+			MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
+			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
+		}
+
+		str_len = std::sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+
+		LPCWSTR info_wch = A2W(info_str);
+		m_stc_St.SetWindowText(info_wch);
+	}
+	PointCloud<PointXYZ>::Ptr totalPC = m_tpc.GetOriginalPC();
+	size_t begID, endID;
+	CString begCS,endCS;
+	m_edt_PCBeginID.GetWindowTextW(begCS);
+	m_edt_PCEndID.GetWindowTextW(endCS);
+	begID = stoll(begCS.GetBuffer());
+	size_t psize=stoll(endCS.GetBuffer())-stoll(begCS.GetBuffer())+1, parts = totalPC->points.size() / psize + 1;
+	char* tmp_str = new char[1000], *file_name=new char[30];
+	LPCWSTR info_wstr;
+	SetSegParameters();
+	CString iters, threshold, inilerRatio, order;
+	m_edt_NumThds.GetWindowTextW(iters);
+	m_edt_DisThrhd.GetWindowTextW(threshold);
+	m_edt_InlR.GetWindowTextW(inilerRatio);
+	m_edt_NormDisWt.GetWindowTextW(order);
+	int ITs = stoi(iters.GetBuffer()), Ord = stoi(order.GetBuffer());
+	double Thres = stod(threshold.GetBuffer()), InR = stod(inilerRatio.GetBuffer());
+	pcl::PointCloud<PointXYZ>::Ptr segPC = m_tpc.GetSegPC();
+	pcl::PointCloud<PointXYZ>::Ptr restPC = m_tpc.GetRestPC();
+	for (size_t partID = 0; partID < parts; partID++)
+	{
+		//begID = partID * psize;
+		endID = begID + psize - 1;
+		m_tpc.InitCloudData();
+		cloud->points.clear();
+		cloud->points.insert(cloud->points.begin(),
+			totalPC->points.begin() + begID,
+			totalPC->points.begin() + min(totalPC->points.size(), endID));
+		m_tpc.SetOriginPC(cloud);
+		if (partID<3 || (partID>=3 && partID < 10 && partID>12))
+		{
+			switch (partID % 10)
+			{
+			case 0:
+				str_len = std::sprintf(info_str + str_len, "On %d-st Characteristics searching, please wait...\n", partID + 1);
+				break;
+			case 1:
+				str_len = std::sprintf(info_str + str_len, "On %d-nd Characteristics searching, please wait...\n", partID + 1);
+				break;
+			case 2:
+				str_len = std::sprintf(info_str + str_len, "On %d-rd Characteristics searching, please wait...\n", partID + 1);
+				break;
+			default:
+				str_len = std::sprintf(info_str + str_len, "On %d-th Characteristics searching, please wait...\n", partID + 1);
+				break;
+			}
+		}
+		else
+		{
+			str_len = std::sprintf(info_str + str_len, "On %d-th Characteristics searching, please wait...\n", partID + 1);
+		}
+
+		info_wstr = A2W(info_str);
+		m_stc_St.SetWindowText(info_wstr);
+		QueryPerformanceCounter(&nst);
+		m_tpc.Get2DBaseLineBYRANSAC(cloud, 50, ITs, Ord, Thres, (int)cloud->points.size()*InR);
+		QueryPerformanceCounter(&nend);
+		//std::memset(info_str, 0, sizeof(info_str) / sizeof(char));
+		std::sprintf(tmp_str, "Current searching costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+
+		info_str = strcat(info_str, tmp_str);
+		info_wstr = A2W(info_str);
+		m_stc_St.SetWindowText(info_wstr);
+
+		segPC = m_tpc.GetSegPC();
+		restPC = m_tpc.GetRestPC();
+		std::sprintf(file_name, "BaseLine%d", partID);
+		SaveCloudToFile(segPC, file_name);
+		std::memset(file_name, 0, sizeof(file_name) / sizeof(char));
+		std::sprintf(file_name, "RestPC%d", partID);
+		SaveCloudToFile(restPC, file_name);
+
+		std::memset(info_str, 0, sizeof(info_str) / sizeof(char));
+		std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+		str_len = 0;
+		begID = endID+1;
+	}
+
+	m_btn_run.EnableWindow(TRUE);
+	m_btn_savedata.EnableWindow(TRUE);
+
+	//Pointers clearation.
+
+	delete[] info_str;
+	delete[] tmp_str;
+	delete[] file_name;
+	tmp_str = nullptr;
+	info_str = nullptr;
+	file_name = nullptr;
+	cloud.reset();
 }

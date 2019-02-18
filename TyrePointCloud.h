@@ -152,6 +152,7 @@ protected:
 	PointCloud<PointXYZ>::Ptr m_originPC;//Original point cloud
 	PointCloud<PointXYZ>::Ptr m_downsample;//Original down sampling cloud.
 	PointCloud<PointXYZ>::Ptr m_segbase;//Segementation basic cloud.
+	PointCloud<PointXYZ>::Ptr m_restPC;//Rest point cloud after segementation.
 	vector<PointCloud<PointXYZ>::Ptr> m_refPlanes;//Reference planes' list.
 	vector<ModelCoefficients::Ptr> m_refCoefs;//The coefficients of planes.
 	vector<PointCloud<PointXYZI>::Ptr> m_restClusters;//The clusters after segmentation searching
@@ -177,14 +178,15 @@ protected:
 		float voxel_res = 0.03f, float seed_res = 0.09f, float color_imp = 0.0f,
 		float spatial_imp=0.6f, float normal_imp=1.0f);
 
-	double PolyFit2D(vector<int> in_pcID, int order, vector<double> &out_paras);
-
-	double PointToModelDistance(int ptID, vector<double> model_paras);
+	double PointToModelDistance(int ptID, vector<double> model_paras, int order);
 
 public:
+	double PolyFit2D(vector<int> in_pcID, int order, vector<double> &out_paras);
+
 	int Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXYZ>::Ptr in_pc,//Set of data points
 		int min_inliers,//Minimum number of data points required to estimate model parameters
 		int max_it,//Maximum iterators
+		int order,//The order of fitted polynomial
 		double modelthreshold,//Threshold value to determine data points that are fit well by model
 		int closepts);//The number of close data points required to assert that a model fits well by data
 
@@ -194,6 +196,8 @@ public:
 	void setOriginRGBPC(PointCloud<PointXYZRGB>::Ptr in_pc);
 
 	PointCloud<PointXYZ>::Ptr GetOriginalPC();
+	PointCloud<PointXYZ>::Ptr GetSegPC();
+	PointCloud<PointXYZ>::Ptr GetRestPC();
 	PointCloud<PointXYZI>::Ptr GetPinsPC();
 	PointCloud<PointXYZRGB>::Ptr GetRGBPC();
 	PointCloud<Normal>::Ptr GetPointNormals();

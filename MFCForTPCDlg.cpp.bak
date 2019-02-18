@@ -95,6 +95,7 @@ BEGIN_MESSAGE_MAP(CMFCForTPCDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RADIO_Chars_LCCP, &CMFCForTPCDlg::OnBnClickedRadioCharsLccp)
 	ON_BN_CLICKED(IDC_RADIO_Chars_CPC, &CMFCForTPCDlg::OnBnClickedRadioCharsCpc)
 	ON_BN_CLICKED(IDC_BTN_LoadAndSave, &CMFCForTPCDlg::OnBnClickedBtnLoadandsave)
+	ON_BN_CLICKED(IDC_RADIO_Chars_BLS, &CMFCForTPCDlg::OnBnClickedRadioCharsBls)
 END_MESSAGE_MAP()
 
 
@@ -322,6 +323,9 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 			break;
 		case 4:
 			m_tpc.FindCharsByCPC(cloud, lbl_chars);
+			break;
+		case 5:
+			m_tpc.Get2DBaseLineBYRANSAC(cloud, 10, 100000, 0.1, cloud->points.size()*0.5);
 			break;
 	}
 	QueryPerformanceCounter(&nend);
@@ -1114,4 +1118,11 @@ void CMFCForTPCDlg::OnBnClickedBtnLoadandsave()
 	str_len = sprintf(info_str, "Save file costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 	info_wch = A2W(info_str);
 	m_stc_St.SetWindowText(info_wch);
+}
+
+
+void CMFCForTPCDlg::OnBnClickedRadioCharsBls()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	m_RadioID = 5;
 }
