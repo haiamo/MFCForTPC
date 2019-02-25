@@ -13,6 +13,14 @@
 #include "afxcmn.h"
 #include "afxwin.h"
 
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#include "curand_kernel.h"
+#include "cuda.h"
+#include "device_functions.h"
+#include "cublas.h"
+#include "cublas_v2.h"
+
 #include <pcl\visualization\pcl_visualizer.h>
 #include <pcl\visualization\common\float_image_utils.h>
 #include <pcl\io\png_io.h>

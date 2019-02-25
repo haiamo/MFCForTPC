@@ -612,15 +612,138 @@ void CMFCForTPCDlg::OnBnClickedBtnSavedata()
 void CMFCForTPCDlg::OnBnClickedButton2()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	CString iters, hypopts,order;
+	m_edt_NumThds.GetWindowTextW(iters);
+	m_edt_Width.GetWindowTextW(hypopts);
+	m_edt_Height.GetWindowTextW(order);
 
-	double *xvals, *yvals, *paras,*dists;
-	size_t pcsize = 50000;
+	double *xvals, *yvals, *paras,*dists,*hypox,*hypoy,*As=NULL,**Qs=NULL,**taus=NULL,**Rs=NULL;
+	size_t pcsize = 100, its = stoi(iters.GetBuffer()), hypos = stoi(hypopts.GetBuffer()), paraSize = stoi(order.GetBuffer());
 	xvals = (double*)malloc(sizeof(double) * pcsize);
 	yvals = (double*)malloc(sizeof(double) * pcsize);
-	paras = (double*)malloc(sizeof(double) * 4);
+	paras = (double*)malloc(sizeof(double) * paraSize);
 	dists = (double*)malloc(sizeof(double) * pcsize);
+	hypox = (double*)malloc(sizeof(double) * its * hypos);
+	hypoy = (double*)malloc(sizeof(double) * its * hypos);
+	/*As = (double*)malloc(sizeof(double)* its * hypos * paraSize);
+	Qs = (double**)malloc(sizeof(double*)* its);
+	taus = (double**)malloc(sizeof(double*)* its);
+	Rs = (double**)malloc(sizeof(double*)*its);
+
+	for (int i = 0; i < its; i++)
+	{
+		Qs[i] = (double*)malloc(sizeof(double) * hypos * hypos);
+		taus[i] = (double*)malloc(sizeof(double) * paraSize);
+		Rs[i] = (double*)malloc(sizeof(double)*hypos*paraSize);
+	}*/
+
+	for (int ii = 0; ii < pcsize; ii++)
+	{
+		xvals[ii] = ii / 10.0;
+		yvals[ii] = ii * 2.0;
+	}
+
+	if (cudaError_t::cudaSuccess != RANSACOnGPU(xvals, yvals, pcsize, its, hypos, paraSize, hypox, hypoy, As, Qs, taus, Rs, paras))
+	{
+		return;
+	}
+	int str_len = 0;
+	char* info_str = (char*)malloc(sizeof(char)*10000000);
+	char* tmp_str = (char*)malloc(sizeof(char) * 10000);
+
+	str_len = std::sprintf(info_str, "Hypo_x:\n");
+	for (int ii = 0; ii < its*hypos;ii++)
+	{
+		std::sprintf(tmp_str, " %.1f ", hypox[ii]);
+		if (ii % (hypos) == hypos - 1)
+		{
+			std::sprintf(tmp_str, "%.1f\n", hypox[ii]);
+		}
+		info_str = strcat(info_str, tmp_str);
+		tmp_str[0] = '\0';
+		//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+	}
+	tmp_str[0] = '\0';
+	//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+	std::sprintf(tmp_str, "As:\n");
+	info_str = strcat(info_str, tmp_str);
+	for (int ii = 0; ii < its * hypos * paraSize; ii++)
+	{
+		std::sprintf(tmp_str, " %.3f ", As[ii]);
+		if (ii % (hypos * paraSize) == hypos * paraSize - 1)
+		{
+			std::sprintf(tmp_str, "%.3f\n", As[ii]);
+		}
+		info_str = strcat(info_str, tmp_str);
+		tmp_str[0] = '\0';
+		//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+	}
+	tmp_str[0] = '\0';
+	//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+	std::sprintf(tmp_str, "Qs:\n");
+	info_str = strcat(info_str, tmp_str);
+	double* tmp_arr;
+	for (int jj = 0; jj < its; jj++)
+	{
+		tmp_arr = Qs[jj];
+		for (int ii = 0; ii < hypos * hypos; ii++)
+		{
+			std::sprintf(tmp_str, " %.3f ", tmp_arr[ii]);
+			if (ii % (hypos * hypos) == hypos * hypos - 1)
+			{
+				std::sprintf(tmp_str, "%.3f\n", tmp_arr[ii]);
+			}
+			info_str = strcat(info_str, tmp_str);
+			tmp_str[0] = '\0'; 
+			//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+		}
+	}
+
+	tmp_str[0] = '\0';
+	//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+	std::sprintf(tmp_str, "taus:\n");
+	info_str = strcat(info_str, tmp_str);
+	for (int jj = 0; jj < its; jj++)
+	{
+		tmp_arr = taus[jj];
+		for (int ii = 0; ii < paraSize; ii++)
+		{
+			std::sprintf(tmp_str, " %.3f ", tmp_arr[ii]);
+			if (ii % (paraSize) == paraSize - 1)
+			{
+				std::sprintf(tmp_str, "%.3f\n", tmp_arr[ii]);
+			}
+			info_str = strcat(info_str, tmp_str);
+			tmp_str[0] = '\0'; 
+			//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+		}
+	}
+	tmp_str[0] = '\0';
+	//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+	std::sprintf(tmp_str, "Rs:\n");
+	info_str = strcat(info_str, tmp_str);
+	for (int jj = 0; jj < its; jj++)
+	{
+		tmp_arr = Rs[jj];
+		for (int ii = 0; ii < hypos * paraSize; ii++)
+		{
+			std::sprintf(tmp_str, " %.3f ", tmp_arr[ii]);
+			if (ii % (hypos * paraSize) == hypos * paraSize - 1)
+			{
+				std::sprintf(tmp_str, "%.3f\n", tmp_arr[ii]);
+			}
+			info_str = strcat(info_str, tmp_str);
+			tmp_str[0] = '\0'; 
+			//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+		}
+	}
+
+	USES_CONVERSION;
+	LPCWSTR info_wch = A2W(info_str);
+	m_stc_St.SetWindowText(info_wch);
+
 	//memset(dists, -1.0, sizeof(double)*pcsize);
-	paras[0] = 1.0;
+	/*paras[0] = 1.0;
 	paras[1] = 1.0;
 	paras[2] = 1.0;
 	paras[3] = 1.0;
@@ -654,7 +777,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	vector<double> outPara;
 	//paras=(double*)malloc(sizeof(double)*pcsize);
 	m_tpc.PolyFit2D(pcIDs, 4, outPara);
-	TRACE("The fitted function is y=%fx^4+%fx^3+%fx^2+%fx+%f.\n", outPara[4], outPara[3], outPara[2], outPara[1], outPara[0]);
+	TRACE("The fitted function is y=%fx^4+%fx^3+%fx^2+%fx+%f.\n", outPara[4], outPara[3], outPara[2], outPara[1], outPara[0]);*/
 
 	/*QueryPerformanceFrequency(&nfreq);
 	QueryPerformanceCounter(&nst);
@@ -666,14 +789,95 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	GetPCInterceptAsynch(xvals, yvals, pcsize, paras, 4, dists);
 	QueryPerformanceCounter(&nend);
 	TRACE("GPU asynchoronous computing costs %f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);*/
-	free(xvals);
-	xvals = NULL;
-	free(yvals);
-	yvals = NULL;
-	free(paras);
-	paras = NULL;
-	free(dists);
-	dists = NULL;
+	if (NULL != xvals)
+	{
+		free(xvals);
+		xvals = NULL;
+	}
+
+	if (NULL != yvals)
+	{
+		free(yvals);
+		yvals = NULL;
+	}
+	if (NULL != paras)
+	{
+		free(paras);
+		paras = NULL;
+	}
+	if (NULL != dists)
+	{
+		free(dists);
+		dists = NULL;
+	}
+	if (NULL != hypox)
+	{
+		free(hypox);
+		hypox = NULL;
+	}
+	if (NULL != hypoy)
+	{
+		free(hypoy);
+		hypoy = NULL;
+	}
+
+	if (NULL != As)
+	{
+		free(As);
+		As = NULL;
+	}
+
+	if (NULL != Qs)
+	{
+		for (int i = 0; i < its; i++)
+		{
+			if (NULL != Qs[i])
+			{
+				free(Qs[i]);
+			}
+		}
+		free(Qs);
+		Qs = NULL;
+	}
+
+	if (NULL != Rs)
+	{
+		for (int i = 0; i < its; i++)
+		{
+			if (NULL != Rs[i])
+			{
+				free(Rs[i]);
+			}
+		}
+		free(Rs);
+		Rs=NULL;
+	}
+	
+	if (NULL != taus)
+	{
+		for (int i = 0; i < its; i++)
+		{
+			if (NULL != taus[i])
+			{
+				free(taus[i]);
+			}
+		}
+		free(taus);
+		taus = NULL;
+	}
+
+	if (NULL != info_str)
+	{
+		free(info_str);
+		info_str = NULL;
+	}
+	
+	if (NULL != tmp_str)
+	{
+		free(tmp_str);
+		tmp_str = NULL;
+	}
+
 
 	/*pcl::PointCloud<PointXYZ>::Ptr Cld_ptr(::new pcl::PointCloud<PointXYZ>);
 	pcl::PointCloud<PointXYZ>::Ptr tmp_ptr(::new pcl::PointCloud<PointXYZ>);
