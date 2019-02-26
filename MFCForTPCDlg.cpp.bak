@@ -625,7 +625,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	dists = (double*)malloc(sizeof(double) * pcsize);
 	hypox = (double*)malloc(sizeof(double) * its * hypos);
 	hypoy = (double*)malloc(sizeof(double) * its * hypos);
-	/*As = (double*)malloc(sizeof(double)* its * hypos * paraSize);
+	As = (double*)malloc(sizeof(double)* its * hypos * paraSize);
 	Qs = (double**)malloc(sizeof(double*)* its);
 	taus = (double**)malloc(sizeof(double*)* its);
 	Rs = (double**)malloc(sizeof(double*)*its);
@@ -635,7 +635,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		Qs[i] = (double*)malloc(sizeof(double) * hypos * hypos);
 		taus[i] = (double*)malloc(sizeof(double) * paraSize);
 		Rs[i] = (double*)malloc(sizeof(double)*hypos*paraSize);
-	}*/
+	}
 
 	for (int ii = 0; ii < pcsize; ii++)
 	{
@@ -647,6 +647,110 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	{
 		return;
 	}
+	/*else
+	{
+		cudaError_t cudaErr;
+		cublasHandle_t handle;
+		cublasStatus_t stat;
+		int num = its, rows = hypos, cols = paraSize, ltau = cols;//1,3,3,3
+
+		double **Aarray, **Tauarray = taus;
+		Aarray = (double**)malloc(sizeof(double*));
+		Aarray[0] = (double*)malloc(sizeof(double)*rows*cols);
+		srand(time(0));
+		for (int ii = 0; ii < rows; ii++)
+		{
+			for (int jj = 0; jj < cols; jj++)
+			{
+				Aarray[0][ii*rows + jj] = rand() % 100;
+			}
+		}
+
+		//Create host pointer array to device matrix storage
+		double **d_Aarray, **d_Tauarray, **h_d_Aarray, **h_d_Tauarray;
+		double **d_outA, **h_d_outA;
+		h_d_Aarray = (double**)malloc(num * sizeof(double*));
+		h_d_Tauarray = (double**)malloc(num * sizeof(double*));
+		h_d_outA = (double**)malloc(num * sizeof(double*));
+
+		for (int i = 0; i < num; i++)
+		{
+			//cudaErr = cudaMalloc((void**)&h_d_Aarray[i], rows*cols * sizeof(double));
+			//cudaErr = cudaMalloc((void**)&h_d_Tauarray[i], ltau * sizeof(double));
+			stat = cublasAlloc(rows*cols, sizeof(double), (void**)&h_d_Aarray[i]);
+			stat = cublasAlloc(ltau, sizeof(double), (void**)&h_d_Tauarray[i]);
+			stat = cublasAlloc(rows*cols, sizeof(double), (void**)&h_d_outA[i]);
+		}
+
+		//Copy the host array of device pointers to the device
+		//cudaErr = cudaMalloc((void**)&d_Aarray, num * sizeof(double*));
+		//cudaErr = cudaMalloc((void**)&d_Tauarray, num * sizeof(double*));
+		stat = cublasAlloc(num, sizeof(double*), (void**)&d_Aarray);
+		stat = cublasAlloc(num, sizeof(double*), (void**)&d_Tauarray);
+		stat = cublasAlloc(num, sizeof(double*), (void**)&d_outA);
+
+		stat = cublasCreate(&handle);
+		
+		//Set input matrices onto device
+		for (int i = 0; i < num; i++)
+		{
+			stat = cublasSetMatrix(rows, cols, sizeof(double), Aarray[i], rows, h_d_Aarray[i], rows);
+			stat = cublasSetVector(ltau, sizeof(double), Tauarray[i], 1, h_d_Tauarray[i], 1);
+			stat = cublasSetMatrix(rows, cols, sizeof(double), Aarray[i], rows, h_d_outA[i], rows);
+			//cudaErr = cudaMemcpy(h_d_Aarray[i], Aarray[i], rows*cols * sizeof(double), cudaMemcpyHostToDevice);
+			//cudaErr = cudaMemcpy(h_d_Tauarray[i], Tauarray[i], ltau * sizeof(double), cudaMemcpyHostToDevice);
+			//cudaErr = cudaMemcpy(d_Aarray[i], Aarray[i], rows*cols * sizeof(double), cudaMemcpyHostToDevice);
+			//cudaErr = cudaMemcpy(d_Tauarray[i], Tauarray[i], ltau * sizeof(double), cudaMemcpyHostToDevice);
+		}
+		stat = cublasSetVector(num, sizeof(double*), h_d_Tauarray,1, d_Tauarray,1 );
+		stat = cublasSetVector(num, sizeof(double*), h_d_Aarray, 1, d_Aarray, 1);
+		stat = cublasSetVector(num, sizeof(double*), h_d_outA, 1, d_outA, 1);
+		//cudaErr = cudaMemcpy(d_Aarray, h_d_Aarray, num *sizeof(double*), cudaMemcpyHostToDevice);
+		cudaErr = cudaThreadSynchronize();
+		int *info, lda = rows;
+		//cudaErr = cudaMalloc((void**)&info, sizeof(int)*num);
+		info = (int*)malloc(sizeof(int)*num);
+		stat = cublasDgeqrfBatched(handle, rows, cols, d_Aarray, lda, d_Tauarray, info, num);
+		//stat = cublasDmatinvBatched(handle, rows, &d_Aarray[0], lda, d_outA, lda, info, num);
+		cudaErr = cudaThreadSynchronize();
+		//Retrieve result matrix from device
+		cudaErr = cudaMemcpy(h_d_Aarray, d_Aarray, num * sizeof(double*), cudaMemcpyDeviceToHost);
+		cudaErr = cudaMemcpy(h_d_Tauarray, d_Tauarray, num * sizeof(double*), cudaMemcpyDeviceToHost);
+		for (int i = 0; i < num; i++)
+		{
+			stat = cublasGetMatrix(rows, cols, sizeof(double), h_d_Aarray[i], rows, Aarray[i], rows);
+			stat = cublasGetVector(ltau, sizeof(double), h_d_Tauarray[i], 1, Tauarray[i], 1);
+			//cudaErr = cudaMemcpy(Aarray[i], h_d_Aarray[i], rows*cols * sizeof(double), cudaMemcpyDeviceToHost);
+			//cudaErr = cudaMemcpy(Tauarray[i], h_d_Tauarray[i], ltau * sizeof(double), cudaMemcpyDeviceToHost);
+			//cudaErr = cudaMemcpy(Aarray[i], d_Aarray[i], rows*cols * sizeof(double), cudaMemcpyDeviceToHost);
+			//cudaErr = cudaMemcpy(Tauarray[i], d_Tauarray[i], ltau * sizeof(double), cudaMemcpyDeviceToHost);
+			//cudaErr = cudaMemcpy(h_dd_Aarray[i], Aarray[i], rows*cols * sizeof(double), cudaMemcpyHostToDevice);
+			//cudaErr = cudaMemcpy(h_dd_Tauarray[i], Tauarray[i], ltau * sizeof(double), cudaMemcpyHostToDevice);
+		}
+		//cublasGetVector(num, sizeof(double*), d_Tauarray, 1, Tauarray, 1);
+		//cudaErr = cudaMemcpy(dd_Aarray, h_dd_Aarray, num * sizeof(double*), cudaMemcpyHostToDevice);
+		//cudaErr = cudaMemcpy(dd_Tauarray, h_dd_Tauarray, num * sizeof(double*), cudaMemcpyHostToDevice);
+
+		free(Aarray[0]);
+		free(Aarray);
+
+		for (int i = 0; i < num; i++)
+		{
+			cudaFree(h_d_Aarray[i]);
+			cudaFree(h_d_Tauarray[i]);
+			cudaFree(h_d_outA[i]);
+		}
+		free(h_d_Aarray);
+		free(h_d_Tauarray);
+		free(h_d_outA);
+
+		cublasFree(d_Aarray);
+		cublasFree(d_Tauarray);
+		cublasFree(d_outA);
+
+		cublasDestroy(handle);
+		free(info);
+	}*/
 	int str_len = 0;
 	char* info_str = (char*)malloc(sizeof(char)*10000000);
 	char* tmp_str = (char*)malloc(sizeof(char) * 10000);
@@ -665,42 +769,56 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	}
 	tmp_str[0] = '\0';
 	//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
-	std::sprintf(tmp_str, "As:\n");
+	int curID = 0;
+	std::sprintf(tmp_str, "A^T s:\n");
 	info_str = strcat(info_str, tmp_str);
-	for (int ii = 0; ii < its * hypos * paraSize; ii++)
+	for (int ii = 0; ii < its; ii++)
 	{
-		std::sprintf(tmp_str, " %.3f ", As[ii]);
-		if (ii % (hypos * paraSize) == hypos * paraSize - 1)
+		for (int coli = 0; coli < paraSize; coli++)
 		{
-			std::sprintf(tmp_str, "%.3f\n", As[ii]);
+			for (int rowi = 0; rowi < hypos; rowi++)
+			{
+				curID = coli*hypos + rowi;
+				std::sprintf(tmp_str, " %.3f ", As[curID]);
+				info_str = strcat(info_str, tmp_str);
+				tmp_str[0] = '\0';
+			}
+			std::sprintf(tmp_str, "\n");
+			info_str = strcat(info_str, tmp_str);
+			tmp_str[0] = '\0';
 		}
+		std::sprintf(tmp_str, "\n");
 		info_str = strcat(info_str, tmp_str);
 		tmp_str[0] = '\0';
-		//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
 	}
 	tmp_str[0] = '\0';
-	//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
-	std::sprintf(tmp_str, "Qs:\n");
+
+	std::sprintf(tmp_str, "Q^T s:\n");
 	info_str = strcat(info_str, tmp_str);
 	double* tmp_arr;
+
 	for (int jj = 0; jj < its; jj++)
 	{
 		tmp_arr = Qs[jj];
-		for (int ii = 0; ii < hypos * hypos; ii++)
+		for (int coli = 0; coli < hypos; coli++)
 		{
-			std::sprintf(tmp_str, " %.3f ", tmp_arr[ii]);
-			if (ii % (hypos * hypos) == hypos * hypos - 1)
+			for (int rowi = 0; rowi < hypos; rowi++)
 			{
-				std::sprintf(tmp_str, "%.3f\n", tmp_arr[ii]);
+				curID = coli*hypos + rowi;
+				std::sprintf(tmp_str, " %.3f ", tmp_arr[curID]);
+				info_str = strcat(info_str, tmp_str);
+				tmp_str[0] = '\0';
 			}
+			std::sprintf(tmp_str , "\n");
 			info_str = strcat(info_str, tmp_str);
-			tmp_str[0] = '\0'; 
-			//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+			tmp_str[0] = '\0';
 		}
+		std::sprintf(tmp_str, "\n\n");
+		info_str = strcat(info_str, tmp_str);
+		tmp_str[0] = '\0';
 	}
 
 	tmp_str[0] = '\0';
-	//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
 	std::sprintf(tmp_str, "taus:\n");
 	info_str = strcat(info_str, tmp_str);
 	for (int jj = 0; jj < its; jj++)
@@ -709,33 +827,38 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		for (int ii = 0; ii < paraSize; ii++)
 		{
 			std::sprintf(tmp_str, " %.3f ", tmp_arr[ii]);
-			if (ii % (paraSize) == paraSize - 1)
-			{
-				std::sprintf(tmp_str, "%.3f\n", tmp_arr[ii]);
-			}
 			info_str = strcat(info_str, tmp_str);
-			tmp_str[0] = '\0'; 
-			//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+			tmp_str[0] = '\0';
 		}
+		std::sprintf(tmp_str, "\n");
+		info_str = strcat(info_str, tmp_str);
+		tmp_str[0] = '\0';
 	}
+	std::sprintf(tmp_str, "\n\n");
+	info_str = strcat(info_str, tmp_str);
 	tmp_str[0] = '\0';
-	//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
-	std::sprintf(tmp_str, "Rs:\n");
+
+	std::sprintf(tmp_str, "R^T s:\n");
 	info_str = strcat(info_str, tmp_str);
 	for (int jj = 0; jj < its; jj++)
 	{
 		tmp_arr = Rs[jj];
-		for (int ii = 0; ii < hypos * paraSize; ii++)
+		for (int coli = 0; coli < paraSize; coli++)
 		{
-			std::sprintf(tmp_str, " %.3f ", tmp_arr[ii]);
-			if (ii % (hypos * paraSize) == hypos * paraSize - 1)
+			for (int rowi = 0; rowi < hypos; rowi++)
 			{
-				std::sprintf(tmp_str, "%.3f\n", tmp_arr[ii]);
+				curID = coli*hypos + rowi;
+				std::sprintf(tmp_str, " %.3f ", tmp_arr[curID]);
+				info_str = strcat(info_str, tmp_str);
+				tmp_str[0] = '\0';
 			}
+			std::sprintf(tmp_str, "\n");
 			info_str = strcat(info_str, tmp_str);
 			tmp_str[0] = '\0'; 
-			//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
 		}
+		std::sprintf(tmp_str, "\n");
+		info_str = strcat(info_str, tmp_str);
+		tmp_str[0] = '\0';
 	}
 
 	USES_CONVERSION;
