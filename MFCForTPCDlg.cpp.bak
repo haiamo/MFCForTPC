@@ -612,20 +612,26 @@ void CMFCForTPCDlg::OnBnClickedBtnSavedata()
 void CMFCForTPCDlg::OnBnClickedButton2()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	CString iters, hypopts,order;
-	m_edt_NumThds.GetWindowTextW(iters);
+	CString pcS, iters, hypopts,order;
+	m_edt_NormDisWt.GetWindowTextW(iters);
+	m_edt_NumThds.GetWindowTextW(pcS);
 	m_edt_Width.GetWindowTextW(hypopts);
 	m_edt_Height.GetWindowTextW(order);
 
 	double *xvals, *yvals, *paras,*dists,*hypox,*hypoy,*As=NULL,**Qs=NULL,**taus=NULL,**Rs=NULL;
-	size_t pcsize = 100, its = stoi(iters.GetBuffer()), hypos = stoi(hypopts.GetBuffer()), paraSize = stoi(order.GetBuffer());
+	size_t pcsize = stoi(pcS.GetBuffer()), its = stoi(iters.GetBuffer()), hypos = stoi(hypopts.GetBuffer()), paraSize = stoi(order.GetBuffer());
 	xvals = (double*)malloc(sizeof(double) * pcsize);
+	memset(xvals, 0.0, sizeof(double)*pcsize);
 	yvals = (double*)malloc(sizeof(double) * pcsize);
+	memset(yvals, 0.0, sizeof(double)*pcsize);
 	paras = (double*)malloc(sizeof(double) * paraSize);
+	memset(paras, 0.0, sizeof(double)*paraSize);
 	dists = (double*)malloc(sizeof(double) * pcsize);
+	memset(dists, 0.0, sizeof(double)*pcsize);
 	hypox = (double*)malloc(sizeof(double) * its * hypos);
 	hypoy = (double*)malloc(sizeof(double) * its * hypos);
 	As = (double*)malloc(sizeof(double)* its * hypos * paraSize);
+	memset(As, 0.0, sizeof(double)*its * hypos * paraSize);
 	Qs = (double**)malloc(sizeof(double*)* its);
 	taus = (double**)malloc(sizeof(double*)* its);
 	Rs = (double**)malloc(sizeof(double*)*its);
@@ -633,14 +639,18 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	for (int i = 0; i < its; i++)
 	{
 		Qs[i] = (double*)malloc(sizeof(double) * hypos * hypos);
+		memset(Qs[i], 0.0, sizeof(double)* hypos * hypos);
 		taus[i] = (double*)malloc(sizeof(double) * paraSize);
+		memset(taus[i], 0.0, sizeof(double)* paraSize);
 		Rs[i] = (double*)malloc(sizeof(double)*hypos*paraSize);
+		memset(Rs[i], 0.0, sizeof(double)* hypos * paraSize);
 	}
 
+	srand(time(NULL));
 	for (int ii = 0; ii < pcsize; ii++)
 	{
 		xvals[ii] = ii / 10.0;
-		yvals[ii] = ii * 2.0;
+		yvals[ii] = ii * ii*0.02 + rand()*1.0 / RAND_MAX*0.1;
 	}
 
 	if (cudaError_t::cudaSuccess != RANSACOnGPU(xvals, yvals, pcsize, its, hypos, paraSize, hypox, hypoy, As, Qs, taus, Rs, paras))
@@ -778,7 +788,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		{
 			for (int rowi = 0; rowi < hypos; rowi++)
 			{
-				curID = coli*hypos + rowi;
+				curID = ii*hypos*paraSize + coli*hypos + rowi;
 				std::sprintf(tmp_str, " %.3f ", As[curID]);
 				info_str = strcat(info_str, tmp_str);
 				tmp_str[0] = '\0';
@@ -804,7 +814,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		{
 			for (int rowi = 0; rowi < hypos; rowi++)
 			{
-				curID = coli*hypos + rowi;
+				curID = jj*hypos*hypos + coli*hypos + rowi;
 				std::sprintf(tmp_str, " %.3f ", tmp_arr[curID]);
 				info_str = strcat(info_str, tmp_str);
 				tmp_str[0] = '\0';
@@ -847,7 +857,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		{
 			for (int rowi = 0; rowi < hypos; rowi++)
 			{
-				curID = coli*hypos + rowi;
+				curID = jj*paraSize*hypos + coli*hypos + rowi;
 				std::sprintf(tmp_str, " %.3f ", tmp_arr[curID]);
 				info_str = strcat(info_str, tmp_str);
 				tmp_str[0] = '\0';

@@ -69,8 +69,7 @@ extern "C" void GetPCInterceptAsynch(double* xvals, double* yvals, size_t pcsize
 extern "C" void GetPCIntercept(double* xvals, double* yvals, size_t pcsize, double* paras, int parasize, double* dists);
 
 extern "C" cudaError_t RANSACOnGPU(double* xvals, double* yvals, size_t pcsize, int maxIters, int minInliers, int parasize,
-							double* &hst_hypox, double*& hst_hypoy, double* &As, double** &Qs, double** &taus, double** &Rs, double** &paras,
-							double* &modelErr, double** &dists);
+							double* &hst_hypox, double*& hst_hypoy, double* &As, double** &Qs, double** &taus, double** &Rs, double* &paras);
 
 #endif
 
