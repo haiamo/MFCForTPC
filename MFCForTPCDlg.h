@@ -6,10 +6,20 @@
 #undef min
 #undef max
 
+#define randRange(b,a) ((a)+((b)-(a))*1.0/RAND_MAX*rand()*1.0)
+
 #include "stdafx.h"
 #include "TyrePointCloud.h"
 #include "afxcmn.h"
 #include "afxwin.h"
+
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#include "curand_kernel.h"
+#include "cuda.h"
+#include "device_functions.h"
+#include "cublas.h"
+#include "cublas_v2.h"
 
 #include <pcl\visualization\pcl_visualizer.h>
 #include <pcl\visualization\common\float_image_utils.h>
@@ -95,6 +105,9 @@ protected:
 	//User defined methods
 	void GetPathAndType(string &fpath, string &ftype);
 
+	template<typename DataType>
+	void ConvertMatToText(char*&io_text, const char* begLine, DataType** inData, int matCols, int matRows = 1, int matNums = 1);
+
 private:
 	//User defined members
 	TyrePointCloud m_tpc;
@@ -115,4 +128,6 @@ public:
 	afx_msg void OnBnClickedRadioCharsLccp();
 	afx_msg void OnBnClickedRadioCharsCpc();
 	afx_msg void OnBnClickedBtnLoadandsave();
+	afx_msg void OnBnClickedRadioCharsBls();
+	afx_msg void OnBnClickedBtnRunAlldata();
 };

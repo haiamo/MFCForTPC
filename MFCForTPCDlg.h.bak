@@ -101,6 +101,7 @@ private:
 	//RangeImageProperties m_RIProp;
 
 	bool m_bRanSeg = false;
+	string m_preFilePath = "";
 public:
 	afx_msg void OnBnClickedBtnSavedata();
 	CButton m_btn_savedata;
@@ -113,4 +114,5 @@ public:
 	afx_msg void OnBnClickedRadioCharsSeg();
 	afx_msg void OnBnClickedRadioCharsLccp();
 	afx_msg void OnBnClickedRadioCharsCpc();
+	afx_msg void OnBnClickedBtnLoadandsave();
 };

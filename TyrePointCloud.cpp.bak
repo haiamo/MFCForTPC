@@ -290,6 +290,93 @@ int TyrePointCloud::SupervoxelClustering(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	return 0;
 }
 
+int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc, int min_inliers, int max_it, double modelthreshold, int closepts)
+{
+	//Preparation for parameters
+	//Current this function will fit cubic line in 2D point cloud, which shows y=a*x^3+b*x^2+c*x+d
+	vector<double> bestPara(4),candPara(4);
+	double bestError = 0.0, candError = 0.0;
+	vector<int> bestInliers(min_inliers), hypoInliers(min_inliers), candInliers(in_pc->points.size()), outliers, allIds;
+	vector<int>::iterator OutIdIt,candIDit;
+	double bestErr = HUGE_VAL;
+	int cur_it;
+	allIds.reserve(in_pc->points.size());
+	for (size_t tt = 0; tt < in_pc->points.size(); tt++)
+	{
+		allIds.push_back(tt);
+	}
+
+	//Loop of outer iteration
+	while (cur_it < max_it)
+	{
+		//min_inliers randomly selected points from input data
+		srand((unsigned int)time(0));
+		for (int ii = 0; ii < min_inliers; ii++)
+		{
+			hypoInliers[ii] = rand() % in_pc->points.size();
+		}
+
+		outliers = allIds;
+		candIDit = hypoInliers.begin();
+		OutIdIt =outliers.begin();
+		while (OutIdIt < outliers.end())
+		{
+			if (candIDit < hypoInliers.end())
+			{
+				if (*OutIdIt == *candIDit)
+				{
+					OutIdIt = outliers.erase(OutIdIt);
+					++candIDit;
+				}
+				else
+				{
+					++OutIdIt;
+				}
+			}
+			else
+			{
+				break;
+			}
+		}
+		//Get model parameters fitted to candInliers by Least Squares 
+		//Get candPara
+
+		//Filtering inliers and outliers.
+		candInliers.clear();
+		candInliers.reserve(outliers.size());
+		OutIdIt = outliers.begin();
+		while(OutIdIt < outliers.end())
+		{
+			//Calculating the distance between the current point and the model.
+			//...
+			if (true)//Filtering inliers and outliers by the model.
+			{
+				candInliers.push_back(*OutIdIt);
+				OutIdIt = outliers.erase(OutIdIt);
+			}
+			else
+			{
+				++OutIdIt;
+			}
+		}
+
+		if (candInliers.size() > closepts)
+		{
+			//Get better model(candPara) by fitting candInliers and InitialInliers using Least Squares
+			//Calculate candError...
+			if (candError < bestError)
+			{
+				bestPara = candPara;
+				bestError = candError;
+				bestInliers = candInliers;
+			}
+		}
+		cur_it++;
+	}//End of outer iteration
+
+	return 0;
+}
+
 void TyrePointCloud::SetOriginPC(PointCloud<PointXYZ>::Ptr in_pc)
 {
 	m_originPC = in_pc;

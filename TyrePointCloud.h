@@ -39,6 +39,12 @@
 #include <pcl\segmentation\lccp_segmentation.h>
 #include <pcl\segmentation\cpc_segmentation.h>
 
+#include <pcl\visualization\common\float_image_utils.h>
+#include <pcl\visualization\range_image_visualizer.h>
+#include <pcl\io\png_io.h>
+#include <pcl\io\io.h>
+#include <pcl\common\io.h>
+
 #include <pcl\gpu\features\features.hpp>
 #include <pcl\gpu\octree\device_format.hpp>
 #include <pcl\gpu\containers\device_memory.hpp>
@@ -142,6 +148,7 @@ protected:
 	PointCloud<PointXYZ>::Ptr m_originPC;//Original point cloud
 	PointCloud<PointXYZ>::Ptr m_downsample;//Original down sampling cloud.
 	PointCloud<PointXYZ>::Ptr m_segbase;//Segementation basic cloud.
+	PointCloud<PointXYZ>::Ptr m_restPC;//Rest point cloud after segementation.
 	vector<PointCloud<PointXYZ>::Ptr> m_refPlanes;//Reference planes' list.
 	vector<ModelCoefficients::Ptr> m_refCoefs;//The coefficients of planes.
 	vector<PointCloud<PointXYZI>::Ptr> m_restClusters;//The clusters after segmentation searching
@@ -165,12 +172,6 @@ protected:
 		float voxel_res = 0.03f, float seed_res = 0.09f, float color_imp = 0.0f,
 		float spatial_imp=0.6f, float normal_imp=1.0f);
 
-	int Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc,//Set of data points
-		int min_inliers,//Minimum number of data points required to estimate model parameters
-		int max_it,//Maximum iterators
-		double modelthreshold,//Threshold value to determine data points that are fit well by model
-		int closepts);//The number of close data points required to assert that a model fits well by data
-
 public:
 	void InitCloudData();
 	//Get and Set point clouds.
@@ -178,6 +179,8 @@ public:
 	void setOriginRGBPC(PointCloud<PointXYZRGB>::Ptr in_pc);
 
 	PointCloud<PointXYZ>::Ptr GetOriginalPC();
+	PointCloud<PointXYZ>::Ptr GetSegPC();
+	PointCloud<PointXYZ>::Ptr GetRestPC();
 	PointCloud<PointXYZI>::Ptr GetPinsPC();
 	PointCloud<PointXYZRGB>::Ptr GetRGBPC();
 	PointCloud<Normal>::Ptr GetPointNormals();
@@ -214,14 +217,6 @@ public:
 		 zUP(in): The upper bound along z-axis.
 		 width(in): The width of a laser line in Range Image.
 		 height(in): The height of Range Image.
-
-	*/
-
-	int LoadTyrePC(char* p_pc, int length);
-	/* Loading tyre point clouds from a char list by using CUDA.
-	   Parameters:
-	     p_pc(in): The pointer of the input char list.
-		 length(in): The number of points in the char list.
 	*/
 
 	int FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gpu::Octree::Ptr &in_tree, PointCloud<Normal>::Ptr &out_normal);
@@ -245,7 +240,19 @@ public:
 		 out_pc(out): A list of PinObjects, which have position(x,y,z) and the length(len).
 	*/
 
-};
+	int FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
+		pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc);
+	/* This function splits one in put point cloud(in_pc) into two parts: PC including chars(char_pc) and the basement
+	   one(base_pc).
+	   Parameters:
+		in_pt(in): Input point cloud pointer.
+		maxIters(in): The iteration numbers for RANSAC.
+		minInliers(in): The number of points(called inliers) for the beginning of iteration.
+		paraSize(in): The parameters of fitted polynomials in 2D, where paraSize=order+1.
+		UTh(in): The upper boundary of threshold for fitted polynomials.
+		LTh(in): The lower boundary of threshold for fitted polynomials.
+		char_pc(out): The pointer of point cloud contains characteristics.
+		base_pc(out): The pointer of point cloud includes the basement points.
+	*/
 
-//GPU Host Interfaces:
-//int ConvCharToValue(char* in_pc, pcl::PointCloud<PointXYZ>::Ptr& out_pt);
+};
