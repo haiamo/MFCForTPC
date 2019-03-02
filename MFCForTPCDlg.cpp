@@ -331,7 +331,11 @@ void CMFCForTPCDlg::OnBnClickedBtnRun()
 			m_edt_DisThrhd.GetWindowTextW(threshold);
 			m_edt_InlR.GetWindowTextW(inilerRatio);
 			m_edt_NormDisWt.GetWindowTextW(order);
-			m_tpc.Get2DBaseLineBYRANSAC(cloud, 50, stoi(iters.GetBuffer()), stoi(order.GetBuffer()),stof(threshold.GetBuffer()), (int)cloud->points.size()*stof(inilerRatio.GetBuffer()));
+			//m_tpc.Get2DBaseLineBYRANSAC(cloud, 50, stoi(iters.GetBuffer()), stoi(order.GetBuffer()),stof(threshold.GetBuffer()), (int)cloud->points.size()*stof(inilerRatio.GetBuffer()));
+			pcl::PointCloud<PointXYZ>::Ptr chars(::new PointCloud<PointXYZ>);
+			pcl::PointCloud<PointXYZ>::Ptr baseline(::new PointCloud<PointXYZ>);
+			m_tpc.FindCharsBy2DRANSACGPU(cloud, stoi(iters.GetBuffer()), stoi(inilerRatio.GetBuffer()),
+				stoi(order.GetBuffer())+1, stof(threshold.GetBuffer()), stof(threshold.GetBuffer()), chars, baseline);
 			break;
 	}
 	QueryPerformanceCounter(&nend);
@@ -489,6 +493,57 @@ int CMFCForTPCDlg::SaveCloudToFile(PointTPtr p_inpc, string ex_info)
 	return 0;
 }
 
+template<typename DataType>
+void CMFCForTPCDlg::ConvertMatToText(char *& io_text, const char* begLine, DataType ** inData, int matCols, int matRows, int matNums)
+{
+	//Input data matrix should be stored in column-major.
+	char* tmp_str = (char*)malloc(sizeof(char) * 10000);
+	if (strlen(io_text) <= 0)
+	{
+		std::sprintf(io_text, begLine);
+	}
+	else
+	{
+		std::sprintf(tmp_str, begLine);
+		io_text = strcat(io_text, tmp_str);
+	}
+	int curID = 0;
+	double* tmpArr;
+	for (int ii = 0; ii < matNums; ii++)
+	{
+		tmpArr = *(inData + ii);
+		for (int rowi = 0; rowi < matRows; rowi++)
+		{
+			for (int coli = 0; coli < matCols; coli++)
+			{
+				curID = rowi*matCols + coli;
+				std::sprintf(tmp_str, " %.3lf ",(double)tmpArr[curID]);
+				io_text = strcat(io_text, tmp_str);
+				tmp_str[0] = '\0';
+			}
+			if (matRows > 1)
+			{
+				std::sprintf(tmp_str, "\n");
+				io_text = strcat(io_text, tmp_str);
+				tmp_str[0] = '\0';
+			}
+
+		}
+		if (matNums > 1)
+		{
+			std::sprintf(tmp_str, "\n");
+			io_text = strcat(io_text, tmp_str);
+			tmp_str[0] = '\0';
+		}
+	}
+	std::sprintf(tmp_str, "\n");
+	io_text = strcat(io_text, tmp_str);
+	tmp_str[0] = '\0';
+	free(tmp_str);
+	tmp_str = NULL;
+}
+
+
 void CMFCForTPCDlg::SetSegParameters()
 {
 	CString cur_val;
@@ -625,8 +680,8 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	yvals = (double*)malloc(sizeof(double) * pcsize);
 	memset(yvals, 0.0, sizeof(double)*pcsize);
 	paras = (double**)malloc(sizeof(double*) * its);
-	modelErr = (double*)malloc(sizeof(double) * pcsize);
-	memset(modelErr, 0.0, sizeof(double)*pcsize);
+	modelErr = (double*)malloc(sizeof(double) * its);
+	memset(modelErr, 0.0, sizeof(double)*its);
 	hypox = (double*)malloc(sizeof(double) * its * hypos);
 	hypoy = (double*)malloc(sizeof(double) * its * hypos);
 	As = (double*)malloc(sizeof(double)* its * hypos * paraSize);
@@ -651,10 +706,12 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	}
 
 	srand(time(NULL));
+	double tmpRand = 0.0;
 	for (int ii = 0; ii < pcsize; ii++)
 	{
+		tmpRand = rand()*1.0 / RAND_MAX*0.1;
 		xvals[ii] = ii / 10.0;
-		yvals[ii] = ii * ii*0.02 + rand()*1.0 / RAND_MAX*0.1;
+		yvals[ii] = ii * ii*0.02 + ii*(0.3 + tmpRand) + 1.0 + tmpRand;
 	}
 
 	if (cudaError_t::cudaSuccess != RANSACOnGPU(xvals, yvals, pcsize, its, hypos, paraSize, hypox, hypoy, As, Qs, taus, Rs, paras,modelErr,dists))
@@ -766,10 +823,11 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		free(info);
 	}*/
 	int str_len = 0;
-	char* info_str = (char*)malloc(sizeof(char)*10000000);
+	char* info_str = (char*)malloc(sizeof(char) * 10000000);
 	char* tmp_str = (char*)malloc(sizeof(char) * 10000);
-
-	str_len = std::sprintf(info_str, "Hypo_x:\n");
+	double* tmp_arr;
+	int curID = 0;
+	/*str_len = std::sprintf(info_str, "Hypo_x:\n");
 	for (int ii = 0; ii < its*hypos;ii++)
 	{
 		std::sprintf(tmp_str, " %.1f ", hypox[ii]);
@@ -779,12 +837,28 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		}
 		info_str = strcat(info_str, tmp_str);
 		tmp_str[0] = '\0';
-		//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
 	}
+	std::sprintf(tmp_str, "\n");
+	info_str = strcat(info_str, tmp_str);
 	tmp_str[0] = '\0';
-	//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
-	int curID = 0;
-	/*std::sprintf(tmp_str, "A^T s:\n");
+
+	str_len = std::sprintf(info_str, "Hypo_y:\n");
+	for (int ii = 0; ii < its*hypos; ii++)
+	{
+		std::sprintf(tmp_str, " %.1f ", hypoy[ii]);
+		if (ii % (hypos) == hypos - 1)
+		{
+			std::sprintf(tmp_str, "%.1f\n", hypoy[ii]);
+		}
+		info_str = strcat(info_str, tmp_str);
+		tmp_str[0] = '\0';
+	}
+	std::sprintf(tmp_str, "\n");
+	info_str = strcat(info_str, tmp_str);
+	tmp_str[0] = '\0';
+
+	
+	std::sprintf(tmp_str, "A^T s:\n");
 	info_str = strcat(info_str, tmp_str);
 	for (int ii = 0; ii < its; ii++)
 	{
@@ -805,12 +879,10 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		info_str = strcat(info_str, tmp_str);
 		tmp_str[0] = '\0';
 	}
-	tmp_str[0] = '\0';*/
+	tmp_str[0] = '\0';
 
 	std::sprintf(tmp_str, "Q^T s:\n");
 	info_str = strcat(info_str, tmp_str);
-	double* tmp_arr;
-
 	for (int jj = 0; jj < its; jj++)
 	{
 		tmp_arr = Qs[jj];
@@ -833,7 +905,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	}
 
 	tmp_str[0] = '\0';
-	/*std::sprintf(tmp_str, "taus:\n");
+	std::sprintf(tmp_str, "taus:\n");
 	info_str = strcat(info_str, tmp_str);
 	for (int jj = 0; jj < its; jj++)
 	{
@@ -850,7 +922,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	}
 	std::sprintf(tmp_str, "\n\n");
 	info_str = strcat(info_str, tmp_str);
-	tmp_str[0] = '\0';*/
+	tmp_str[0] = '\0';
 
 	std::sprintf(tmp_str, "R^T s:\n");
 	info_str = strcat(info_str, tmp_str);
@@ -875,9 +947,40 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		tmp_str[0] = '\0';
 	}
 	std::sprintf(tmp_str, "\n\n");
-	info_str = strcat(info_str, tmp_str);
+	info_str = strcat(info_str, tmp_str);*/
 
+
+
+	info_str[0] = '\0';
+	ConvertMatToText(info_str, "xVals:\n", &xvals, pcsize);
+	ConvertMatToText(info_str, "yVals:\n", &yvals, pcsize);
+	ConvertMatToText(info_str, "paras:\n", paras, paraSize,1,its);
+	ConvertMatToText(info_str, "ModelErrs:\n", &modelErr, its);
+	ConvertMatToText(info_str, "Distance:\n", dists, pcsize, 1, its);
+
+	/*std::sprintf(info_str, "xVals:\n");
+	for (int ii = 0; ii < pcsize; ii++)
+	{
+		std::sprintf(tmp_str, " %.1f ", xvals[ii]);
+		info_str = strcat(info_str, tmp_str);
+		tmp_str[0] = '\0';
+	}
+	std::sprintf(tmp_str, "\n");
+	info_str = strcat(info_str, tmp_str);
 	tmp_str[0] = '\0';
+
+	std::sprintf(tmp_str, "yVals:\n");
+	info_str = strcat(info_str, tmp_str);
+	for (int ii = 0; ii < pcsize; ii++)
+	{
+		std::sprintf(tmp_str, " %.1f ", yvals[ii]);
+		info_str = strcat(info_str, tmp_str);
+		tmp_str[0] = '\0';
+	}
+	std::sprintf(tmp_str, "\n");
+	info_str = strcat(info_str, tmp_str);
+	tmp_str[0] = '\0';
+
 	std::sprintf(tmp_str, "paras:\n");
 	info_str = strcat(info_str, tmp_str);
 	for (int jj = 0; jj < its; jj++)
@@ -893,6 +996,37 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		info_str = strcat(info_str, tmp_str);
 		tmp_str[0] = '\0';
 	}
+	std::sprintf(tmp_str, "\n");
+	info_str = strcat(info_str, tmp_str);
+	tmp_str[0] = '\0';
+
+	std::sprintf(tmp_str, "ModelErrs:\n");
+	info_str = strcat(info_str, tmp_str);
+	for (int jj = 0; jj < its; jj++)
+	{
+		std::sprintf(tmp_str, " %.3f ", modelErr[jj]);
+		info_str = strcat(info_str, tmp_str);
+		tmp_str[0] = '\0';
+	}
+	std::sprintf(tmp_str, "\n");
+	info_str = strcat(info_str, tmp_str);
+	tmp_str[0] = '\0';
+
+	std::sprintf(tmp_str, "Distances:\n");
+	info_str = strcat(info_str, tmp_str);
+	for (int jj = 0; jj < its; jj++)
+	{
+		tmp_arr = dists[jj];
+		for (int coli = 0; coli < pcsize; coli++)
+		{
+			std::sprintf(tmp_str, " %.3f ", tmp_arr[coli]);
+			info_str = strcat(info_str, tmp_str);
+			tmp_str[0] = '\0';
+		}
+		std::sprintf(tmp_str, "\n");
+		info_str = strcat(info_str, tmp_str);
+		tmp_str[0] = '\0';
+	}*/
 
 	USES_CONVERSION;
 	LPCWSTR info_wch = A2W(info_str);

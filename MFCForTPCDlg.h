@@ -105,6 +105,9 @@ protected:
 	//User defined methods
 	void GetPathAndType(string &fpath, string &ftype);
 
+	template<typename DataType>
+	void ConvertMatToText(char*&io_text, const char* begLine, DataType** inData, int matCols, int matRows = 1, int matNums = 1);
+
 private:
 	//User defined members
 	TyrePointCloud m_tpc;

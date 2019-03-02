@@ -618,16 +618,15 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	m_edt_Width.GetWindowTextW(hypopts);
 	m_edt_Height.GetWindowTextW(order);
 
-	double *xvals, *yvals, *paras,*dists,*hypox,*hypoy,*As=NULL,**Qs=NULL,**taus=NULL,**Rs=NULL;
+	double *xvals, *yvals, **paras,*modelErr, **dists,*hypox,*hypoy,*As=NULL,**Qs=NULL,**taus=NULL,**Rs=NULL;
 	size_t pcsize = stoi(pcS.GetBuffer()), its = stoi(iters.GetBuffer()), hypos = stoi(hypopts.GetBuffer()), paraSize = stoi(order.GetBuffer());
 	xvals = (double*)malloc(sizeof(double) * pcsize);
 	memset(xvals, 0.0, sizeof(double)*pcsize);
 	yvals = (double*)malloc(sizeof(double) * pcsize);
 	memset(yvals, 0.0, sizeof(double)*pcsize);
-	paras = (double*)malloc(sizeof(double) * paraSize);
-	memset(paras, 0.0, sizeof(double)*paraSize);
-	dists = (double*)malloc(sizeof(double) * pcsize);
-	memset(dists, 0.0, sizeof(double)*pcsize);
+	paras = (double**)malloc(sizeof(double*) * its);
+	modelErr = (double*)malloc(sizeof(double) * pcsize);
+	memset(modelErr, 0.0, sizeof(double)*pcsize);
 	hypox = (double*)malloc(sizeof(double) * its * hypos);
 	hypoy = (double*)malloc(sizeof(double) * its * hypos);
 	As = (double*)malloc(sizeof(double)* its * hypos * paraSize);
@@ -635,6 +634,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	Qs = (double**)malloc(sizeof(double*)* its);
 	taus = (double**)malloc(sizeof(double*)* its);
 	Rs = (double**)malloc(sizeof(double*)*its);
+	dists = (double**)malloc(sizeof(double*)*its);
 
 	for (int i = 0; i < its; i++)
 	{
@@ -644,6 +644,10 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		memset(taus[i], 0.0, sizeof(double)* paraSize);
 		Rs[i] = (double*)malloc(sizeof(double)*hypos*paraSize);
 		memset(Rs[i], 0.0, sizeof(double)* hypos * paraSize);
+		paras[i] = (double*)malloc(sizeof(double)*paraSize);
+		memset(paras[i], 0.0, sizeof(double)*paraSize);
+		dists[i] = (double*)malloc(sizeof(double)*pcsize);
+		memset(dists[0], 0.0,sizeof(double)*pcsize);
 	}
 
 	srand(time(NULL));
@@ -653,7 +657,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		yvals[ii] = ii * ii*0.02 + rand()*1.0 / RAND_MAX*0.1;
 	}
 
-	if (cudaError_t::cudaSuccess != RANSACOnGPU(xvals, yvals, pcsize, its, hypos, paraSize, hypox, hypoy, As, Qs, taus, Rs, paras))
+	if (cudaError_t::cudaSuccess != RANSACOnGPU(xvals, yvals, pcsize, its, hypos, paraSize, hypox, hypoy, As, Qs, taus, Rs, paras,modelErr,dists))
 	{
 		return;
 	}
@@ -780,7 +784,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	tmp_str[0] = '\0';
 	//memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
 	int curID = 0;
-	std::sprintf(tmp_str, "A^T s:\n");
+	/*std::sprintf(tmp_str, "A^T s:\n");
 	info_str = strcat(info_str, tmp_str);
 	for (int ii = 0; ii < its; ii++)
 	{
@@ -801,7 +805,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		info_str = strcat(info_str, tmp_str);
 		tmp_str[0] = '\0';
 	}
-	tmp_str[0] = '\0';
+	tmp_str[0] = '\0';*/
 
 	std::sprintf(tmp_str, "Q^T s:\n");
 	info_str = strcat(info_str, tmp_str);
@@ -814,7 +818,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		{
 			for (int rowi = 0; rowi < hypos; rowi++)
 			{
-				curID = jj*hypos*hypos + coli*hypos + rowi;
+				curID = coli*hypos + rowi;
 				std::sprintf(tmp_str, " %.3f ", tmp_arr[curID]);
 				info_str = strcat(info_str, tmp_str);
 				tmp_str[0] = '\0';
@@ -829,7 +833,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	}
 
 	tmp_str[0] = '\0';
-	std::sprintf(tmp_str, "taus:\n");
+	/*std::sprintf(tmp_str, "taus:\n");
 	info_str = strcat(info_str, tmp_str);
 	for (int jj = 0; jj < its; jj++)
 	{
@@ -846,7 +850,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	}
 	std::sprintf(tmp_str, "\n\n");
 	info_str = strcat(info_str, tmp_str);
-	tmp_str[0] = '\0';
+	tmp_str[0] = '\0';*/
 
 	std::sprintf(tmp_str, "R^T s:\n");
 	info_str = strcat(info_str, tmp_str);
@@ -857,7 +861,7 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 		{
 			for (int rowi = 0; rowi < hypos; rowi++)
 			{
-				curID = jj*paraSize*hypos + coli*hypos + rowi;
+				curID = coli*hypos + rowi;
 				std::sprintf(tmp_str, " %.3f ", tmp_arr[curID]);
 				info_str = strcat(info_str, tmp_str);
 				tmp_str[0] = '\0';
@@ -865,6 +869,25 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 			std::sprintf(tmp_str, "\n");
 			info_str = strcat(info_str, tmp_str);
 			tmp_str[0] = '\0'; 
+		}
+		std::sprintf(tmp_str, "\n");
+		info_str = strcat(info_str, tmp_str);
+		tmp_str[0] = '\0';
+	}
+	std::sprintf(tmp_str, "\n\n");
+	info_str = strcat(info_str, tmp_str);
+
+	tmp_str[0] = '\0';
+	std::sprintf(tmp_str, "paras:\n");
+	info_str = strcat(info_str, tmp_str);
+	for (int jj = 0; jj < its; jj++)
+	{
+		tmp_arr = paras[jj];
+		for (int ii = 0; ii < paraSize; ii++)
+		{
+			std::sprintf(tmp_str, " %.3f ", tmp_arr[ii]);
+			info_str = strcat(info_str, tmp_str);
+			tmp_str[0] = '\0';
 		}
 		std::sprintf(tmp_str, "\n");
 		info_str = strcat(info_str, tmp_str);
@@ -935,11 +958,32 @@ void CMFCForTPCDlg::OnBnClickedButton2()
 	}
 	if (NULL != paras)
 	{
+		for (int i = 0; i < its; i++)
+		{
+			if (NULL != paras[i])
+			{
+				free(paras[i]);
+			}			
+		}
 		free(paras);
 		paras = NULL;
 	}
+
+	if (NULL != modelErr)
+	{
+		free(modelErr);
+		modelErr = NULL;
+	}
+
 	if (NULL != dists)
 	{
+		for (int i = 0; i < its; i++)
+		{
+			if (NULL != dists[i])
+			{
+				free(dists[i]);
+			}
+		}
 		free(dists);
 		dists = NULL;
 	}

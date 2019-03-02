@@ -43,8 +43,8 @@
 #include <pcl\segmentation\lccp_segmentation.h>
 #include <pcl\segmentation\cpc_segmentation.h>
 
-#include <pcl\visualization\common\float_image_utils.h>
-#include <pcl\visualization\range_image_visualizer.h>
+//#include <pcl\visualization\common\float_image_utils.h>
+//#include <pcl\visualization\range_image_visualizer.h>
 #include <pcl\io\png_io.h>
 #include <pcl\io\io.h>
 #include <pcl\common\io.h>
@@ -286,10 +286,25 @@ public:
 		 out_pc(out): A list of PinObjects, which have position(x,y,z) and the length(len).
 	*/
 
+	int FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
+		pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc);
+	/* This function splits one in put point cloud(in_pc) into two parts: PC including chars(char_pc) and the basement
+	   one(base_pc).
+	   Parameters:
+		in_pt(in): Input point cloud pointer.
+		maxIters(in): The iteration numbers for RANSAC.
+		minInliers(in): The number of points(called inliers) for the beginning of iteration.
+		paraSize(in): The parameters of fitted polynomials in 2D, where paraSize=order+1.
+		UTh(in): The upper boundary of threshold for fitted polynomials.
+		LTh(in): The lower boundary of threshold for fitted polynomials.
+		char_pc(out): The pointer of point cloud contains characteristics.
+		base_pc(out): The pointer of point cloud includes the basement points.
+	*/
+	
 	int CovToRangeImage(vector<float> SesPos, float AngRes = 1.0f, float maxAngWid = 360.0f,
 		float maxAngHgt = 180.0f, float noiseLevel = 0.0f, float minRange = 0.0f,
 		int borderSize = 1);
-};
+}
 
 //GPU Host Interfaces:
 //int ConvCharToValue(char* in_pc, pcl::PointCloud<PointXYZ>::Ptr& out_pt);

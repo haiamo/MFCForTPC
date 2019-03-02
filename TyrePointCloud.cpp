@@ -1539,6 +1539,151 @@ int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
 	return 0;
 }
 
+int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
+	pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc)
+{
+	//extern "C" cudaError_t RANSACOnGPU(double* xvals, double* yvals, size_t pcsize, int maxIters, int minInliers, int parasize,
+	//	double* &hst_hypox, double* &hst_hypoy, double* &As, double** &Qs, double** &taus, double** &Rs, double**& paras,
+	//	double* &modelErr, double** &dists)
+	cudaError_t cudaErr;
+	size_t pcsize = in_pc->points.size();
+	double *xvals, *yvals, *hst_hypox, *hst_hypoy, *As, *modelErr;
+	double **Qs, **taus, **Rs, **paras, **dists;
+
+	//Malloc spaces for data
+	xvals = (double*)malloc(pcsize * sizeof(double));
+	yvals = (double*)malloc(pcsize * sizeof(double));
+	hst_hypox = (double*)malloc(maxIters *minInliers * sizeof(double));
+	hst_hypoy = (double*)malloc(maxIters *minInliers * sizeof(double));
+	As = (double*)malloc(sizeof(double)* maxIters * minInliers * paraSize);
+	modelErr = (double*)malloc(sizeof(double) * maxIters);
+
+	Qs = (double**)malloc(sizeof(double*)* maxIters);
+	taus = (double**)malloc(sizeof(double*)* maxIters);
+	Rs = (double**)malloc(sizeof(double*)*maxIters);
+	paras = (double**)malloc(sizeof(double*) * maxIters);
+	dists = (double**)malloc(sizeof(double*)*maxIters);
+
+	for (int i = 0; i < maxIters; i++)
+	{
+		Qs[i] = (double*)malloc(sizeof(double) * minInliers * minInliers);
+		memset(Qs[i], 0.0, sizeof(double)* minInliers * minInliers);
+		taus[i] = (double*)malloc(sizeof(double) * paraSize);
+		memset(taus[i], 0.0, sizeof(double)* paraSize);
+		Rs[i] = (double*)malloc(sizeof(double)*minInliers*paraSize);
+		memset(Rs[i], 0.0, sizeof(double)* minInliers * paraSize);
+		paras[i] = (double*)malloc(sizeof(double)*paraSize);
+		memset(paras[i], 0.0, sizeof(double)*paraSize);
+		dists[i] = (double*)malloc(sizeof(double)*pcsize);
+		memset(dists[0], 0.0, sizeof(double)*pcsize);
+	}
+
+	//Set input parameter values
+	for (size_t ii = 0; ii < pcsize; ii++)
+	{
+		xvals[ii] = in_pc->points[ii].x;
+		yvals[ii] = in_pc->points[ii].z;
+	}
+
+	cudaErr = RANSACOnGPU(xvals, yvals, pcsize, maxIters, minInliers, paraSize,
+		hst_hypox, hst_hypoy, As, Qs, taus, Rs, paras, modelErr, dists);
+
+	int bestIt = 0;
+	double bestErr = modelErr[0];
+	for (int ii = 1; ii < maxIters; ii++)
+	{
+		if (bestErr - modelErr[ii] > 1e-5)
+		{
+			bestErr = modelErr[ii];
+			bestIt = ii;
+		}
+	}
+
+	PointXYZ tmpPt;
+	double* distList = *(dists + bestIt);
+	for (size_t ii = 0; ii < pcsize; ii++)
+	{
+		tmpPt = in_pc->points[ii];
+		if ((distList[ii] > 0 && distList[ii] < UTh) || (distList[ii] <= 0 && distList[ii] > LTh))
+		{
+			m_segbase->points.push_back(tmpPt);
+		}
+		else
+		{
+			m_restPC->points.push_back(tmpPt);
+		}
+	}
+	char_pc = m_restPC;
+	base_pc = m_segbase;
+
+	//Free spaces
+	if (NULL != xvals)
+	{
+		free(xvals);
+		xvals = NULL;
+	}
+	if (NULL != yvals)
+	{
+		free(yvals);
+		yvals = NULL;
+	}
+	if (NULL !=hst_hypox)
+	{
+		free(hst_hypox);
+		hst_hypox = NULL;
+	}
+	if (NULL != hst_hypoy)
+	{
+		free(hst_hypoy);
+		hst_hypoy = NULL;
+	}
+	if (NULL != As)
+	{
+		free(As);
+		As = NULL;
+	}
+	if (NULL != modelErr)
+	{
+		free(modelErr);
+		modelErr = NULL;
+	}
+
+	for (int i = 0; i < maxIters; i++)
+	{
+		if (NULL != Qs[i])
+		{
+			free(Qs[i]);
+		}
+		if (NULL != taus[i])
+		{
+			free(taus[i]);
+		}
+		if (NULL != Rs[i])
+		{
+			free(Rs[i]);
+		}
+		if (NULL != paras[i])
+		{
+			free(paras[i]);
+		}
+		if (NULL != dists[i])
+		{
+			free(dists[i]);
+		}
+	}
+	free(Qs);
+	Qs = NULL;
+	free(taus);
+	taus = NULL;
+	free(Rs);
+	Rs = NULL;
+	free(paras);
+	paras = NULL;
+	free(dists);
+	dists = NULL;
+	return 0;
+}
+
 int TyrePointCloud::CovToRangeImage(vector<float> SesPos, float AngRes, float maxAngWid,
 	float maxAngHgt, float noiseLevel, float minRange,
 	int borderSize)

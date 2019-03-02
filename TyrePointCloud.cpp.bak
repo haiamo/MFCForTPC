@@ -35,6 +35,7 @@ TyrePointCloud::~TyrePointCloud()
 	m_originPC.reset();
 	m_downsample.reset();
 	m_segbase.reset();
+	m_restPC.reset();
 	m_candPins.reset();
 	m_pinsPC.reset();
 	m_rgbPC.reset();
@@ -47,6 +48,7 @@ void TyrePointCloud::InitCloudData()
 	m_originPC.reset(::new PointCloud<PointXYZ>);
 	m_downsample.reset(::new PointCloud<PointXYZ>);
 	m_segbase.reset(::new PointCloud<PointXYZ>);
+	m_restPC.reset(::new PointCloud<PointXYZ>);
 	if(!m_refPlanes.empty())
 		m_refPlanes.clear();
 	if (!m_refCoefs.empty())
@@ -290,27 +292,46 @@ int TyrePointCloud::SupervoxelClustering(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	return 0;
 }
 
-int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXYZ>::Ptr in_pc, int min_inliers, int max_it, double modelthreshold, int closepts)
+int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXYZ>::Ptr in_pc, int min_inliers, int max_it, int order, double modelthreshold, int closepts)
 {
 	//Preparation for parameters
-	//Current this function will fit cubic line in 2D point cloud, which shows y=a*x^3+b*x^2+c*x+d
-	vector<double> bestPara(4),candPara(4);
-	double bestError = 0.0, candError = 0.0;
-	vector<int> bestInliers(min_inliers), hypoInliers(min_inliers), candInliers(in_pc->points.size()), outliers, allIds;
-	vector<int>::iterator OutIdIt,candIDit;
-	double bestErr = HUGE_VAL;
-	int cur_it = 0;
-	allIds.reserve(in_pc->points.size());
-	for (size_t tt = 0; tt < in_pc->points.size(); tt++)
+	//Point cloud for GPU
+	double *xvals, *yvals, *dists, *paras;
+	size_t pcsize = in_pc->points.size();
+	int parasize = order+1;
+	xvals = (double*)malloc(sizeof(double)*pcsize);
+	yvals = (double*)malloc(sizeof(double)*pcsize);
+	dists = (double*)malloc(sizeof(double)*pcsize);
+	paras = (double*)malloc(sizeof(double) * parasize);
+	pcl::PointCloud<PointXYZ>::iterator ptIt = in_pc->points.begin();
+	size_t ptID = 0;
+	while (ptIt < in_pc->points.end())
 	{
-		allIds.push_back(tt);
+		xvals[ptID] = ptIt->x;
+		yvals[ptID] = ptIt->z;
+		ptID++;
+		ptIt++;
+	}
+
+
+	//Current this function will fit cubic line in 2D point cloud, which shows y=a*x^3+b*x^2+c*x+d
+	vector<double> bestPara(parasize),candPara(parasize);
+	double bestError = 0.0, candError = 0.0;
+	vector<int> bestInliers, hypoInliers(min_inliers), candInliers(in_pc->points.size()), outliers, allIds(in_pc->points.size());
+	vector<int>::iterator OutIdIt,bestIDit, hypoIDit;
+	double bestErr = HUGE_VAL;
+	int cur_it = 0, goodItTimes=0;
+	for (int tt = 0; tt < in_pc->points.size(); tt++)
+	{
+		allIds[tt] = tt;
 	}
 
 	//Loop of outer iteration
-	while (cur_it < max_it)
+	srand((unsigned int)time(0));
+	while (cur_it < max_it && goodItTimes<max_it*0.1)
 	{
 		//min_inliers randomly selected points from input data
-		srand((unsigned int)time(0));
+		
 		for (int ii = 0; ii < min_inliers; ii++)
 		{
 			hypoInliers[ii] = rand() % in_pc->points.size();
@@ -318,16 +339,16 @@ int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXYZ>::Ptr in_pc, 
 		sort(hypoInliers.begin(), hypoInliers.end());
 
 		outliers = allIds;
-		candIDit = hypoInliers.begin();
+		hypoIDit = hypoInliers.begin();
 		OutIdIt =outliers.begin();
 		while (OutIdIt < outliers.end())
 		{
-			if (candIDit < hypoInliers.end())
+			if (hypoIDit < hypoInliers.end())
 			{
-				if (*OutIdIt == *candIDit)
+				if (*OutIdIt == *hypoIDit)
 				{
 					OutIdIt = outliers.erase(OutIdIt);
-					candIDit++;
+					hypoIDit++;
 				}
 				else
 				{
@@ -340,47 +361,93 @@ int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXYZ>::Ptr in_pc, 
 			}
 		}
 		//Get model parameters fitted to candInliers by Least Squares 
-		PolyFit2D(hypoInliers, 3, candPara);
+		PolyFit2D(hypoInliers, parasize-1, candPara);
 		//Filtering inliers and outliers.
 		candInliers.clear();
 		candInliers.reserve(outliers.size());
+		
+		//Get distance by GPU
+		for (int ii = 0; ii < candPara.size(); ii++)
+		{
+			paras[ii] = candPara[ii];
+		}
+		//paras[0] = candPara[0]; paras[1] = candPara[1]; paras[2] = candPara[2]; paras[3] = candPara[3];
+		//GetPCDistance(xvals, yvals, pcsize, paras,4, dists);
+		GetPCInterceptAsynch(xvals, yvals, pcsize, paras, parasize, dists);
 		OutIdIt = outliers.begin();
+		while (OutIdIt < outliers.end())
+		{
+			if (dists[*OutIdIt] < modelthreshold && dists[*OutIdIt] + modelthreshold > 0.0)
+			{
+				candInliers.push_back(*OutIdIt);
+				//OutIdIt = outliers.erase(OutIdIt);
+			}
+			//else
+			//{
+				OutIdIt++;
+			//}
+		}
+
+		/*OutIdIt = outliers.begin();
 		double cur_dist = 0.0;
 		while(OutIdIt < outliers.end())
 		{
 			//Calculating the distance between the current point and the model.
-			//
-			cur_dist = PointToModelDistance(*OutIdIt, candPara);
+			cur_dist = PointToModelDistance(*OutIdIt, candPara, 3);
 			if (cur_dist<modelthreshold)//Filtering inliers and outliers by the model.
 			{
 				candInliers.push_back(*OutIdIt);
-				OutIdIt = outliers.erase(OutIdIt);
+				//OutIdIt = outliers.erase(OutIdIt);
 			}
-			else
-			{
+			//else
+			//{
 				++OutIdIt;
-			}
-		}
+			//}
+		}*/
 
 		if (candInliers.size() > closepts)
 		{
 			//Get better model(candPara) by fitting candInliers and hypoInliers using Least Squares
 			candInliers.insert(candInliers.end(), hypoInliers.begin(), hypoInliers.end());
-			candError = PolyFit2D(candInliers, 3, candPara);
-			if (cur_it == 0)
-			{
-				bestErr = candError;
-			}
-			else if (candError < bestError)
+			candError = PolyFit2D(candInliers, parasize-1, candPara);
+			if (candError < bestError || goodItTimes==0)
 			{
 				bestPara = candPara;
 				bestError = candError;
-				bestInliers = candInliers;
+				bestInliers.assign(candInliers.begin(), candInliers.end());
 			}
+			goodItTimes++;
 		}
 		cur_it++;
 	}//End of outer iteration
 
+	bestIDit = bestInliers.begin();
+	m_segbase->points.reserve(bestInliers.size());
+	m_restPC->points.reserve(m_originPC->points.size()-bestInliers.size());
+	size_t curID = 0;
+	sort(bestInliers.begin(), bestInliers.end());
+	while (bestIDit < bestInliers.end() && curID<m_originPC->points.size())
+	{
+		if (curID < *bestIDit)
+		{
+			m_restPC->points.push_back(m_originPC->points[curID]);
+		}
+		else if (curID == *bestIDit)
+		{
+			m_segbase->points.push_back(m_originPC->points[curID]);
+			bestIDit++;
+		}
+		curID++;
+	}
+
+	free(xvals);
+	free(yvals);
+	free(dists);
+	free(paras);
+	xvals = NULL;
+	yvals = NULL;
+	dists = NULL;
+	paras = NULL;
 	return 0;
 }
 
@@ -393,17 +460,19 @@ double TyrePointCloud::PolyFit2D(vector<int> in_pcID, int order, vector<double>&
 	while (rowi < in_pcID.size())
 	{
 		curID = in_pcID[rowi];
-		xvals[rowi] = cloud->points[curID].x;
-		yvals[rowi] = cloud->points[curID].z;
+		xvals(rowi) = cloud->points[curID].x;
+		yvals(rowi) = cloud->points[curID].z;
 		A(rowi, 0) = 1.0;
 		for (int coli = 0; coli < order; coli++)
 		{
-			A(rowi, 1 + coli) = A(rowi, coli)*xvals[rowi];
+			A(rowi, 1 + coli) = A(rowi, coli)*xvals(rowi);
 		}
 		rowi++;
 	}
 	auto Q = A.householderQr();
+	auto Q1 = A.colPivHouseholderQr();
 	Eigen::VectorXd beta = Q.solve(yvals);
+	Eigen::VectorXd beta1 = Q1.solve(yvals);
 	out_paras.clear();
 	out_paras.reserve(beta.size());
 	for (Eigen::Index ii = 0; ii < beta.size(); ii++)
@@ -416,9 +485,51 @@ double TyrePointCloud::PolyFit2D(vector<int> in_pcID, int order, vector<double>&
 	return errVal;
 }
 
-double TyrePointCloud::PointToModelDistance(int ptID, vector<double> model_paras)
+double TyrePointCloud::PointToModelDistance(int ptID, vector<double> model_paras, int order)
 {
-	return 0.0;
+	double dist = 0.0, eps = 1e-5;
+	pcl::PointCloud<PointXYZ>::Ptr cloud = m_originPC;
+	Eigen::VectorXd iniPt(3), k_thPt(3), k_thF(3), k_thDeltX(3);
+	iniPt(0) = cloud->points[ptID].x;
+	iniPt(1) = cloud->points[ptID].z;
+	iniPt(2) = 1.0;
+	k_thPt = iniPt;
+	double a = model_paras[3], b = model_paras[2], c = model_paras[1], d = model_paras[0];
+	double g1 = 0.0, g2 = 0.0, detJ = 0.0;
+	Eigen::MatrixXd k_thJ(3,3) , k_thJAdj(3, 3);
+	do
+	{
+		if (order == 3)
+		{
+			k_thF(0) = -1.0*(3 * a*k_thPt(2)*k_thPt(0)*k_thPt(0) + 2 * b*k_thPt(2)*k_thPt(0) + 2 * k_thPt(0) + c*k_thPt(2) - 2 * iniPt(0));
+			k_thF(1) = -1.0*(2 * k_thPt(1) - 2 * iniPt(1) - k_thPt(2));
+			k_thF(2) = -1.0*(a*k_thPt(0)*k_thPt(0)*k_thPt(0) + b*k_thPt(0)*k_thPt(0) + c*k_thPt(0) + d - k_thPt(1));
+
+			g1 = 6 * a*k_thPt(0)*k_thPt(2) + 2 * b*k_thPt(2) + 2;
+			g2 = 3 * a*k_thPt(0)*k_thPt(0) + 2 * b*k_thPt(0) + c;
+
+			k_thJ(0, 0) = g1; k_thJ(0, 1) = 0.0; k_thJ(0, 2) = g2;
+			k_thJ(1, 0) = 0.0; k_thJ(1, 1) = 2.0; k_thJ(1, 2) = -1.0;
+			k_thJ(2, 0) = g2; k_thJ(2, 1) = -1.0; k_thJ(2, 2) = 0.0;
+
+			k_thJAdj(0, 0) = -1; k_thJAdj(0, 1) = -g2; k_thJAdj(0, 2) = -2 * g2;
+			k_thJAdj(1, 0) = -g2; k_thJAdj(1, 1) = -g2 * g2; k_thJAdj(1, 2) = g1;
+			k_thJAdj(2, 0) = -2 * g2; k_thJAdj(2, 1) = g1; k_thJAdj(2, 2) = 2 * g1;
+
+			detJ = -2 * g2 * g2 - g1;
+			if (abs(detJ) < eps)
+			{
+				detJ = 1e-5;
+			}
+		}
+		//auto k_thQ = k_thJ.householderQr();
+		//k_thDeltX = k_thQ.solve(k_thF);
+		k_thDeltX = -1.0 / detJ*k_thJAdj*k_thF;
+		k_thPt += k_thDeltX;
+	} while ((abs(k_thF(0)) >= eps && abs(k_thF(1)) >= eps && abs(k_thF(2)) >= eps) &&
+		(abs(k_thDeltX(0)) >= eps && abs(k_thDeltX(1)) >= eps && abs(k_thDeltX(2)) >= eps));
+	dist = sqrt((k_thPt(0) - iniPt(0))*(k_thPt(0) - iniPt(0)) + (k_thPt(0) - iniPt(0))*(k_thPt(0) - iniPt(0)));
+	return dist;
 }
 
 void TyrePointCloud::SetOriginPC(PointCloud<PointXYZ>::Ptr in_pc)
@@ -434,6 +545,16 @@ void TyrePointCloud::setOriginRGBPC(PointCloud<PointXYZRGB>::Ptr in_pc)
 PointCloud<PointXYZ>::Ptr TyrePointCloud::GetOriginalPC()
 {
 	return m_originPC;
+}
+
+PointCloud<PointXYZ>::Ptr TyrePointCloud::GetSegPC()
+{
+	return m_segbase;
+}
+
+PointCloud<PointXYZ>::Ptr TyrePointCloud::GetRestPC()
+{
+	return m_restPC;
 }
 
 PointCloud<PointXYZI>::Ptr TyrePointCloud::GetPinsPC()
@@ -616,16 +737,17 @@ int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float yStep,
 					if (jj < width * height)
 					{
 						tmpXYZ.x = xLB + (jj % width) * (xUB - xLB) / width;
-						tmpXYZ.y = 0.0f;//step;
+						tmpXYZ.y = step;
 						tmpXYZ.z = cur_fl;
-						cloud->points.push_back(tmpXYZ);
-						tmpRGB.x = tmpXYZ.x;
+						if(tmpXYZ.x-xLB>8.0)
+							cloud->points.push_back(tmpXYZ);
+						/*tmpRGB.x = tmpXYZ.x;
 						tmpRGB.y = tmpXYZ.y;
 						tmpRGB.z = tmpXYZ.z;
 						tmpRGB.r = 200;
 						tmpRGB.g = 200;
 						tmpRGB.b = 200;
-						cloudrgb->points.push_back(tmpRGB);
+						cloudrgb->points.push_back(tmpRGB);*/
 					}
 					else
 					{
