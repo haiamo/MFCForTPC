@@ -35,6 +35,7 @@ TyrePointCloud::~TyrePointCloud()
 	m_originPC.reset();
 	m_downsample.reset();
 	m_segbase.reset();
+	m_restPC.reset();
 	m_candPins.reset();
 	m_pinsPC.reset();
 	m_rgbPC.reset();
@@ -47,6 +48,7 @@ void TyrePointCloud::InitCloudData()
 	m_originPC.reset(::new PointCloud<PointXYZ>);
 	m_downsample.reset(::new PointCloud<PointXYZ>);
 	m_segbase.reset(::new PointCloud<PointXYZ>);
+	m_restPC.reset(::new PointCloud<PointXYZ>);
 	if(!m_refPlanes.empty())
 		m_refPlanes.clear();
 	if (!m_refCoefs.empty())
@@ -290,93 +292,6 @@ int TyrePointCloud::SupervoxelClustering(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	return 0;
 }
 
-int TyrePointCloud::Get2DBaseLineBYRANSAC(pcl::PointCloud<PointXY>::Ptr in_pc, int min_inliers, int max_it, double modelthreshold, int closepts)
-{
-	//Preparation for parameters
-	//Current this function will fit cubic line in 2D point cloud, which shows y=a*x^3+b*x^2+c*x+d
-	vector<double> bestPara(4),candPara(4);
-	double bestError = 0.0, candError = 0.0;
-	vector<int> bestInliers(min_inliers), hypoInliers(min_inliers), candInliers(in_pc->points.size()), outliers, allIds;
-	vector<int>::iterator OutIdIt,candIDit;
-	double bestErr = HUGE_VAL;
-	int cur_it;
-	allIds.reserve(in_pc->points.size());
-	for (size_t tt = 0; tt < in_pc->points.size(); tt++)
-	{
-		allIds.push_back(tt);
-	}
-
-	//Loop of outer iteration
-	while (cur_it < max_it)
-	{
-		//min_inliers randomly selected points from input data
-		srand((unsigned int)time(0));
-		for (int ii = 0; ii < min_inliers; ii++)
-		{
-			hypoInliers[ii] = rand() % in_pc->points.size();
-		}
-
-		outliers = allIds;
-		candIDit = hypoInliers.begin();
-		OutIdIt =outliers.begin();
-		while (OutIdIt < outliers.end())
-		{
-			if (candIDit < hypoInliers.end())
-			{
-				if (*OutIdIt == *candIDit)
-				{
-					OutIdIt = outliers.erase(OutIdIt);
-					++candIDit;
-				}
-				else
-				{
-					++OutIdIt;
-				}
-			}
-			else
-			{
-				break;
-			}
-		}
-		//Get model parameters fitted to candInliers by Least Squares 
-		//Get candPara
-
-		//Filtering inliers and outliers.
-		candInliers.clear();
-		candInliers.reserve(outliers.size());
-		OutIdIt = outliers.begin();
-		while(OutIdIt < outliers.end())
-		{
-			//Calculating the distance between the current point and the model.
-			//...
-			if (true)//Filtering inliers and outliers by the model.
-			{
-				candInliers.push_back(*OutIdIt);
-				OutIdIt = outliers.erase(OutIdIt);
-			}
-			else
-			{
-				++OutIdIt;
-			}
-		}
-
-		if (candInliers.size() > closepts)
-		{
-			//Get better model(candPara) by fitting candInliers and InitialInliers using Least Squares
-			//Calculate candError...
-			if (candError < bestError)
-			{
-				bestPara = candPara;
-				bestError = candError;
-				bestInliers = candInliers;
-			}
-		}
-		cur_it++;
-	}//End of outer iteration
-
-	return 0;
-}
-
 void TyrePointCloud::SetOriginPC(PointCloud<PointXYZ>::Ptr in_pc)
 {
 	m_originPC = in_pc;
@@ -390,6 +305,16 @@ void TyrePointCloud::setOriginRGBPC(PointCloud<PointXYZRGB>::Ptr in_pc)
 PointCloud<PointXYZ>::Ptr TyrePointCloud::GetOriginalPC()
 {
 	return m_originPC;
+}
+
+PointCloud<PointXYZ>::Ptr TyrePointCloud::GetSegPC()
+{
+	return m_segbase;
+}
+
+PointCloud<PointXYZ>::Ptr TyrePointCloud::GetRestPC()
+{
+	return m_restPC;
 }
 
 PointCloud<PointXYZI>::Ptr TyrePointCloud::GetPinsPC()
@@ -567,16 +492,8 @@ int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float yStep,
 					if (jj < width * height)
 					{
 						tmpXYZ.x = xLB + (jj % width) * (xUB - xLB) / width;
-						tmpXYZ.y = 0.0f;//step;
+						tmpXYZ.y = step;
 						tmpXYZ.z = cur_fl;
-						cloud->points.push_back(tmpXYZ);
-						tmpRGB.x = tmpXYZ.x;
-						tmpRGB.y = tmpXYZ.y;
-						tmpRGB.z = tmpXYZ.z;
-						tmpRGB.r = 200;
-						tmpRGB.g = 200;
-						tmpRGB.b = 200;
-						cloudrgb->points.push_back(tmpRGB);
 					}
 					else
 					{
@@ -599,119 +516,6 @@ int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float yStep,
 			return FILE_TYPE_ERROR;
 		}
 	}
-}
-
-int TyrePointCloud::LoadTyrePC(char * p_pc, int length)
-{
-	if (!p_pc)
-	{
-		return EMPTY_CHAR_PTR;
-	}
-	else
-	{
-		m_originPC.reset(::new pcl::PointCloud<PointXYZ>);
-		m_rgbPC.reset(::new pcl::PointCloud<PointXYZRGB>);
-		string in_str=p_pc;
-		stringstream oss;
-		oss << in_str;
-		string cur_str;
-		size_t line_width = 0,width=0,height = 0,hID=0;
-		bool b_pcData = false;
-		char** chars;
-		while (getline(oss,cur_str))
-		{
-			if (!b_pcData)
-			{
-				if (cur_str == "end_header")
-				{
-					b_pcData = true;
-				}
-				if (cur_str.find("element vertex") != std::string::npos)
-				{
-					cur_str.erase(cur_str.begin(), cur_str.begin()+14);
-					size_t index = 0;
-					if (!cur_str.empty())
-					{
-						while ((index = cur_str.find(' ', index)) != string::npos)
-						{
-							cur_str.erase(index, 1);
-						}
-					}
-					height = stoull(cur_str);
-				}
-			}
-			else
-			{
-				line_width = cur_str.length();
-				width = line_width * 2;
-			}
-		}
-
-		
-		chars = (char**)malloc(sizeof(char*)*height);
-		for (size_t ii = 0; ii < height; ii++)
-		{
-			chars[ii] = (char*)malloc(sizeof(char)*(width+1));
-		}
-		oss.clear();
-		oss << in_str;
-		b_pcData = false;
-		hID = 0;
-		while (getline(oss, cur_str))
-		{
-			if (!b_pcData)
-			{
-				if (cur_str == "end_header")
-				{
-					b_pcData = true;
-				}
-			}
-			else
-			{
-				if (hID > height-1)
-				{
-					break;
-				}
-				line_width = cur_str.length();
-				cur_str.copy(chars[hID], line_width, 0);
-				for (size_t ii = line_width; ii < width; ii++)
-				{
-					chars[hID][ii] = ' ';
-				}
-				chars[hID][width] = '\0';
-				hID++;
-			}
-		}
-
-		float* x, *y, *z;
-		x = (float*)malloc(sizeof(float)*height);
-		y = (float*)malloc(sizeof(float)*height);
-		z = (float*)malloc(sizeof(float)*height);
-
-		GPUCharToValue(chars,x,y,z,height,width);
-		PointXYZRGB tmprgb;
-		for (size_t ii = 0; ii < height; ii++)
-		{
-			tmprgb.x = x[ii];
-			tmprgb.y = y[ii];
-			tmprgb.z = z[ii];
-			tmprgb.r = 150;
-			tmprgb.g = 150;
-			tmprgb.b = 150;
-			m_originPC->points.push_back(PointXYZ(tmprgb.x, tmprgb.y, tmprgb.z));
-			m_rgbPC->points.push_back(tmprgb);
-		}
-		free(x);
-		free(y);
-		free(z);
-
-		for (size_t ii = 0; ii < height; ii++)
-		{
-			free(chars[ii]);
-		}
-		free(chars);
-	}
-	return 0;
 }
 
 int TyrePointCloud::FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gpu::Octree::Ptr &in_tree, PointCloud<Normal>::Ptr &out_normal)
@@ -1254,54 +1058,146 @@ int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
 	return 0;
 }
 
-/*int ConvCharToValue(char * p_pc, pcl::PointCloud<PointXYZ>::Ptr& out_pt)
+int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
+	pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc)
 {
-	if (!p_pc)
+	cudaError_t cudaErr;
+	size_t pcsize = in_pc->points.size();
+	double *xvals, *yvals, *hst_hypox, *hst_hypoy, *As, *modelErr;
+	double **Qs, **taus, **Rs, **paras, **dists;
+
+	//Malloc spaces for data
+	xvals = (double*)malloc(pcsize * sizeof(double));
+	yvals = (double*)malloc(pcsize * sizeof(double));
+	hst_hypox = (double*)malloc(maxIters *minInliers * sizeof(double));
+	hst_hypoy = (double*)malloc(maxIters *minInliers * sizeof(double));
+	As = (double*)malloc(sizeof(double)* maxIters * minInliers * paraSize);
+	modelErr = (double*)malloc(sizeof(double) * maxIters);
+
+	Qs = (double**)malloc(sizeof(double*)* maxIters);
+	taus = (double**)malloc(sizeof(double*)* maxIters);
+	Rs = (double**)malloc(sizeof(double*)*maxIters);
+	paras = (double**)malloc(sizeof(double*) * maxIters);
+	dists = (double**)malloc(sizeof(double*)*maxIters);
+
+	for (int i = 0; i < maxIters; i++)
 	{
-		return EMPTY_CHAR_PTR;
+		Qs[i] = (double*)malloc(sizeof(double) * minInliers * minInliers);
+		memset(Qs[i], 0.0, sizeof(double)* minInliers * minInliers);
+		taus[i] = (double*)malloc(sizeof(double) * paraSize);
+		memset(taus[i], 0.0, sizeof(double)* paraSize);
+		Rs[i] = (double*)malloc(sizeof(double)*minInliers*paraSize);
+		memset(Rs[i], 0.0, sizeof(double)* minInliers * paraSize);
+		paras[i] = (double*)malloc(sizeof(double)*paraSize);
+		memset(paras[i], 0.0, sizeof(double)*paraSize);
+		dists[i] = (double*)malloc(sizeof(double)*pcsize);
+		memset(dists[0], 0.0, sizeof(double)*pcsize);
 	}
-	else
+
+	//Set input parameter values
+	for (size_t ii = 0; ii < pcsize; ii++)
 	{
-		string in_str = p_pc;
-		stringstream oss;
-		oss << in_str;
-		string cur_str;
-		thrust::host_vector<char*> str_host;
-		char* tmpCharp;
-		bool b_pcData = false;
-		size_t len;
-		while (getline(oss, cur_str))
+		xvals[ii] = in_pc->points[ii].x;
+		yvals[ii] = in_pc->points[ii].z;
+	}
+
+	cudaErr = RANSACOnGPU(xvals, yvals, pcsize, maxIters, minInliers, paraSize,
+		hst_hypox, hst_hypoy, As, Qs, taus, Rs, paras, modelErr, dists);
+
+	int bestIt = 0;
+	double bestErr = modelErr[0];
+	for (int ii = 1; ii < maxIters; ii++)
+	{
+		if (bestErr - modelErr[ii] > 1e-5)
 		{
-			if (!b_pcData)
-			{
-				if (cur_str == "end_header")
-				{
-					b_pcData = true;
-				}
-			}
-			else
-			{
-				len = cur_str.length();
-				tmpCharp = (char*)malloc((len + 1) * sizeof(char));
-				cur_str.copy(tmpCharp, len, 0);
-				str_host.push_back(tmpCharp);
-			}
-			cur_str = "";
+			bestErr = modelErr[ii];
+			bestIt = ii;
 		}
-		size_t lines_len = str_host.size();
-
-		thrust::device_vector<char*> str_dev;
-		thrust::copy(str_host.begin(), str_host.end(), str_dev.begin());
-
-		pcl::gpu::DeviceArray<PointXYZRGB> pt_dev;
-		pcl::PointCloud<PointXYZRGB>::Ptr pt_host;
-		pt_host->points.resize(lines_len, PointXYZRGB());
-		pt_dev.upload(pt_host->points);
-		CharToValueDev(str_dev, pt_dev);
-		pt_dev.download(pt_host->points);
 	}
 
+	PointXYZ tmpPt;
+	double* distList = *(dists + bestIt);
+	for (size_t ii = 0; ii < pcsize; ii++)
+	{
+		tmpPt = in_pc->points[ii];
+		if ((distList[ii] > 0 && distList[ii] < UTh) || (distList[ii] <= 0 && distList[ii] > LTh))
+		{
+			m_segbase->points.push_back(tmpPt);
+		}
+		else
+		{
+			m_restPC->points.push_back(tmpPt);
+		}
+	}
+	char_pc = m_restPC;
+	base_pc = m_segbase;
+
+	//Free spaces
+	if (NULL != xvals)
+	{
+		free(xvals);
+		xvals = NULL;
+	}
+	if (NULL != yvals)
+	{
+		free(yvals);
+		yvals = NULL;
+	}
+	if (NULL !=hst_hypox)
+	{
+		free(hst_hypox);
+		hst_hypox = NULL;
+	}
+	if (NULL != hst_hypoy)
+	{
+		free(hst_hypoy);
+		hst_hypoy = NULL;
+	}
+	if (NULL != As)
+	{
+		free(As);
+		As = NULL;
+	}
+	if (NULL != modelErr)
+	{
+		free(modelErr);
+		modelErr = NULL;
+	}
+
+	for (int i = 0; i < maxIters; i++)
+	{
+		if (NULL != Qs[i])
+		{
+			free(Qs[i]);
+		}
+		if (NULL != taus[i])
+		{
+			free(taus[i]);
+		}
+		if (NULL != Rs[i])
+		{
+			free(Rs[i]);
+		}
+		if (NULL != paras[i])
+		{
+			free(paras[i]);
+		}
+		if (NULL != dists[i])
+		{
+			free(dists[i]);
+		}
+	}
+	free(Qs);
+	Qs = NULL;
+	free(taus);
+	taus = NULL;
+	free(Rs);
+	Rs = NULL;
+	free(paras);
+	paras = NULL;
+	free(dists);
+	dists = NULL;
 	return 0;
-}*/
+}
 
 

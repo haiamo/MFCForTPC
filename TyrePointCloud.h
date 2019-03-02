@@ -39,8 +39,6 @@
 #include <pcl\segmentation\lccp_segmentation.h>
 #include <pcl\segmentation\cpc_segmentation.h>
 
-#include <pcl\visualization\common\float_image_utils.h>
-#include <pcl\visualization\range_image_visualizer.h>
 #include <pcl\io\png_io.h>
 #include <pcl\io\io.h>
 #include <pcl\common\io.h>
@@ -205,7 +203,7 @@ public:
 	void SetClusterTolerance(double ct);
 
 public:
-	int LoadTyrePC(string pcfile, float xLB = 0.0f, float xUB = 1000.0f, float yStep=0.03f, float zLB=0.0f, float zUB=1000.0f, size_t width = 1536, size_t height = 10000);
+	int LoadTyrePC(string pcfile, float xLB = 0.0f, float xUB = 1000.0f, float yStep=0.03f, float zLB=0.0f, float zUB=1000.0f, size_t width = 1536, size_t height = 10000,float xBeg=0, float xEnd=1000);
 	/* Loading tyre point clouds from file, which contains in .ply, .pcd or .dat file.
 	   Parameters:
 	     pcfile(in): The input file directory of point clouds.
