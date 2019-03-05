@@ -387,7 +387,7 @@ void TyrePointCloud::SetClusterTolerance(double ct)
 	m_clustertolerance = ct;
 }
 
-int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float yStep, float zLB, float zUB, size_t width, size_t height)
+int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float yStep, float zLB, float zUB, size_t width, size_t height, float xBeg, float xEnd)
 {
 	InitCloudData();
 	PointCloud<PointXYZRGB>::Ptr cloudrgb(::new PointCloud<PointXYZRGB>);
@@ -494,6 +494,8 @@ int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float yStep,
 						tmpXYZ.x = xLB + (jj % width) * (xUB - xLB) / width;
 						tmpXYZ.y = step;
 						tmpXYZ.z = cur_fl;
+						if(tmpXYZ.x>xBeg && tmpXYZ.z<xEnd)
+							cloud->points.push_back(tmpXYZ);
 					}
 					else
 					{

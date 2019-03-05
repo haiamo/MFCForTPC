@@ -4,6 +4,12 @@
 //2018/12/10 TonyHE Add Properties for SegSearching
 //2018/12/12 TonyHE Add FiltePins overload function
 //2018/12/13 TonyHE Add FindPins function with input of char pointer.
+/*	2019/2/28 TonyHE Verstion 1.0 of TPC with CUDA
+	1.Using RANSAC algorithm to split tyre point cloud into two parts: 
+	the segement basement part and the characterist part.
+	2.Also depending on PCL to load and save point cloud, this method 
+	will be deprecated in further versions.
+*/
 #pragma once
 #undef min
 #undef max
