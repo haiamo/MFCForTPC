@@ -1103,7 +1103,7 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 		yvals[ii] = in_pc->points[ii].z;
 	}
 
-	cudaErr = RANSACOnGPU(xvals, yvals, pcsize, maxIters, minInliers, paraSize,
+	cudaErr = RANSACOnGPU(xvals, yvals, pcsize, maxIters, minInliers, paraSize,UTh,LTh,
 		hst_hypox, hst_hypoy, As, Qs, taus, Rs, paras, modelErr, dists);
 
 	int bestIt = 0;

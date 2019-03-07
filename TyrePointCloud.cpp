@@ -387,7 +387,34 @@ void TyrePointCloud::SetClusterTolerance(double ct)
 	m_clustertolerance = ct;
 }
 
-int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float yStep, float zLB, float zUB, size_t width, size_t height, float xBeg, float xEnd)
+int TyrePointCloud::LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, float xEnd)
+{
+	float xLB, xUB, yStep, zLB, zUB, zStep,xStep,xOrigin,zOrigin;
+	size_t width, height;
+	int byteSize;
+	string typeR, typeI;
+	prop.GetAxisProp(&xLB, &xUB, &xStep,&xOrigin, 'x');
+	prop.GetAxisProp(&zLB, &zUB, &zStep,&zOrigin, 'z');
+	prop.GetAxisProp(NULL, NULL, &yStep,NULL, 'y');
+	prop.GetWidthHeightBSize(&width, &height,&byteSize);
+	prop.GetRIType(typeR, typeI);
+	int errID = 0;
+	string file_type = "";
+	file_type = pcfile.substr(pcfile.length() - 4, 4);
+	if (0 == strcmp(file_type.data(), ".dat"))
+	{
+		ifstream input_file;
+		input_file.open(pcfile.data(), ios::binary);
+		input_file.seekg(0, ios::end);
+		height = input_file.tellg();
+		height = height / (byteSize * width);
+	}
+	errID=LoadTyrePC(pcfile, xLB, xUB,  zLB, zUB,xStep,yStep,zStep,xOrigin,0.0f,zOrigin, width, height, xBeg, xEnd, typeR, typeI);
+	return errID;
+}
+
+int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float zLB, float zUB, float xStep, float yStep, float zStep,
+	float xOrigin, float yOrigin, float zOrigin, size_t width, size_t height, float xBeg, float xEnd, string typeR, string typeI)
 {
 	InitCloudData();
 	PointCloud<PointXYZRGB>::Ptr cloudrgb(::new PointCloud<PointXYZRGB>);
@@ -463,8 +490,8 @@ int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float yStep,
 			input_file.open(pcfile.data(), ios::binary);
 			cloud->points.reserve(width * height);
 			cloudrgb->points.reserve(width*height);
-			m_segmaxradius = sqrt((xUB - xLB)*(xUB - xLB) + yStep*height*yStep*height + (zUB - zLB)*(zUB - zLB));
-			m_segminradius = min(abs(xUB - xLB) / width, yStep);
+			//m_segmaxradius = sqrt((xUB - xLB)*(xUB - xLB) + yStep*height*yStep*height + (zUB - zLB)*(zUB - zLB));
+			//m_segminradius = min(abs(xUB - xLB) / width, yStep);
 			if(input_file)
 			{
 				char* p;
@@ -472,12 +499,48 @@ int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float yStep,
 				PointXYZRGB tmpRGB;
 				size_t jj = 0;
 				float cur_fl = 1.0f, step=0.0f;
+				unsigned int cur_ui = 0;
+				int cur_i = 0;
+				unsigned int byteR;
+				string typeR_C;
 
-				//Get a 32bit char, then convert it to float:
-				while (input_file.peek() != EOF)
+				if ("BYTE" == typeR)
+				{
+					byteR = 1;
+				}
+				else if ("WORD" == typeR)
+				{
+					byteR = 2;
+				}
+				else if ("DWORD" == typeR || "INT" == typeR || "FLOAT" == typeR)
+				{
+					byteR = 4;
+				}
+
+				if ("BYTE" == typeR || "WORD" == typeR || "DWORD" == typeR)
+				{
+					p = (char*)&cur_ui;
+				}
+				else if ("INT" == typeR)
+				{
+					p = (char*)&cur_i;
+				}
+				else if ("FLOAT" == typeR)
 				{
 					p = (char*)&cur_fl;
-					input_file.read(p, sizeof(float));
+				}
+
+				while (input_file.peek() != EOF)
+				{
+					input_file.read(p, byteR);
+					if ("BYTE" == typeR || "WORD" == typeR || "DWORD" == typeR)
+					{
+						cur_fl = cur_ui*1.0f;
+					}
+					else if ("INT" == typeR)
+					{
+						cur_fl = cur_i*1.0f;
+					}
 					if (jj % width == 0)
 					{
 						step += yStep;
@@ -491,10 +554,10 @@ int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float yStep,
 
 					if (jj < width * height)
 					{
-						tmpXYZ.x = xLB + (jj % width) * (xUB - xLB) / width;
+						tmpXYZ.x = xOrigin + ((jj % width) - xLB) * xStep;
 						tmpXYZ.y = step;
-						tmpXYZ.z = cur_fl;
-						if(tmpXYZ.x>xBeg && tmpXYZ.z<xEnd)
+						tmpXYZ.z = zOrigin + (cur_fl - zLB) * zStep;
+						if((jj % width)>=xBeg && (jj % width)<=xEnd)
 							cloud->points.push_back(tmpXYZ);
 					}
 					else
