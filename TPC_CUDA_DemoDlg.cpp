@@ -58,13 +58,6 @@ CTPC_CUDA_DemoDlg::CTPC_CUDA_DemoDlg(CWnd* pParent /*=NULL*/)
 void CTPC_CUDA_DemoDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_EDIT_xLB, m_edt_xLB);
-	DDX_Control(pDX, IDC_EDIT_xUB, m_edt_xUB);
-	DDX_Control(pDX, IDC_EDIT_yStep, m_edt_yStep);
-	DDX_Control(pDX, IDC_EDIT_zLB, m_edt_zLB);
-	DDX_Control(pDX, IDC_EDIT_zUB, m_edt_zUB);
-	DDX_Control(pDX, IDC_EDIT_Width, m_edt_Width);
-	DDX_Control(pDX, IDC_EDIT_Height, m_edt_Height);
 	DDX_Control(pDX, IDC_EDIT_MaxIt, m_edt_MaxIters);
 	DDX_Control(pDX, IDC_EDIT_MinInl, m_edt_MinInliers);
 	DDX_Control(pDX, IDC_EDIT_ParaSize, m_edt_ParaSize);
@@ -75,6 +68,7 @@ void CTPC_CUDA_DemoDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_BTN_Run, m_btn_run);
 	DDX_Control(pDX, IDC_EDIT_xBeg, m_edt_xBeg);
 	DDX_Control(pDX, IDC_EDIT_xEnd, m_edt_xEnd);
+	DDX_Control(pDX, IDC_EDIT_PtSize, m_edt_PtSize);
 }
 
 BEGIN_MESSAGE_MAP(CTPC_CUDA_DemoDlg, CDialogEx)
@@ -118,13 +112,6 @@ BOOL CTPC_CUDA_DemoDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
-	m_edt_xLB.SetWindowText(_T("102.176"));
-	m_edt_xUB.SetWindowText(_T("144.275"));
-	m_edt_yStep.SetWindowText(_T("0.09"));
-	m_edt_zLB.SetWindowText(_T("60.1541"));
-	m_edt_zUB.SetWindowText(_T("144.275"));
-	m_edt_Width.SetWindowText(_T("1536"));
-	m_edt_Height.SetWindowText(_T("50"));
 	m_edt_xBeg.SetWindowText(_T("110.0"));
 	m_edt_xEnd.SetWindowText(_T("144.275"));
 
@@ -226,24 +213,9 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnRun()
 	else
 	{
 		int f_error = -1;
-		CString xlb, xub, ystep, zlb, zub, width, height,xbeg,xend;
-		float xmin, xmax, ys, zmin, zmax,xb,xe;
-		size_t w, h;
+		CString xbeg,xend;
+		float xb,xe;
 
-		m_edt_xLB.GetWindowTextW(xlb);
-		xmin = stof(xlb.GetBuffer());
-		m_edt_xUB.GetWindowTextW(xub);
-		xmax = stof(xub.GetBuffer());
-		m_edt_yStep.GetWindowTextW(ystep);
-		ys = stof(ystep.GetBuffer());
-		m_edt_zLB.GetWindowTextW(zlb);
-		zmin = stof(zlb.GetBuffer());
-		m_edt_zUB.GetWindowTextW(zub);
-		zmax = stof(zub.GetBuffer());
-		m_edt_Width.GetWindowTextW(width);
-		w = stoi(width.GetBuffer());
-		m_edt_Height.GetWindowTextW(height);
-		h = stoi(height.GetBuffer());
 		m_edt_xBeg.GetWindowTextW(xbeg);
 		xb = stof(xbeg.GetBuffer());
 		m_edt_xEnd.GetWindowTextW(xend);
@@ -265,7 +237,6 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnRun()
 
 		QueryPerformanceCounter(&nst);
 		f_error = m_tpc.LoadTyrePC(pcfile, m_tpcProp, xb, xe);
-		//f_error = m_tpc.LoadTyrePC(pcfile, xmin, xmax, ys, zmin, zmax, w, h,xb,xe);
 		QueryPerformanceCounter(&nend);
 		if (-1 == f_error)
 		{
@@ -275,14 +246,14 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnRun()
 
 		str_len = std::sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
 
-		LPCWSTR info_wch = A2W(info_str);
+		/*LPCWSTR info_wch = A2W(info_str);
 		m_stc_St.SetWindowText(info_wch);
 		pcl::PointCloud<PointXYZ>::Ptr oriPC = m_tpc.GetOriginalPC();
 		if (0 > SaveCloudToFile(oriPC, "OriginPC"))
 		{
 			MessageBox(L"Fail to save point cloud data, please check!", L"Save File Error", MB_OK | MB_ICONERROR);
 			m_stc_St.SetWindowTextW(L"Saving failed: .ply file save failed.");
-		}
+		}*/
 	}
 	char* tmp_str = new char[1000];
 	str_len = std::sprintf(info_str + str_len, "Starting Characteristics searching, please wait...\n");
@@ -297,11 +268,21 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnRun()
 	m_edt_LTh.GetWindowTextW(LTh);
 	pcl::PointCloud<PointXYZ>::Ptr chars(::new pcl::PointCloud<PointXYZ>);
 	pcl::PointCloud<PointXYZ>::Ptr base(::new pcl::PointCloud<PointXYZ>);
+	pcl::PointCloud<PointXYZ>::Ptr inCloud(::new pcl::PointCloud<PointXYZ>);
 	cloud = m_tpc.GetOriginalPC();
+	CString ptsize_cs;
+	size_t ptSize;
+
+	m_edt_PtSize.GetWindowTextW(ptsize_cs);
+	ptSize = stof(ptsize_cs.GetBuffer());
+	for (size_t it = 0; it < min(ptSize,cloud->points.size()); it++)
+	{
+		inCloud->points.push_back(cloud->points[it]);
+	}
 
 	QueryPerformanceCounter(&nst);
-	//m_tpc.FindCharsBy2DRANSACGPU(cloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
-		//stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base);
+	m_tpc.FindCharsBy2DRANSACGPU(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
+		stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base);
 	QueryPerformanceCounter(&nend);
 
 	std::memset(info_str, 0, sizeof(info_str) / sizeof(char));

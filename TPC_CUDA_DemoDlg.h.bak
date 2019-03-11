@@ -8,6 +8,7 @@
 
 #include "stdafx.h"
 #include "TyrePointCloud.h"
+#include "TPCProperty.h"
 #include "afxcmn.h"
 #include "afxwin.h"
 
@@ -90,6 +91,7 @@ protected:
 private:
 	//User defined members
 	TyrePointCloud m_tpc;
+	TPCProperty m_tpcProp;
 	string m_preFilePath = "";
 public:
 	CEdit m_edt_xBeg;

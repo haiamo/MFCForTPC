@@ -33,7 +33,9 @@ int TPCProperty::SetTPCLoadProp(string filename)
 	fstream file;
 	file.open(filename, ios_base::in);
 	string strLine,strVal;
-	float origin,scale;
+	float curFl,origin,scale;
+	int curInt;
+	unsigned int curUInt;
 	string::size_type idx, begIdx, endIdx;
 	bool b_sensor = false, b_world = false, b_range = false, b_intensity = false, b_databegin = false;
 	vector<string> baseStrs = { "fov x0","fov x1","fov z0","fov z2","origin x","scale x","origin z","scale z"};
