@@ -1130,6 +1130,7 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	size_t pcsize = in_pc->points.size();
 	double *xvals, *yvals, *hst_hypox, *hst_hypoy, *As, *modelErr;
 	double **Qs, **taus, **Rs, **paras, **dists;
+	int hypoIters = 0;
 
 	//Malloc spaces for data
 	xvals = (double*)malloc(pcsize * sizeof(double));
@@ -1167,11 +1168,11 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	}
 
 	cudaErr = RANSACOnGPU(xvals, yvals, pcsize, maxIters, minInliers, paraSize,UTh,LTh,
-		hst_hypox, hst_hypoy, As, Qs, taus, Rs, paras, modelErr, dists);
+		hst_hypox, hst_hypoy, As, Qs, taus, Rs, paras, modelErr, dists, hypoIters);
 
 	int bestIt = 0;
 	double bestErr = modelErr[0];
-	for (int ii = 1; ii < maxIters; ii++)
+	for (int ii = 1; ii < hypoIters; ii++)
 	{
 		if (bestErr - modelErr[ii] > 1e-5)
 		{
@@ -1185,7 +1186,7 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	for (size_t ii = 0; ii < pcsize; ii++)
 	{
 		tmpPt = in_pc->points[ii];
-		if ((distList[ii] > 0 && distList[ii] < UTh) || (distList[ii] <= 0 && distList[ii] > LTh))
+		if ((distList[ii] > 0 && distList[ii] < UTh) || (distList[ii] <= 0 && distList[ii] > -LTh))
 		{
 			m_segbase->points.push_back(tmpPt);
 		}
