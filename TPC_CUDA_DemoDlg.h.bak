@@ -57,13 +57,13 @@ protected:
 public:
 	afx_msg void OnBnClickedBtnRun();
 	afx_msg void OnBnClickedBtnExit();
-	CEdit m_edt_xLB;
-	CEdit m_edt_xUB;
-	CEdit m_edt_yStep;
-	CEdit m_edt_zLB;
-	CEdit m_edt_zUB;
-	CEdit m_edt_Width;
-	CEdit m_edt_Height;
+//	CEdit m_edt_xLB;
+//	CEdit m_edt_xUB;
+//	CEdit m_edt_yStep;
+//	CEdit m_edt_zLB;
+//	CEdit m_edt_zUB;
+//	CEdit m_edt_Width;
+//	CEdit m_edt_Height;
 	CEdit m_edt_MaxIters;
 	CEdit m_edt_MinInliers;
 	CEdit m_edt_ParaSize;
@@ -96,4 +96,5 @@ private:
 public:
 	CEdit m_edt_xBeg;
 	CEdit m_edt_xEnd;
+	CEdit m_edt_PtSize;
 };

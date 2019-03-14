@@ -97,4 +97,5 @@ public:
 	CEdit m_edt_xBeg;
 	CEdit m_edt_xEnd;
 	CEdit m_edt_PtSize;
+	afx_msg void OnBnClickedBtnSave();
 };

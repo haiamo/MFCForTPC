@@ -24,7 +24,7 @@
 
 extern "C" cudaError_t RANSACOnGPU(double* xvals, double* yvals, size_t pcsize, int maxIters, int minInliers, int parasize, double uTh, double lTh,
 							double* &hst_hypox, double*& hst_hypoy, double* &As, double** &Qs, double** &taus, double** &Rs, double** &paras,
-							double* &modelErr, double** &dists);
+							double* &modelErr, double** &dists, int &hypoIters);
 
 #endif
 

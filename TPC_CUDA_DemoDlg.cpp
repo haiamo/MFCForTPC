@@ -77,6 +77,7 @@ BEGIN_MESSAGE_MAP(CTPC_CUDA_DemoDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BTN_Run, &CTPC_CUDA_DemoDlg::OnBnClickedBtnRun)
 	ON_BN_CLICKED(IDC_BTN_Exit, &CTPC_CUDA_DemoDlg::OnBnClickedBtnExit)
+	ON_BN_CLICKED(IDC_BTN_Save, &CTPC_CUDA_DemoDlg::OnBnClickedBtnSave)
 END_MESSAGE_MAP()
 
 
@@ -245,15 +246,6 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnRun()
 		}
 
 		str_len = std::sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
-
-		/*LPCWSTR info_wch = A2W(info_str);
-		m_stc_St.SetWindowText(info_wch);
-		pcl::PointCloud<PointXYZ>::Ptr oriPC = m_tpc.GetOriginalPC();
-		if (0 > SaveCloudToFile(oriPC, "OriginPC"))
-		{
-			MessageBox(L"Fail to save point cloud data, please check!", L"Save File Error", MB_OK | MB_ICONERROR);
-			m_stc_St.SetWindowTextW(L"Saving failed: .ply file save failed.");
-		}*/
 	}
 	char* tmp_str = new char[1000];
 	str_len = std::sprintf(info_str + str_len, "Starting Characteristics searching, please wait...\n");
@@ -420,4 +412,90 @@ void CTPC_CUDA_DemoDlg::GetPathAndType(string & fpath, string & ftype)
 	fname = fullname.substr(0, ftypeid);
 	ftype = fullname.substr(ftypeid + 1);
 	fpath = path.substr(0, pathid + 1) + fname;
+}
+
+
+void CTPC_CUDA_DemoDlg::OnBnClickedBtnSave()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CFileDialog fileopendlg(TRUE);
+	CString filepath;
+	if (fileopendlg.DoModal() == IDOK)
+	{
+		filepath = fileopendlg.GetPathName();
+		m_stc_FlPth.SetWindowText(filepath);
+	}
+	else
+	{
+		m_stc_FlPth.SetWindowText(L"");
+	}
+
+	// Load point cloud file
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	QueryPerformanceFrequency(&nfreq);
+	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
+	CString	cs_file;
+	string pcfile = "", file_type = "";
+	char* info_str = new char[1000];
+	int str_len = 0;
+	m_stc_FlPth.GetWindowTextW(cs_file);
+	USES_CONVERSION;
+	pcfile = CT2A(cs_file.GetBuffer());
+	if (0 == strcmp("", pcfile.data()))
+	{
+		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
+		m_stc_St.SetWindowText(L"Loading failed: empty file path");
+		m_btn_run.EnableWindow(TRUE);
+		return;
+	}
+	else
+	{
+		int f_error = -1;
+		CString xbeg, xend;
+		float xb, xe;
+
+		m_edt_xBeg.GetWindowTextW(xbeg);
+		xb = stof(xbeg.GetBuffer());
+		m_edt_xEnd.GetWindowTextW(xend);
+		xe = stof(xend.GetBuffer());
+
+		file_type = pcfile.substr(pcfile.length() - 4, 4);
+		if (0 == strcmp(file_type.data(), ".dat"))
+		{
+			MessageBox(L"Please open related .xml file for .dat loading.", L"File needed", MB_OK);
+			CString xmlpath;
+			string xmlStr = "";
+			if (fileopendlg.DoModal() == IDOK)
+			{
+				xmlpath = fileopendlg.GetPathName();
+				xmlStr = CT2A(xmlpath.GetBuffer());
+				m_tpcProp.SetTPCLoadProp(xmlStr);
+			}
+		}
+
+		QueryPerformanceCounter(&nst);
+		f_error = m_tpc.LoadTyrePC(pcfile, m_tpcProp, xb, xe);
+		QueryPerformanceCounter(&nend);
+		if (-1 == f_error)
+		{
+			MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
+			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
+		}
+
+		str_len = std::sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+
+		LPCWSTR info_wch = A2W(info_str);
+		m_stc_St.SetWindowText(info_wch);
+		pcl::PointCloud<PointXYZ>::Ptr oriPC = m_tpc.GetOriginalPC();
+		QueryPerformanceCounter(&nst);
+		if (0 > SaveCloudToFile(oriPC, "OriginPC"))
+		{
+			MessageBox(L"Fail to save point cloud data, please check!", L"Save File Error", MB_OK | MB_ICONERROR);
+			m_stc_St.SetWindowTextW(L"Saving failed: .ply file save failed.");
+		}
+		QueryPerformanceCounter(&nend);
+		str_len = std::sprintf(info_str+str_len, "Saving ply file costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+		info_wch = A2W(info_str);
+		m_stc_St.SetWindowText(info_wch);
+	}
 }

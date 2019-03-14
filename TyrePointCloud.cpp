@@ -1128,8 +1128,8 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 {
 	cudaError_t cudaErr;
 	size_t pcsize = in_pc->points.size();
-	double *xvals, *yvals, *hst_hypox, *hst_hypoy, *As, *modelErr;
-	double **Qs, **taus, **Rs, **paras, **dists;
+	double *xvals, *yvals, *hst_hypox, *hst_hypoy, *As, *modelErr, *dists;
+	double **Qs, **taus, **Rs, **paras;
 	int hypoIters = 0;
 
 	//Malloc spaces for data
@@ -1144,7 +1144,7 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	taus = (double**)malloc(sizeof(double*)* maxIters);
 	Rs = (double**)malloc(sizeof(double*)*maxIters);
 	paras = (double**)malloc(sizeof(double*) * maxIters);
-	dists = (double**)malloc(sizeof(double*)*maxIters);
+	dists = (double*)malloc(sizeof(double)*pcsize*maxIters);
 
 	for (int i = 0; i < maxIters; i++)
 	{
@@ -1156,8 +1156,6 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 		memset(Rs[i], 0.0, sizeof(double)* minInliers * paraSize);
 		paras[i] = (double*)malloc(sizeof(double)*paraSize);
 		memset(paras[i], 0.0, sizeof(double)*paraSize);
-		dists[i] = (double*)malloc(sizeof(double)*pcsize);
-		memset(dists[0], 0.0, sizeof(double)*pcsize);
 	}
 
 	//Set input parameter values
@@ -1182,7 +1180,7 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	}
 
 	PointXYZ tmpPt;
-	double* distList = *(dists + bestIt);
+	double* distList = dists + bestIt;
 	for (size_t ii = 0; ii < pcsize; ii++)
 	{
 		tmpPt = in_pc->points[ii];
@@ -1229,6 +1227,11 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 		free(modelErr);
 		modelErr = NULL;
 	}
+	if (NULL != dists)
+	{
+		free(dists);
+		dists = NULL;
+	}
 
 	for (int i = 0; i < maxIters; i++)
 	{
@@ -1247,10 +1250,6 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 		if (NULL != paras[i])
 		{
 			free(paras[i]);
-		}
-		if (NULL != dists[i])
-		{
-			free(dists[i]);
 		}
 	}
 	free(Qs);
