@@ -22,6 +22,7 @@
 #include <sstream>
 
 #include "cudaMain.h"
+#include "TPCProperty.h"
 
 #include <pcl\io\pcd_io.h>
 #include <pcl\io\ply_io.h>
@@ -209,18 +210,34 @@ public:
 	void SetClusterTolerance(double ct);
 
 public:
-	int LoadTyrePC(string pcfile, float xLB = 0.0f, float xUB = 1000.0f, float yStep=0.03f, float zLB=0.0f, float zUB=1000.0f, size_t width = 1536, size_t height = 10000,float xBeg=0, float xEnd=1000);
+	int LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, float xEnd);
+
+	int LoadTyrePC(string pcfile, float xLB = 0.0f, float xUB = 1000.0f, float zLB=0.0f, float zUB=1000.0f, float xStep=0.03f, float yStep = 0.03f, float zStep = 0.03f,
+		float xOrigin = 0.0f, float yOrigin = 0.0f, float zOrigin = 0.0f, size_t width = 1536, size_t height = 10000,float xBeg=0, float xEnd=1000, string typeR="FLOAT", string typeI="FLOAT");
 	/* Loading tyre point clouds from file, which contains in .ply, .pcd or .dat file.
 	   Parameters:
 	     pcfile(in): The input file directory of point clouds.
 		 NOTE: the following three parameters are only avalible for .dat file, the point size is width*height.
 		 xLB(in): The lower bound along x-axis.
 		 xUP(in): The upper bound along x-axis.
-		 yStep(in): The step length along y-axis.
 		 zLB(in): The lower bound along z-axis.
 		 zUP(in): The upper bound along z-axis.
+		 xStep(in): The step length along y-axis.
+		 yStep(in): The step length along y-axis.
+		 zStep(in): The step length along y-axis.
 		 width(in): The width of a laser line in Range Image.
 		 height(in): The height of Range Image.
+		 xBeg(in): The begin point of x, which is equal or larger than xLB.
+		 xEnd(in): The end point of x, which may differ from xUB;
+		 typeR(in): The data type (SICK valuetype) of Range part in .dat file.
+		 typeI(in): The data type (SICK valuetype) of Intensity part in .dat file as well. 
+			NOTE: The data type list as following:
+			SICK Valuetype		| Size of Byte	|  C++ Valuetype	|  C++ Size of Byte
+			BYTE(unsigned int)	|      1B   	|  unsigned int		|		4B
+			WORD(unsigned int)	|      2B		|  unsigned int		|		4B
+			DWORD(unsigned int)	|	   4B		|  unsigned int		|		4B
+			INT(signed int)		|	   4B		|	    int			|		4B
+			FLOAT(float)		|	   4B		|		float		|		4B
 	*/
 
 	int FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gpu::Octree::Ptr &in_tree, PointCloud<Normal>::Ptr &out_normal);

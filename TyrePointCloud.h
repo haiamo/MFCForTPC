@@ -67,6 +67,7 @@
 
 #include "cuda_runtime.h"
 
+#define GPUPCLIMIT 35000
 
 using namespace pcl;
 using namespace Eigen;

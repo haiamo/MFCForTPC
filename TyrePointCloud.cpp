@@ -1129,13 +1129,14 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	cudaError_t cudaErr;
 	size_t pcsize = in_pc->points.size();
 	int resIters = 0;
-	double *xvals, *yvals, *hst_hypox, *hst_hypoy, *modelErr, *dists;
+	int *resInliers;
+	double *xvals, *yvals, *paraList, *modelErr, *dists;
 
 	//Malloc spaces for data
+	resInliers = (int*)malloc(maxIters * sizeof(int));
 	xvals = (double*)malloc(pcsize * sizeof(double));
 	yvals = (double*)malloc(pcsize * sizeof(double));
-	hst_hypox = (double*)malloc(maxIters *minInliers * sizeof(double));
-	hst_hypoy = (double*)malloc(maxIters *minInliers * sizeof(double));
+	paraList = (double*)malloc(maxIters *paraSize * sizeof(double));
 	modelErr = (double*)malloc(sizeof(double) * maxIters);
 	dists = (double*)malloc(sizeof(double)*pcsize*maxIters);
 
@@ -1147,21 +1148,28 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	}
 
 	cudaErr = RANSACOnGPU(xvals, yvals, pcsize, maxIters, minInliers, paraSize,UTh,LTh,
-		hst_hypox, hst_hypoy, modelErr, dists, resIters);
+		paraList, resInliers, modelErr, dists, resIters);
 
-	int bestIt = 0;
+	int bestIt = 0, maxInliers = resInliers[0];
 	double bestErr = modelErr[0];
 	for (int ii = 1; ii < resIters; ii++)
 	{
-		if (bestErr - modelErr[ii] > 1e-5)
+		if (resInliers[ii] > maxInliers)
 		{
 			bestErr = modelErr[ii];
+			maxInliers = resInliers[ii];
+			bestIt = ii;
+		}
+		else if (resInliers[ii] == maxInliers && modelErr[ii] < bestErr)
+		{
+			bestErr = modelErr[ii];
+			maxInliers = resInliers[ii];
 			bestIt = ii;
 		}
 	}
 
 	PointXYZ tmpPt;
-	double* distList = dists + bestIt;
+	double* distList = dists + bestIt*pcsize;
 	for (size_t ii = 0; ii < pcsize; ii++)
 	{
 		tmpPt = in_pc->points[ii];
@@ -1178,6 +1186,11 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	base_pc = m_segbase;
 
 	//Free spaces
+	if (NULL != resInliers)
+	{
+		free(resInliers);
+		resInliers = NULL;
+	}
 	if (NULL != xvals)
 	{
 		free(xvals);
@@ -1188,15 +1201,10 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 		free(yvals);
 		yvals = NULL;
 	}
-	if (NULL !=hst_hypox)
+	if (NULL != paraList)
 	{
-		free(hst_hypox);
-		hst_hypox = NULL;
-	}
-	if (NULL != hst_hypoy)
-	{
-		free(hst_hypoy);
-		hst_hypoy = NULL;
+		free(paraList);
+		paraList = NULL;
 	}
 	if (NULL != modelErr)
 	{
