@@ -211,10 +211,10 @@ public:
 	void SetClusterTolerance(double ct);
 
 public:
-	int LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, float xEnd);
+	int LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, float xEnd, float &yBeg);
 
-	int LoadTyrePC(string pcfile, float xLB = 0.0f, float xUB = 1000.0f, float zLB=0.0f, float zUB=1000.0f, float xStep=0.03f, float yStep = 0.03f, float zStep = 0.03f,
-		float xOrigin = 0.0f, float yOrigin = 0.0f, float zOrigin = 0.0f, size_t width = 1536, size_t height = 10000,float xBeg=0, float xEnd=1000, string typeR="FLOAT", string typeI="FLOAT");
+	int LoadTyrePC(string pcfile, float &yOrigin,float xLB = 0.0f, float xUB = 1000.0f, float zLB=0.0f, float zUB=1000.0f, float xStep=0.03f, float yStep = 0.03f, float zStep = 0.03f,
+		float xOrigin = 0.0f, float zOrigin = 0.0f, size_t width = 1536, size_t height = 10000,float xBeg=0.0f, float xEnd=1000.0f, string typeR="FLOAT", string typeI="FLOAT");
 	/* Loading tyre point clouds from file, which contains in .ply, .pcd or .dat file.
 	   Parameters:
 	     pcfile(in): The input file directory of point clouds.
@@ -277,4 +277,5 @@ public:
 		base_pc(out): The pointer of point cloud includes the basement points.
 	*/
 
+	int DownSampling(pcl::PointCloud<PointXYZ>::Ptr in_pc, int folder);
 };

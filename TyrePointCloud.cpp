@@ -29,7 +29,6 @@ TyrePointCloud::TyrePointCloud()
 	InitCloudData();
 }
 
-
 TyrePointCloud::~TyrePointCloud()
 {
 	m_originPC.reset();
@@ -387,7 +386,7 @@ void TyrePointCloud::SetClusterTolerance(double ct)
 	m_clustertolerance = ct;
 }
 
-int TyrePointCloud::LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, float xEnd)
+int TyrePointCloud::LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, float xEnd, float& yBeg)
 {
 	float xLB, xUB, yStep, zLB, zUB, zStep,xStep,xOrigin,zOrigin;
 	size_t width, height;
@@ -409,12 +408,12 @@ int TyrePointCloud::LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, floa
 		height = input_file.tellg();
 		height = height / (byteSize * width);
 	}
-	errID=LoadTyrePC(pcfile, xLB, xUB,  zLB, zUB,xStep,yStep,zStep,xOrigin,0.0f,zOrigin, width, height, xBeg, xEnd, typeR, typeI);
+	errID=LoadTyrePC(pcfile, yBeg, xLB, xUB,  zLB, zUB,xStep,yStep,zStep,xOrigin,zOrigin, width, height, xBeg, xEnd, typeR, typeI);
 	return errID;
 }
 
-int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float zLB, float zUB, float xStep, float yStep, float zStep,
-	float xOrigin, float yOrigin, float zOrigin, size_t width, size_t height, float xBeg, float xEnd, string typeR, string typeI)
+int TyrePointCloud::LoadTyrePC(string pcfile,float& yOrigin, float xLB, float xUB, float zLB, float zUB, float xStep, float yStep, float zStep,
+	float xOrigin,  float zOrigin, size_t width, size_t height, float xBeg, float xEnd, string typeR, string typeI)
 {
 	InitCloudData();
 	PointCloud<PointXYZRGB>::Ptr cloudrgb(::new PointCloud<PointXYZRGB>);
@@ -498,7 +497,7 @@ int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float zLB, f
 				PointXYZ tmpXYZ;
 				PointXYZRGB tmpRGB;
 				size_t jj = 0;
-				float cur_fl = 1.0f, step=0.0f;
+				float cur_fl = 1.0f, step= yOrigin;
 				unsigned int cur_ui = 0;
 				int cur_i = 0;
 				unsigned int byteR;
@@ -569,6 +568,7 @@ int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float zLB, f
 				}
 				m_originPC = cloud;
 				m_rgbPC = cloudrgb;
+				yOrigin = step + yStep;
 				return 0;
 			}
 			else
@@ -1103,7 +1103,7 @@ int TyrePointCloud::FindCharsByCPC(pcl::PointCloud<PointXYZ>::Ptr in_pc, pcl::Po
 
 int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
 {
-	LoadTyrePC(p_pc, length);
+	//LoadTyrePC(p_pc, length);
 
 	FindPinsBySegmentationGPU(m_originPC, m_pinsPC);
 
@@ -1127,65 +1127,138 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc)
 {
 	cudaError_t cudaErr;
-	size_t pcsize = in_pc->points.size();
+	bool bNeedComp = true;
+	size_t pcsize = in_pc->points.size(), lastPCSize, curPCBegID = 0;
 	int resIters = 0;
 	int *resInliers;
 	double *xvals, *yvals, *paraList, *modelErr, *dists;
+	size_t GPURunTimes;
+
+	int bestIt = 0, maxInliers = 0, InlierPreModel = 0;
+	double bestErr = 0.0, ErrPreModel = 0.0;
+	PointXYZ tmpPt;
+	double* bestDist, *DistPreModel, *bestParas;
+	
+
+	if ( pcsize> GPUPCLIMIT)
+	{
+		GPURunTimes = (pcsize + GPUPCLIMIT) / GPUPCLIMIT;
+		lastPCSize = pcsize%GPUPCLIMIT;
+		pcsize = GPUPCLIMIT;		
+	}
+	else
+	{
+		pcsize = in_pc->points.size();
+		lastPCSize = pcsize;
+		GPURunTimes = 1;
+	}
 
 	//Malloc spaces for data
+	bestParas = (double*)malloc(sizeof(double)*paraSize);
 	resInliers = (int*)malloc(maxIters * sizeof(int));
 	xvals = (double*)malloc(pcsize * sizeof(double));
 	yvals = (double*)malloc(pcsize * sizeof(double));
 	paraList = (double*)malloc(maxIters *paraSize * sizeof(double));
 	modelErr = (double*)malloc(sizeof(double) * maxIters);
 	dists = (double*)malloc(sizeof(double)*pcsize*maxIters);
+	DistPreModel = (double*)malloc(sizeof(double)*pcsize);
 
-	//Set input parameter values
-	for (size_t ii = 0; ii < pcsize; ii++)
+	for (size_t gpuII = 0; gpuII < GPURunTimes; gpuII++)
 	{
-		xvals[ii] = in_pc->points[ii].x;
-		yvals[ii] = in_pc->points[ii].z;
-	}
+		memset(resInliers, 0, sizeof(int)*maxIters);
+		memset(xvals, 0, sizeof(double)*pcsize);
+		memset(yvals, 0, sizeof(double)*pcsize);
+		memset(paraList, 0, sizeof(double)*maxIters *paraSize);
+		memset(modelErr, 0, sizeof(double)*maxIters);
+		memset(dists, 0, sizeof(double)*pcsize*maxIters);
 
-	cudaErr = RANSACOnGPU(xvals, yvals, pcsize, maxIters, minInliers, paraSize,UTh,LTh,
-		paraList, resInliers, modelErr, dists, resIters);
+		//Set input parameter values
+		curPCBegID = gpuII*pcsize;
+		if (gpuII == GPURunTimes - 1)
+		{
+			pcsize = lastPCSize;
+			free(xvals);
+			free(yvals);
+			free(dists);
+			free(DistPreModel);
+			xvals = (double*)malloc(sizeof(double)*pcsize);
+			yvals = (double*)malloc(pcsize * sizeof(double));
+			dists = (double*)malloc(sizeof(double)*pcsize*maxIters);
+			DistPreModel = (double*)malloc(sizeof(double)*pcsize);
+		}
 
-	int bestIt = 0, maxInliers = resInliers[0];
-	double bestErr = modelErr[0];
-	for (int ii = 1; ii < resIters; ii++)
-	{
-		if (resInliers[ii] > maxInliers)
+		for (size_t ii = 0; ii < pcsize; ii++)
 		{
-			bestErr = modelErr[ii];
-			maxInliers = resInliers[ii];
-			bestIt = ii;
+			xvals[ii] = in_pc->points[curPCBegID + ii].x;
+			yvals[ii] = in_pc->points[curPCBegID + ii].z;
 		}
-		else if (resInliers[ii] == maxInliers && modelErr[ii] < bestErr)
-		{
-			bestErr = modelErr[ii];
-			maxInliers = resInliers[ii];
-			bestIt = ii;
-		}
-	}
 
-	PointXYZ tmpPt;
-	double* distList = dists + bestIt*pcsize;
-	for (size_t ii = 0; ii < pcsize; ii++)
-	{
-		tmpPt = in_pc->points[ii];
-		if ((distList[ii] > 0 && distList[ii] < UTh) || (distList[ii] <= 0 && distList[ii] > -LTh))
+		if (gpuII > 0)
 		{
-			m_segbase->points.push_back(tmpPt);
+			cudaErr = DataFitToGivenModel(xvals, yvals, pcsize, paraSize, bestParas, UTh, LTh, InlierPreModel, ErrPreModel,DistPreModel);
+			if (InlierPreModel < maxInliers*0.9)
+			{
+				bNeedComp = true;
+			}
+			else
+			{
+				bNeedComp = false;
+				bestDist = DistPreModel;
+			}
 		}
-		else
+
+		if (bNeedComp)
 		{
-			m_restPC->points.push_back(tmpPt);
+			cudaErr = RANSACOnGPU(xvals, yvals, pcsize, maxIters, minInliers, paraSize, UTh, LTh,
+				paraList, resInliers, modelErr, dists, resIters);
+
+			for (int ii = 1; ii < resIters; ii++)
+			{
+				if (resInliers[ii] > maxInliers)
+				{
+					bestErr = modelErr[ii];
+					maxInliers = resInliers[ii];
+					bestIt = ii;
+				}
+				else if (resInliers[ii] == maxInliers && modelErr[ii] < bestErr)
+				{
+					bestErr = modelErr[ii];
+					maxInliers = resInliers[ii];
+					bestIt = ii;
+				}
+			}
+
+			for(int ii=0;ii<paraSize;ii++)
+			{
+				bestParas[ii] = paraList[bestIt*paraSize + ii];
+			}
+
+			bestDist = dists + bestIt*pcsize;
 		}
+
+		for (size_t ii = 0; ii < pcsize; ii++)
+		{
+			tmpPt = in_pc->points[curPCBegID + ii];
+			if ((bestDist[ii] > 0 && bestDist[ii] < UTh) || (bestDist[ii] <= 0 && bestDist[ii] > -LTh))
+			{
+				m_segbase->points.push_back(tmpPt);
+			}
+			else
+			{
+				m_restPC->points.push_back(tmpPt);
+			}
+		}
+
 	}
 	char_pc = m_restPC;
 	base_pc = m_segbase;
 
 	//Free spaces
+	if (NULL != bestParas)
+	{
+		free(bestParas);
+		bestParas = NULL;
+	}
 	if (NULL != resInliers)
 	{
 		free(resInliers);
@@ -1215,6 +1288,22 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	{
 		free(dists);
 		dists = NULL;
+	}
+	if (NULL != DistPreModel)
+	{
+		free(DistPreModel);
+		DistPreModel = NULL;
+	}
+	return 0;
+}
+
+int TyrePointCloud::DownSampling(pcl::PointCloud<PointXYZ>::Ptr in_pc, int folder)
+{
+	size_t totalPts = in_pc->points.size();
+	m_downsample->points.clear();
+	for (size_t ii = 0; ii < totalPts; ii+=folder)
+	{
+		m_downsample->points.push_back(in_pc->points[ii]);
 	}
 	return 0;
 }

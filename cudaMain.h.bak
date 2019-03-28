@@ -23,7 +23,10 @@
 #ifdef __cplusplus
 
 extern "C" cudaError_t RANSACOnGPU(double* xvals, double* yvals, size_t pcsize, int maxIters, int minInliers, int parasize, double uTh, double lTh,
-							double* &hst_hypox, double*& hst_hypoy,	double* &modelErr, double* &dists, int &resIters);
+							double* &paraList, int* &resInliers,	double* &modelErr, double* &dists, int &resIters);
+
+extern "C" cudaError_t DataFitToGivenModel(double* xvals, double* yvals, size_t pcSize, int paraSize, double* modelPara,double uTh, double lTh,
+							int* &resInliers, double* &modelErr);
 
 #endif
 

@@ -67,6 +67,7 @@
 
 #include "cuda_runtime.h"
 
+#define GPUPCLIMIT 35000
 
 using namespace pcl;
 using namespace Eigen;
@@ -276,4 +277,5 @@ public:
 		base_pc(out): The pointer of point cloud includes the basement points.
 	*/
 
+	int DownSampling(pcl::PointCloud<PointXYZ>::Ptr in_pc, int folder);
 };
