@@ -29,7 +29,6 @@ TyrePointCloud::TyrePointCloud()
 	InitCloudData();
 }
 
-
 TyrePointCloud::~TyrePointCloud()
 {
 	m_originPC.reset();
@@ -387,7 +386,7 @@ void TyrePointCloud::SetClusterTolerance(double ct)
 	m_clustertolerance = ct;
 }
 
-int TyrePointCloud::LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, float xEnd)
+int TyrePointCloud::LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, float xEnd, float& yBeg)
 {
 	float xLB, xUB, yStep, zLB, zUB, zStep,xStep,xOrigin,zOrigin;
 	size_t width, height;
@@ -409,12 +408,12 @@ int TyrePointCloud::LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, floa
 		height = input_file.tellg();
 		height = height / (byteSize * width);
 	}
-	errID=LoadTyrePC(pcfile, xLB, xUB,  zLB, zUB,xStep,yStep,zStep,xOrigin,0.0f,zOrigin, width, height, xBeg, xEnd, typeR, typeI);
+	errID=LoadTyrePC(pcfile, yBeg, xLB, xUB,  zLB, zUB,xStep,yStep,zStep,xOrigin,zOrigin, width, height, xBeg, xEnd, typeR, typeI);
 	return errID;
 }
 
-int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float zLB, float zUB, float xStep, float yStep, float zStep,
-	float xOrigin, float yOrigin, float zOrigin, size_t width, size_t height, float xBeg, float xEnd, string typeR, string typeI)
+int TyrePointCloud::LoadTyrePC(string pcfile,float& yOrigin, float xLB, float xUB, float zLB, float zUB, float xStep, float yStep, float zStep,
+	float xOrigin,  float zOrigin, size_t width, size_t height, float xBeg, float xEnd, string typeR, string typeI)
 {
 	InitCloudData();
 	PointCloud<PointXYZRGB>::Ptr cloudrgb(::new PointCloud<PointXYZRGB>);
@@ -498,7 +497,7 @@ int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float zLB, f
 				PointXYZ tmpXYZ;
 				PointXYZRGB tmpRGB;
 				size_t jj = 0;
-				float cur_fl = 1.0f, step=0.0f;
+				float cur_fl = 1.0f, step= yOrigin;
 				unsigned int cur_ui = 0;
 				int cur_i = 0;
 				unsigned int byteR;
@@ -569,6 +568,7 @@ int TyrePointCloud::LoadTyrePC(string pcfile, float xLB, float xUB, float zLB, f
 				}
 				m_originPC = cloud;
 				m_rgbPC = cloudrgb;
+				yOrigin = step + yStep;
 				return 0;
 			}
 			else
@@ -1103,7 +1103,7 @@ int TyrePointCloud::FindCharsByCPC(pcl::PointCloud<PointXYZ>::Ptr in_pc, pcl::Po
 
 int TyrePointCloud::FindPins(char * p_pc, int length, vector<PinObject>& out_pc)
 {
-	LoadTyrePC(p_pc, length);
+	//LoadTyrePC(p_pc, length);
 
 	FindPinsBySegmentationGPU(m_originPC, m_pinsPC);
 
@@ -1132,7 +1132,7 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	int resIters = 0;
 	int *resInliers;
 	double *xvals, *yvals, *paraList, *modelErr, *dists;
-	unsigned int GPURunTimes;
+	size_t GPURunTimes;
 
 	int bestIt = 0, maxInliers = 0, InlierPreModel = 0;
 	double bestErr = 0.0, ErrPreModel = 0.0;
@@ -1149,6 +1149,7 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	else
 	{
 		pcsize = in_pc->points.size();
+		lastPCSize = pcsize;
 		GPURunTimes = 1;
 	}
 
@@ -1162,7 +1163,7 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	dists = (double*)malloc(sizeof(double)*pcsize*maxIters);
 	DistPreModel = (double*)malloc(sizeof(double)*pcsize);
 
-	for (unsigned int gpuII = 0; gpuII < GPURunTimes; gpuII++)
+	for (size_t gpuII = 0; gpuII < GPURunTimes; gpuII++)
 	{
 		memset(resInliers, 0, sizeof(int)*maxIters);
 		memset(xvals, 0, sizeof(double)*pcsize);

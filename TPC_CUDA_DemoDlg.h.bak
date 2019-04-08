@@ -25,7 +25,31 @@
 
 #include <atlconv.h>
 
+#define PIECEPOINTSIZE 1000000
+
 using namespace pcl;
+
+struct RunFileProp
+{
+	string FileName;
+	double LoadTime;
+	double TotalRunTime;
+	double SaveTime;
+	vector<double> PieceRunTime;
+	size_t TotalPtNum;
+	size_t Pieces;
+
+	void Init()
+	{
+		FileName = "";
+		LoadTime = 0.0;
+		TotalRunTime = 0.0;
+		SaveTime = 0.0;
+		PieceRunTime.clear();
+		TotalPtNum = 0;
+		Pieces = 0;
+	}
+};
 
 
 // CTPC_CUDA_DemoDlg dialog
@@ -88,6 +112,14 @@ protected:
 	template<typename DataType>
 	void ConvertMatToText(char*&io_text, const char* begLine, DataType** inData, int matCols, int matRows = 1, int matNums = 1);
 
+	void LoadAFile(CString cs_file, float& yBeg, RunFileProp& io_prop);
+
+	void RunThroughAFile(CString cs_file, RunFileProp& io_prop);
+
+	void EnableAllButtons(BOOL bEnable);
+
+	void ReadFilePropIntoStream(RunFileProp in_prop, string & out_str);
+
 private:
 	//User defined members
 	TyrePointCloud m_tpc;
@@ -100,4 +132,9 @@ public:
 	afx_msg void OnBnClickedBtnSave();
 	CEdit m_edt_PtSize2;
 	CEdit m_edt_DSFolder;
+	afx_msg void OnBnClickedBtnRunfolder();
+	CButton m_btn_runfolder;
+	CButton m_btn_save;
+	CButton m_btn_exit;
+	CEdit m_edt_Status;
 };

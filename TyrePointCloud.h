@@ -23,6 +23,7 @@
 
 #include "cudaMain.h"
 #include "TPCProperty.h"
+#include "PlaneDivision.h"
 
 #include <pcl\io\pcd_io.h>
 #include <pcl\io\ply_io.h>
@@ -119,6 +120,8 @@ enum PtRefType//Point reference type
 };
 
 
+bool PairCompare(pair<size_t, double> pr1, pair<size_t, double> pr2);
+
 
 //Class for point cloud
 class TyrePointCloud
@@ -169,6 +172,9 @@ protected:
 	map<int, vector<int>> m_clusterDic;//Key is the ID in refPlanes/refCoefs vector
 									   //value is the ID vector of restClusters
 
+	vector<PointCloud<PointXYZ>::Ptr> m_basePCs;
+	vector<PointCloud<PointXYZ>::Ptr> m_charPCs;
+
 	int FiltPins(Vector3d mineigenVector, vector<PointXYZI>& filted_pins);
 	int FiltPins(vector<PointXYZI>& filted_pins);
 	int SupervoxelClustering(pcl::PointCloud<PointXYZ>::Ptr in_pc,
@@ -177,6 +183,19 @@ protected:
 		pcl::PointCloud<PointXYZL>::Ptr & lbl_pc,
 		float voxel_res = 0.03f, float seed_res = 0.09f, float color_imp = 0.0f,
 		float spatial_imp=0.6f, float normal_imp=1.0f);
+
+	template<class T>
+	void SetIntervals(vector<T>& io_v,unsigned int InsertSize, T beg, T end);
+
+	template<class IntType>
+	void SplitAndEvaluatePC(vector<IntType> in_xv, vector<IntType> in_yv, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
+		pcl::PointCloud<PointXYZ>::Ptr in_pc, vector<pcl::PointCloud<PointXYZ>::Ptr>& out_chars, vector<pcl::PointCloud<PointXYZ>::Ptr>& out_bases, double& valErr);
+
+	template<class T>
+	void GetNeighborIntervals(vector<T> in_v, unsigned int nghbNum, T stepLen, T stepLB, T stepUB, vector<vector<T>>& out_Ints, bool NeedSort=true);
+
+	template<class IntType>
+	bool CheckTabooList(vector<IntType> in_xv, vector<IntType> in_yv, vector<vector<IntType>> xTb, vector<vector<IntType>> yTb);
 
 public:
 	void InitCloudData();
@@ -187,6 +206,7 @@ public:
 	PointCloud<PointXYZ>::Ptr GetOriginalPC();
 	PointCloud<PointXYZ>::Ptr GetSegPC();
 	PointCloud<PointXYZ>::Ptr GetRestPC();
+	PointCloud<PointXYZ>::Ptr GetDownSample();
 	PointCloud<PointXYZI>::Ptr GetPinsPC();
 	PointCloud<PointXYZRGB>::Ptr GetRGBPC();
 	PointCloud<Normal>::Ptr GetPointNormals();
@@ -211,7 +231,7 @@ public:
 	void SetClusterTolerance(double ct);
 
 public:
-	int LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, float xEnd, float &yBeg);
+	int LoadTyrePC(string pcfile, TPCProperty& prop, float xBeg, float xEnd, float &yBeg);
 
 	int LoadTyrePC(string pcfile, float &yOrigin,float xLB = 0.0f, float xUB = 1000.0f, float zLB=0.0f, float zUB=1000.0f, float xStep=0.03f, float yStep = 0.03f, float zStep = 0.03f,
 		float xOrigin = 0.0f, float zOrigin = 0.0f, size_t width = 1536, size_t height = 10000,float xBeg=0.0f, float xEnd=1000.0f, string typeR="FLOAT", string typeI="FLOAT");
@@ -275,6 +295,11 @@ public:
 		LTh(in): The lower boundary of threshold for fitted polynomials.
 		char_pc(out): The pointer of point cloud contains characteristics.
 		base_pc(out): The pointer of point cloud includes the basement points.
+	*/
+
+	int FindCharsWithPieces(pcl::PointCloud<PointXYZ>::Ptr in_pc, TPCProperty prop, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
+		vector<pcl::PointCloud<PointXYZ>::Ptr>& char_pcs, vector<pcl::PointCloud<PointXYZ>::Ptr>& base_pcs);
+	/* This function using Taboo Searching method to find out the best cutting intervals along x and y axes.
 	*/
 
 	int DownSampling(pcl::PointCloud<PointXYZ>::Ptr in_pc, int folder);

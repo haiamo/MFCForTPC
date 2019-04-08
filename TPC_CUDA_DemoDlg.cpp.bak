@@ -71,6 +71,10 @@ void CTPC_CUDA_DemoDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_PtSize, m_edt_PtSize);
 	DDX_Control(pDX, IDC_EDIT_PtSize2, m_edt_PtSize2);
 	DDX_Control(pDX, IDC_EDIT_DownSample, m_edt_DSFolder);
+	DDX_Control(pDX, IDC_BTN_RunFolder, m_btn_runfolder);
+	DDX_Control(pDX, IDC_BTN_Save, m_btn_save);
+	DDX_Control(pDX, IDC_BTN_Exit, m_btn_exit);
+	DDX_Control(pDX, IDC_EDIT_Status, m_edt_Status);
 }
 
 BEGIN_MESSAGE_MAP(CTPC_CUDA_DemoDlg, CDialogEx)
@@ -80,6 +84,7 @@ BEGIN_MESSAGE_MAP(CTPC_CUDA_DemoDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BTN_Run, &CTPC_CUDA_DemoDlg::OnBnClickedBtnRun)
 	ON_BN_CLICKED(IDC_BTN_Exit, &CTPC_CUDA_DemoDlg::OnBnClickedBtnExit)
 	ON_BN_CLICKED(IDC_BTN_Save, &CTPC_CUDA_DemoDlg::OnBnClickedBtnSave)
+	ON_BN_CLICKED(IDC_BTN_RunFolder, &CTPC_CUDA_DemoDlg::OnBnClickedBtnRunfolder)
 END_MESSAGE_MAP()
 
 
@@ -181,7 +186,7 @@ HCURSOR CTPC_CUDA_DemoDlg::OnQueryDragIcon()
 void CTPC_CUDA_DemoDlg::OnBnClickedBtnRun()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	m_btn_run.EnableWindow(FALSE);
+	EnableAllButtons(FALSE);
 	m_tpc.InitCloudData();
 	CFileDialog fileopendlg(TRUE);
 	CString filepath;
@@ -194,122 +199,63 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnRun()
 	{
 		m_stc_FlPth.SetWindowText(L"");
 	}
+	float yBeg = 0.0f;
 
-	// Load point cloud file
 	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	RunFileProp rfProp;
+	rfProp.Init();
 	QueryPerformanceFrequency(&nfreq);
-	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
-	CString	cs_file;
-	string pcfile = "", file_type="";
+	QueryPerformanceCounter(&nst);
+	LoadAFile(filepath, yBeg,rfProp);
+	QueryPerformanceCounter(&nend);
+
+	QueryPerformanceCounter(&nst);
+	RunThroughAFile(filepath,rfProp);
+	QueryPerformanceCounter(&nend);
+
 	char* info_str = new char[1000];
-	int str_len = 0;
-	m_stc_FlPth.GetWindowTextW(cs_file);
-	USES_CONVERSION;
-	pcfile = CT2A(cs_file.GetBuffer());
-	if (0 == strcmp("", pcfile.data()))
-	{
-		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
-		m_stc_St.SetWindowText(L"Loading failed: empty file path");
-		m_btn_run.EnableWindow(TRUE);
-		return;
-	}
-	else
-	{
-		int f_error = -1;
-		CString xbeg,xend;
-		float xb,xe;
-
-		m_edt_xBeg.GetWindowTextW(xbeg);
-		xb = stof(xbeg.GetBuffer());
-		m_edt_xEnd.GetWindowTextW(xend);
-		xe = stof(xend.GetBuffer());
-
-		file_type = pcfile.substr(pcfile.length() - 4, 4);
-		if (0 == strcmp(file_type.data(), ".dat"))
-		{
-			MessageBox(L"Please open related .xml file for .dat loading.", L"File needed", MB_OK);
-			CString xmlpath;
-			string xmlStr = "";
-			if (fileopendlg.DoModal() == IDOK)
-			{
-				xmlpath = fileopendlg.GetPathName();
-				xmlStr = CT2A(xmlpath.GetBuffer());
-				m_tpcProp.SetTPCLoadProp(xmlStr);
-			}
-		}
-
-		QueryPerformanceCounter(&nst);
-		f_error = m_tpc.LoadTyrePC(pcfile, m_tpcProp, xb, xe);
-		QueryPerformanceCounter(&nend);
-		if (-1 == f_error)
-		{
-			MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
-			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
-		}
-
-		str_len = std::sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
-	}
 	char* tmp_str = new char[1000];
-	str_len = std::sprintf(info_str + str_len, "Starting Characteristics searching, please wait...\n");
+	int str_len = 0;
+	USES_CONVERSION;
+	string resStr("");
+	ReadFilePropIntoStream(rfProp, resStr);
+	/*std::memset(info_str, 0, sizeof(info_str) / sizeof(char));
+	std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+	std::sprintf(tmp_str, "Raw file is %s.\n", rfProp.FileName);
+	info_str = strcat(info_str, tmp_str);
+	std::sprintf(tmp_str, "Raw file contains %ld points.\n", rfProp.TotalPtNum);
+	info_str = strcat(info_str, tmp_str);
+	std::sprintf(tmp_str, "Loading data costs %lf s.\n", rfProp.LoadTime);
+	info_str = strcat(info_str, tmp_str);
+	std::sprintf(tmp_str, "The total points are split into %d parts.\n", rfProp.Pieces);
+	info_str = strcat(info_str, tmp_str);
+	std::sprintf(tmp_str, "Running data costs %lf s in total.\n", rfProp.TotalRunTime);
+	info_str = strcat(info_str, tmp_str);
+	std::sprintf(tmp_str, "Running time for each pieces as below:\n");
+	info_str = strcat(info_str, tmp_str);
+	for (unsigned int it = 0; it < rfProp.PieceRunTime.size(); it++)
+	{
+		if (it < rfProp.PieceRunTime.size() - 1)
+		{
+			std::sprintf(tmp_str, "%lfs, ", rfProp.PieceRunTime[it]);
+		}
+		else
+		{
+			std::sprintf(tmp_str, "%lfs.\n", rfProp.PieceRunTime[it]);
+		}
+		info_str = strcat(info_str, tmp_str);
+	}
+	std::sprintf(tmp_str, "Saving result costs %lf s in total.\n", rfProp.SaveTime);
+	info_str = strcat(info_str, tmp_str);*/
+	strcpy(info_str, resStr.c_str());
 	LPCWSTR info_wstr = A2W(info_str);
 	m_stc_St.SetWindowText(info_wstr);
 
-	CString maxIt, minInlier, paraSize, UTh, LTh;
-	m_edt_MaxIters.GetWindowTextW(maxIt);
-	m_edt_MinInliers.GetWindowTextW(minInlier);
-	m_edt_ParaSize.GetWindowTextW(paraSize);
-	m_edt_UTh.GetWindowTextW(UTh);
-	m_edt_LTh.GetWindowTextW(LTh);
-	pcl::PointCloud<PointXYZ>::Ptr chars(::new pcl::PointCloud<PointXYZ>);
-	pcl::PointCloud<PointXYZ>::Ptr base(::new pcl::PointCloud<PointXYZ>);
-	pcl::PointCloud<PointXYZ>::Ptr inCloud(::new pcl::PointCloud<PointXYZ>);
-	cloud = m_tpc.GetOriginalPC();
-	CString ptsize_cs;
-	size_t ptSizeBeg, ptSizeEnd;
-	int dsFolder;
-
-	m_edt_PtSize.GetWindowTextW(ptsize_cs);
-	ptSizeBeg = stoll(ptsize_cs.GetBuffer());
-	m_edt_PtSize2.GetWindowTextW(ptsize_cs);
-	ptSizeEnd = stoll(ptsize_cs.GetBuffer());
-	m_edt_DSFolder.GetWindowTextW(ptsize_cs);
-	dsFolder = stoi(ptsize_cs.GetBuffer());
-	for (size_t it = ptSizeBeg; it < min(ptSizeEnd,cloud->points.size()); it++)
-	{
-		if ((it%dsFolder == 0 && dsFolder > 0)|| dsFolder<=0)
-		{
-			inCloud->points.push_back(cloud->points[it]);
-		}
-	}
-
-	QueryPerformanceCounter(&nst);
-	m_tpc.FindCharsBy2DRANSACGPU(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
-		stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base);
-	QueryPerformanceCounter(&nend);
-
-	std::memset(info_str, 0, sizeof(info_str) / sizeof(char));
-	std::sprintf(tmp_str, "Searching chars costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
-	info_str = strcat(info_str, tmp_str);
-	info_wstr = A2W(info_str);
-	m_stc_St.SetWindowText(info_wstr);
-
-	size_t ii = 0;
-	pcl::PointCloud<PointXYZ>::Ptr segPC = m_tpc.GetSegPC();
-	pcl::PointCloud<PointXYZ>::Ptr restPC = m_tpc.GetRestPC();
-	string curName;
-	curName = "BasePC_" + to_string(ptSizeEnd / 10000);
-	SaveCloudToFile(segPC, curName);
-	curName = "CharsPC_" + to_string(ptSizeEnd / 10000);
-	SaveCloudToFile(restPC, curName);
-
-	m_btn_run.EnableWindow(TRUE);
-
-	//Pointers clearation.
+	EnableAllButtons(TRUE);
 	delete[] info_str;
 	delete[] tmp_str;
-	tmp_str = nullptr;
-	info_str = nullptr;
-	cloud.reset();
+	info_str = NULL;
+	tmp_str = NULL;
 }
 
 
@@ -427,6 +373,279 @@ void CTPC_CUDA_DemoDlg::GetPathAndType(string & fpath, string & ftype)
 	fpath = path.substr(0, pathid + 1) + fname;
 }
 
+void CTPC_CUDA_DemoDlg::LoadAFile(CString cs_file, float & yBeg, RunFileProp& io_prop)
+{
+	// Load point cloud file
+	CFileDialog fileopendlg(TRUE);
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	QueryPerformanceFrequency(&nfreq);
+	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
+	string pcfile = "", file_type = "";
+	char* info_str = new char[1000];
+	int str_len = 0;
+	if (cs_file == "")
+	{
+		m_stc_FlPth.GetWindowTextW(cs_file);
+	}
+
+	USES_CONVERSION;
+	pcfile = CT2A(cs_file.GetBuffer());
+	if (0 == strcmp("", pcfile.data()))
+	{
+		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
+		m_stc_St.SetWindowText(L"Loading failed: empty file path");
+		m_btn_run.EnableWindow(TRUE);
+		return;
+	}
+	else
+	{
+		int f_error = -1;
+		CString xbeg, xend;
+		float xb, xe, yb = yBeg;
+		double tmpT = 0.0;
+
+		m_edt_xBeg.GetWindowTextW(xbeg);
+		xb = stof(xbeg.GetBuffer());
+		m_edt_xEnd.GetWindowTextW(xend);
+		xe = stof(xend.GetBuffer());
+
+		file_type = pcfile.substr(pcfile.length() - 4, 4);
+		int lastNpos = 0;
+
+		if (0 == strcmp(file_type.data(), ".dat"))
+		{
+			string xmlStr = "";
+			xmlStr = pcfile.substr(0, pcfile.length() - 4) + ".xml";
+			m_tpcProp.SetTPCLoadProp(xmlStr);
+			lastNpos = pcfile.find_last_of("\\");
+			io_prop.FileName = pcfile.substr(lastNpos + 1, pcfile.length() - lastNpos);
+		}
+
+		QueryPerformanceCounter(&nst);
+		f_error = m_tpc.LoadTyrePC(pcfile, m_tpcProp, xb, xe, yb);
+		QueryPerformanceCounter(&nend);
+		if (-1 == f_error)
+		{
+			MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
+			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
+		}
+		yBeg = yb;
+		tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;
+		io_prop.LoadTime = tmpT;
+		io_prop.TotalPtNum = (m_tpc.GetOriginalPC())->points.size();
+		str_len = std::sprintf(info_str, "Loading text costs %.3f seconds.\n", tmpT);
+	}
+}
+
+void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
+{
+	/* Load point cloud file
+	CFileDialog fileopendlg(TRUE);
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	QueryPerformanceFrequency(&nfreq);
+	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
+	string pcfile = "", file_type = "";
+	char* info_str = new char[1000];
+	int str_len = 0;
+	if (cs_file == "")
+	{
+		m_stc_FlPth.GetWindowTextW(cs_file);
+	}
+	
+	USES_CONVERSION;
+	pcfile = CT2A(cs_file.GetBuffer());
+	if (0 == strcmp("", pcfile.data()))
+	{
+		MessageBox(L"The file path is empty, please check again.", L"Load Info", MB_OK | MB_ICONERROR);
+		m_stc_St.SetWindowText(L"Loading failed: empty file path");
+		m_btn_run.EnableWindow(TRUE);
+		return;
+	}
+	else
+	{
+		int f_error = -1;
+		CString xbeg, xend;
+		float xb, xe, yb = 0.0f;
+
+		m_edt_xBeg.GetWindowTextW(xbeg);
+		xb = stof(xbeg.GetBuffer());
+		m_edt_xEnd.GetWindowTextW(xend);
+		xe = stof(xend.GetBuffer());
+
+		file_type = pcfile.substr(pcfile.length() - 4, 4);
+		if (0 == strcmp(file_type.data(), ".dat"))
+		{
+			string xmlStr = "";
+			xmlStr = pcfile.substr(0, pcfile.length() - 4) + ".xml";
+			m_tpcProp.SetTPCLoadProp(xmlStr);
+		}
+
+		QueryPerformanceCounter(&nst);
+		f_error = m_tpc.LoadTyrePC(pcfile, m_tpcProp, xb, xe, yb);
+		QueryPerformanceCounter(&nend);
+		if (-1 == f_error)
+		{
+			MessageBox(L"Failed to load point cloud data, please try again!", L"LoadError", MB_OK | MB_ICONERROR);
+			m_stc_St.SetWindowText(L"Loading failed: PCL function failed");
+		}
+
+		str_len = std::sprintf(info_str, "Loading text costs %.3f seconds.\n", (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0);
+	}
+	char* tmp_str = new char[1000];
+	str_len = std::sprintf(info_str + str_len, "Starting Characteristics searching, please wait...\n");
+	LPCWSTR info_wstr = A2W(info_str);
+	m_stc_St.SetWindowText(info_wstr);*/
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	double tmpT = 0.0;
+	QueryPerformanceFrequency(&nfreq);
+	string pcfile = "", file_type = "";
+	char* info_str = new char[1000];
+	int str_len = 0;
+	USES_CONVERSION;
+	char* tmp_str = new char[1000];
+	LPCWSTR info_wstr;
+
+	CString maxIt, minInlier, paraSize, UTh, LTh;
+	m_edt_MaxIters.GetWindowTextW(maxIt);
+	m_edt_MinInliers.GetWindowTextW(minInlier);
+	m_edt_ParaSize.GetWindowTextW(paraSize);
+	m_edt_UTh.GetWindowTextW(UTh);
+	m_edt_LTh.GetWindowTextW(LTh);
+	pcl::PointCloud<PointXYZ>::Ptr chars(::new pcl::PointCloud<PointXYZ>);
+	pcl::PointCloud<PointXYZ>::Ptr base(::new pcl::PointCloud<PointXYZ>);
+	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
+	pcl::PointCloud<PointXYZ>::Ptr inCloud(::new pcl::PointCloud<PointXYZ>);
+	cloud = m_tpc.GetOriginalPC();
+	pcl::PointCloud<PointXYZ>::iterator listBeg, listEnd;
+	CString ptsize_cs;
+	size_t ptSizeBeg = 0, ptSizeEnd, totalPCSize = cloud->points.size(), PCPieces = (totalPCSize + PIECEPOINTSIZE) / PIECEPOINTSIZE;
+	int dsFolder;
+	io_prop.Pieces = PCPieces;
+	io_prop.PieceRunTime.reserve(PCPieces);
+
+	/*m_edt_PtSize.GetWindowTextW(ptsize_cs);
+	ptSizeBeg = stoll(ptsize_cs.GetBuffer());
+	m_edt_PtSize2.GetWindowTextW(ptsize_cs);
+	ptSizeEnd = stoll(ptsize_cs.GetBuffer());*/
+	m_edt_DSFolder.GetWindowTextW(ptsize_cs);
+	dsFolder = stoi(ptsize_cs.GetBuffer());
+
+	std::memset(info_str, 0, sizeof(info_str) / sizeof(char));
+	std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+	std::sprintf(tmp_str, "The entire Point Cloud is split into %lu pieces,\n whose computing time are shown below:\n", PCPieces);
+	info_str = strcat(info_str, tmp_str);
+	info_wstr = A2W(info_str);
+	m_stc_St.SetWindowText(info_wstr);
+	for (int tt = 0; tt < PCPieces; tt++)
+	{
+		ptSizeBeg = tt*PIECEPOINTSIZE;
+		if (tt < PCPieces - 1)
+		{
+			ptSizeEnd = ptSizeBeg + PIECEPOINTSIZE;
+		}
+		else
+		{
+			ptSizeEnd = ptSizeBeg + totalPCSize%PIECEPOINTSIZE;
+		}
+
+		inCloud->points.clear();
+		for (size_t ptID = ptSizeBeg; ptID < ptSizeEnd; ptID++)
+		{
+			if (ptID%dsFolder == 0)
+			{
+				inCloud->points.push_back(cloud->points[ptID]);
+			}
+		}
+
+		QueryPerformanceCounter(&nst);
+		m_tpc.FindCharsBy2DRANSACGPU(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
+			stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base);
+		QueryPerformanceCounter(&nend);
+		tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;
+		io_prop.PieceRunTime.push_back(tmpT);
+		io_prop.TotalRunTime += tmpT;
+		std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+		std::sprintf(tmp_str, "Part %d costs %.3fs.\n", tt + 1, tmpT);
+		info_str = strcat(info_str, tmp_str);
+		info_wstr = A2W(info_str);
+		m_stc_St.SetWindowText(info_wstr);
+	}
+
+	std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+	std::sprintf(tmp_str, "All computing work has been finished.");
+	info_str = strcat(info_str, tmp_str);
+	info_wstr = A2W(info_str);
+	m_stc_St.SetWindowText(info_wstr);
+
+	size_t ii = 0;
+	pcl::PointCloud<PointXYZ>::Ptr segPC = m_tpc.GetSegPC();
+	pcl::PointCloud<PointXYZ>::Ptr restPC = m_tpc.GetRestPC();
+	string curName;
+	QueryPerformanceCounter(&nst);
+	curName = "BasePC_Total";
+	SaveCloudToFile(segPC, curName);
+	curName = "CharsPC_Total";
+	SaveCloudToFile(restPC, curName);
+	QueryPerformanceCounter(&nend);
+	tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;
+	io_prop.SaveTime = tmpT;
+
+	//Pointers clearation.
+	delete[] info_str;
+	delete[] tmp_str;
+	tmp_str = nullptr;
+	info_str = nullptr;
+	cloud.reset();
+}
+
+void CTPC_CUDA_DemoDlg::EnableAllButtons(BOOL bEnable)
+{
+	m_btn_run.EnableWindow(bEnable);
+	m_btn_exit.EnableWindow(bEnable);
+	m_btn_runfolder.EnableWindow(bEnable);
+	m_btn_save.EnableWindow(bEnable);
+}
+
+void CTPC_CUDA_DemoDlg::ReadFilePropIntoStream(RunFileProp in_prop, string & out_str)
+{
+	stringstream io_ss;
+	io_ss.str("");
+	io_ss << "File Name " << in_prop.FileName << "." << endl;
+	io_ss << "Total Points " << in_prop.TotalPtNum << "." << endl;
+	io_ss << "Loading Time " << in_prop.LoadTime << "s." << endl;
+	io_ss << "Point Pieces " << in_prop.Pieces << "." << endl;
+	io_ss << "Running Time " << in_prop.TotalRunTime << "s." << endl;
+	io_ss << "Running Pieces Time " << endl;
+	for (size_t it = 0; it < in_prop.PieceRunTime.size(); it++)
+	{
+		if (it < in_prop.PieceRunTime.size() - 1)
+		{
+			io_ss << in_prop.PieceRunTime[it] << "s, ";
+		}
+		else
+		{
+			io_ss << in_prop.PieceRunTime[it] << "s." << endl;
+		}
+	}
+	io_ss << "Saving Time " << in_prop.SaveTime << "s." << endl;
+	string tmp = "";
+	out_str = "";
+	int dotPos = 0;
+	while (io_ss >> tmp)
+	{
+		dotPos = tmp.find_last_of(".");
+		if (dotPos == tmp.length() - 1)
+		{
+			out_str = out_str + " " + tmp + "\n";
+		}
+		else
+		{
+			out_str = out_str + " " + tmp;
+		}
+	}
+	io_ss.str("");
+}
+
 
 void CTPC_CUDA_DemoDlg::OnBnClickedBtnSave()
 {
@@ -465,7 +684,7 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnSave()
 	{
 		int f_error = -1;
 		CString xbeg, xend;
-		float xb, xe;
+		float xb, xe, yb = 0.0f;
 
 		m_edt_xBeg.GetWindowTextW(xbeg);
 		xb = stof(xbeg.GetBuffer());
@@ -487,7 +706,7 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnSave()
 		}
 
 		QueryPerformanceCounter(&nst);
-		f_error = m_tpc.LoadTyrePC(pcfile, m_tpcProp, xb, xe);
+		f_error = m_tpc.LoadTyrePC(pcfile, m_tpcProp, xb, xe, yb);
 		QueryPerformanceCounter(&nend);
 		if (-1 == f_error)
 		{
@@ -511,4 +730,72 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnSave()
 		info_wch = A2W(info_str);
 		m_stc_St.SetWindowText(info_wch);
 	}
+}
+
+
+void CTPC_CUDA_DemoDlg::OnBnClickedBtnRunfolder()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	EnableAllButtons(FALSE);
+	m_tpc.InitCloudData();
+	CFileDialog fileopendlg(TRUE);
+	CString filename,filepath;
+	if (fileopendlg.DoModal() == IDOK)
+	{
+		filename = fileopendlg.GetPathName();
+		filepath = filename.Mid(filename.ReverseFind('\\') + 1);
+		filepath = filename.Left(filename.GetLength() - filepath.GetLength());
+
+		_finddata_t FileInfo;
+		USES_CONVERSION;
+		string pcpath = CT2A(filepath.GetBuffer());
+		string tmpPath = pcpath + "*";
+		long Handle = _findfirst(tmpPath.c_str(), &FileInfo);
+
+		if (Handle == -1L)
+		{
+			m_stc_FlPth.SetWindowText(L"Load folder handle error!");
+		}
+		else
+		{
+			string pcfile;
+			float yBeg = 0.0f;
+			RunFileProp tmpProp;
+			vector<RunFileProp> vProp;
+			do {
+				tmpProp.Init();
+				pcfile = pcpath + FileInfo.name;
+				filename = pcfile.c_str();
+				m_stc_FlPth.SetWindowTextW(filename);
+				if (pcfile.substr(pcfile.length() - 4, 4) == ".dat")
+				{
+					LoadAFile(filename, yBeg,tmpProp);
+					RunThroughAFile(filename,tmpProp);
+					vProp.push_back(tmpProp);
+				}
+			} while (_findnext(Handle, &FileInfo) == 0);
+
+			char* info_str = new char[10000];
+			string tmpStr = "", resStr = "";
+			for (vector<RunFileProp>::iterator it = vProp.begin(); it < vProp.end(); it++)
+			{
+				tmpStr = "";
+				ReadFilePropIntoStream(*it, tmpStr);
+				resStr += tmpStr;
+				resStr += "\n";
+			}
+			strcpy(info_str, resStr.c_str());
+			LPCWSTR info_wstr = A2W(info_str);
+			m_stc_St.SetWindowText(info_wstr);
+			m_edt_Status.SetWindowTextW(info_wstr);
+			delete[] info_str;
+			info_str = nullptr;
+		}
+		_findclose(Handle);
+	}
+	else
+	{
+		m_stc_FlPth.SetWindowText(L"Empty file!"); 
+	}
+	EnableAllButtons(TRUE);
 }
