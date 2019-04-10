@@ -9,6 +9,11 @@
 #include "stdafx.h"
 #include "TyrePointCloud.h"
 
+bool PairCompare(pair<size_t, double> pr1, pair<size_t, double> pr2)
+{
+	return pr1.second >= pr2.second;
+}
+
 TyrePointCloud::TyrePointCloud()
 {
 	m_normalUserDefined = FALSE;
@@ -291,6 +296,218 @@ int TyrePointCloud::SupervoxelClustering(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	return 0;
 }
 
+template<class T>
+void TyrePointCloud::SetIntervals(vector<T>& io_v, unsigned int InsertSize, T beg, T end)
+{
+	io_v.reserve(InsertSize + 1);
+	io_v.push_back(beg);
+	srand(time(0));
+	for (int ii = 0; ii < InsertSize; ii++)
+	{
+		io_v.push_back(rand() / T(RAND_MAX)*(end - beg) + beg);
+	}
+	io_v.push_back(end);
+	sort(io_v.begin(), io_v.end());
+}
+
+template<class IntType>
+void TyrePointCloud::SplitAndEvaluatePC(vector<IntType> in_xv, vector<IntType> in_yv, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
+	pcl::PointCloud<PointXYZ>::Ptr in_pc, vector<pcl::PointCloud<PointXYZ>::Ptr>& out_chars, vector<pcl::PointCloud<PointXYZ>::Ptr>& out_bases, double& valErr)
+{
+	size_t xAxisID, yAxisID, partPCID;
+	size_t xIt, yIt, PCparts = in_xv.size() + in_yv.size() - 3;
+	vector<pcl::PointCloud<PointXYZ>::Ptr> partPCs;
+	partPCs.reserve(PCparts);
+	pcl::PointCloud<PointXYZ>::Ptr tmpPC;
+	double basePtNum = 0.0, totalPtNum = 0.0;
+	for (size_t ii = 0; ii < PCparts; ii++)
+	{
+		tmpPC.reset(::new pcl::PointCloud<PointXYZ>);
+		partPCs.push_back(tmpPC);
+	}
+
+	vector<size_t> xSectNum(in_yv.size() - 1, 0);
+	size_t SectID = 0;
+	for (size_t ii = 1; ii < in_xv.size() - 1; ii++)
+	{
+		if (in_xv[ii] > in_xv[ii - 1])
+		{
+			xSectNum[SectID]++;
+		}
+		else
+		{
+			if (SectID > 0)
+			{
+				xSectNum[SectID] += xSectNum[SectID - 1];
+			}
+			SectID++;
+		}
+	}
+
+	vector<IntType> tmpXV;
+	size_t xBegID = 0, xEndID = 0;
+	for (pcl::PointCloud<PointXYZ>::iterator ptID = in_pc->points.begin(); ptID < in_pc->points.end(); ptID++)
+	{
+		yAxisID = 0;
+		for (yIt = 1; yIt < in_yv.size(); yIt++)
+		{
+			if (ptID->y > in_yv[yIt - 1] - ACCURACY && ptID->y < in_yv[yIt])
+			{
+				yAxisID = yIt;
+				break;
+			}
+		}
+
+		if (tmpXV.size() > 0)
+		{
+			tmpXV.clear();
+		}
+		if (yAxisID >= 2)
+		{
+			xBegID = xSectNum[yAxisID - 2] + 1;
+			xEndID = xSectNum[yAxisID - 1];
+		}
+		else
+		{
+			xBegID = 1;
+			xEndID = xSectNum[yAxisID - 1];
+		}
+		tmpXV.push_back(*in_xv.begin());
+		for (size_t ii = xBegID; ii <= xEndID; ii++)
+		{
+			tmpXV.push_back(in_xv[ii]);
+		}
+		tmpXV.push_back(*prev(in_xv.end()));
+
+		xAxisID = 0;
+		for (xIt=1; xIt < tmpXV.size(); xIt++)
+		{
+			if (ptID->x > tmpXV[xIt - 1] - ACCURACY && ptID->x < tmpXV[xIt])
+			{
+				xAxisID = xIt;
+				break;
+			}
+		}
+		if (0 == xAxisID)
+		{
+			xAxisID = tmpXV.size() - 1;
+		}
+		
+		partPCID = xSectNum[yAxisID - 1] + xAxisID;
+		partPCs[partPCID]->points.push_back(*ptID);
+	}
+
+	pcl::PointCloud<PointXYZ>::Ptr tmpCharPC, tmpBasePC;
+	valErr = 0.0;
+	for (vector<pcl::PointCloud<PointXYZ>::Ptr>::iterator pcIt = partPCs.begin(); pcIt < partPCs.end(); pcIt++)
+	{
+		tmpCharPC.reset(::new pcl::PointCloud<PointXYZ>);
+		tmpBasePC.reset(::new pcl::PointCloud<PointXYZ>);
+		if ((*pcIt)->points.size() > 0)
+		{
+			FindCharsBy2DRANSACGPU(*pcIt, maxIters, minInliers, paraSize, UTh, LTh, tmpCharPC, tmpBasePC);
+			out_chars.push_back(tmpCharPC);
+			out_bases.push_back(tmpBasePC);
+			basePtNum = tmpBasePC->points.size()*1.0;
+			totalPtNum = (*pcIt)->points.size()*1.0;
+			valErr += basePtNum / totalPtNum;
+		}
+	}
+
+	valErr /= PCparts;
+}
+
+template<class T>
+void TyrePointCloud::GetNeighborIntervals(vector<T> in_v, unsigned int nghbNum, T stepLen, T stepLB, T stepUB, vector<vector<T>>& out_Ints, bool NeedSort)
+{
+	T randStep;
+	srand(time(0));
+	size_t curIt = 0;
+	vector<float> curV;
+	out_Ints.clear();
+	out_Ints.reserve(nghbNum);
+	for (unsigned int ii = 0; ii < nghbNum; ii++)
+	{
+		curV.clear();
+		curV.reserve(in_v.size());
+		curV.push_back(in_v[0]);
+		for (unsigned int it = 1; it < in_v.size()-1; it++)
+		{
+			randStep = stepLen*(rand() / T(RAND_MAX)*(stepUB - stepLB) + stepLB);
+			if (in_v[it] + randStep<*in_v.begin() || in_v[it] + randStep>*prev(in_v.end()))
+			{
+				continue;
+			}
+			curV.push_back(in_v[it] + randStep);
+		}
+		curV.push_back(*prev(in_v.end()));
+		if (NeedSort)
+		{
+			sort(curV.begin(), curV.end());
+		}
+		curIt = 1;
+		do
+		{
+			if (curV[curIt] > curV[curIt-1] && curV[curIt] - curV[curIt - 1] < 10 * stepLen && curIt<curV.size()-1)
+			{
+				curV[curIt - 1] = (curV[curIt - 1] + curV[curIt]) / 2;
+				curV.erase(curV.begin() + curIt);
+			}
+			else
+			{
+				curIt++;
+			}
+		} while (curIt < curV.size());
+		out_Ints.push_back(curV);
+	}
+}
+
+template<class IntType>
+bool TyrePointCloud::CheckTabooList(vector<IntType> in_xv, vector<IntType> in_yv, vector<vector<IntType>> xTb, vector<vector<IntType>> yTb)
+{
+	bool bInTbList;
+	IntType tmpDiff;
+	for (size_t tbIt = 0; tbIt < xTb.size(); tbIt++)
+	{
+		bInTbList = true;
+		if (in_xv.size() != xTb[tbIt].size() || in_yv.size() != yTb[tbIt].size())
+		{
+			bInTbList = false;
+		}
+		else
+		{
+			for (size_t valID = 0; valID < in_xv.size(); valID++)
+			{
+				tmpDiff = abs(in_xv[valID] - xTb[tbIt][valID]);
+				if (tmpDiff > ACCURACY)
+				{
+					bInTbList = false;
+					break;
+				}
+			}
+			if (bInTbList)
+			{
+				for (size_t valID = 0; valID < in_yv.size(); valID++)
+				{
+					tmpDiff = abs(in_yv[valID] - yTb[tbIt][valID]);
+					if (tmpDiff > ACCURACY)
+					{
+						bInTbList = false;
+						break;
+					}
+				}
+			}
+		}
+		if (bInTbList)
+		{
+			break;
+		}
+	}
+	return bInTbList;
+}
+
+
+
 void TyrePointCloud::SetOriginPC(PointCloud<PointXYZ>::Ptr in_pc)
 {
 	m_originPC = in_pc;
@@ -314,6 +531,11 @@ PointCloud<PointXYZ>::Ptr TyrePointCloud::GetSegPC()
 PointCloud<PointXYZ>::Ptr TyrePointCloud::GetRestPC()
 {
 	return m_restPC;
+}
+
+PointCloud<PointXYZ>::Ptr TyrePointCloud::GetDownSample()
+{
+	return m_downsample;
 }
 
 PointCloud<PointXYZI>::Ptr TyrePointCloud::GetPinsPC()
@@ -386,9 +608,10 @@ void TyrePointCloud::SetClusterTolerance(double ct)
 	m_clustertolerance = ct;
 }
 
-int TyrePointCloud::LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, float xEnd, float& yBeg)
+int TyrePointCloud::LoadTyrePC(string pcfile, TPCProperty& prop, float xBeg, float xEnd, float& yBeg)
 {
 	float xLB, xUB, yStep, zLB, zUB, zStep,xStep,xOrigin,zOrigin;
+	float yLB = yBeg, yUB = 0.0f, yOrigin = 0.0f;
 	size_t width, height;
 	int byteSize;
 	string typeR, typeI;
@@ -409,6 +632,9 @@ int TyrePointCloud::LoadTyrePC(string pcfile, TPCProperty prop, float xBeg, floa
 		height = height / (byteSize * width);
 	}
 	errID=LoadTyrePC(pcfile, yBeg, xLB, xUB,  zLB, zUB,xStep,yStep,zStep,xOrigin,zOrigin, width, height, xBeg, xEnd, typeR, typeI);
+	yUB = (yBeg - yOrigin) / yStep;
+	prop.SetAxisProp(yLB, yUB, yStep, yOrigin, 'Y');
+	prop.SetAxisProp(xBeg, xEnd, xStep, xOrigin, 'X');
 	return errID;
 }
 
@@ -1195,7 +1421,7 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 
 		if (gpuII > 0)
 		{
-			cudaErr = DataFitToGivenModel(xvals, yvals, pcsize, paraSize, bestParas, UTh, LTh, InlierPreModel, ErrPreModel,DistPreModel);
+			cudaErr = DataFitToGivenModel(xvals, yvals, pcsize, paraSize, bestParas, UTh, LTh, InlierPreModel, ErrPreModel, DistPreModel);
 			if (InlierPreModel < maxInliers*0.9)
 			{
 				bNeedComp = true;
@@ -1228,7 +1454,7 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 				}
 			}
 
-			for(int ii=0;ii<paraSize;ii++)
+			for (int ii = 0; ii < paraSize; ii++)
 			{
 				bestParas[ii] = paraList[bestIt*paraSize + ii];
 			}
@@ -1241,17 +1467,17 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 			tmpPt = in_pc->points[curPCBegID + ii];
 			if ((bestDist[ii] > 0 && bestDist[ii] < UTh) || (bestDist[ii] <= 0 && bestDist[ii] > -LTh))
 			{
-				m_segbase->points.push_back(tmpPt);
+				base_pc->points.push_back(tmpPt);
 			}
 			else
 			{
-				m_restPC->points.push_back(tmpPt);
+				char_pc->points.push_back(tmpPt);
 			}
 		}
 
 	}
-	char_pc = m_restPC;
-	base_pc = m_segbase;
+	m_restPC = char_pc;
+	m_segbase = base_pc;
 
 	//Free spaces
 	if (NULL != bestParas)
@@ -1294,6 +1520,149 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 		free(DistPreModel);
 		DistPreModel = NULL;
 	}
+	return 0;
+}
+
+int TyrePointCloud::FindCharsWithPieces(pcl::PointCloud<PointXYZ>::Ptr in_pc, TPCProperty prop, int maxIters, int minInliers, int paraSize, double UTh, double LTh, vector<pcl::PointCloud<PointXYZ>::Ptr>& char_pcs, vector<pcl::PointCloud<PointXYZ>::Ptr>& base_pcs)
+{
+	//Perpare variables
+	char_pcs.clear();
+	base_pcs.clear();
+	pcl::PointCloud<PointXYZ>::Ptr tmpBasePC, tmpCharPC, tmpPC;
+	unsigned int xInts = 3, yInts = 3;
+	
+	float xLB, xUB, xStep, xOrigin, yLB, yUB, yStep, yOrigin;
+	prop.GetAxisProp(&xLB, &xUB, &xStep, &xOrigin, 'x');
+	prop.GetAxisProp(&yLB, &yUB, &yStep, &yOrigin, 'y');
+	float xBeg, xEnd, yBeg, yEnd, tmpF;
+	xBeg = xLB*xStep;
+	xEnd = (xUB - xLB)*xStep;
+	if (xStep < 0)
+	{
+		tmpF = xBeg;
+		xBeg = xEnd;
+		xEnd = tmpF;
+	}
+
+	yBeg = yLB*yStep;
+	yEnd = (yUB - yLB)*yStep;
+	if (yStep < 0)
+	{
+		tmpF = yBeg;
+		yBeg = yEnd;
+		yEnd = tmpF;
+	}
+
+	//These vectors for storing and returning point clouds.
+	vector<pcl::PointCloud<PointXYZ>::Ptr> partPCs, partBases, partChars;
+	int PCParts = xInts + yInts - 3;
+	partPCs.reserve(PCParts);
+	partBases.reserve(PCParts);
+	partChars.reserve(PCParts);
+	for (int ii = 0; ii < PCParts; ii++)
+	{
+		tmpPC.reset(::new pcl::PointCloud<PointXYZ>);
+		partPCs.push_back(tmpPC);
+	}
+
+	//**********Taboo Searching Start 
+	//Initial result and variables for loop.
+	PlaneDivision *pCurPD = new PDYMajor();
+	pCurPD->GenerateAllRandIntervals(xInts, xBeg, xEnd, yInts, yBeg, yEnd);
+	vector<float> xTmpInt, xCutInt, yCutInt, bestxInts, bestyInts, candInts, tabooInts;
+
+	unsigned int MaxIt = 2000/*Max iteration*/,
+		DivIt = 100/*Threshold of Diversification Iteration*/,
+		CandNum = 5/*Candidate length*/,
+		TbLen = 5;/*Taboo list length*/
+	double curErr = 0.0, bestErr = -1.0;
+	size_t curNbID = 0;
+	unsigned int curItID = 0/*Current Iteration Index*/, 
+		curDivID = 0/*Current Index for Diversification Waiting*/, 
+		curBVIt = 0/*Best value last iterations*/;
+	candInts.reserve(CandNum);
+	vector<vector<float>> xNbInts, yNbInts, xTBList, yTBList;
+	xTBList.reserve(TbLen);
+	yTBList.reserve(TbLen);
+	vector<pair<size_t, double>> NbErrs;
+	pair<size_t, double> tmpErrPr;
+	while (curItID < MaxIt && curBVIt < MaxIt*0.1)
+	{
+		//Generate neighbors 
+		GetNeighborIntervals(xCutInt, CandNum, xStep, -10*xStep, 10*xStep, xNbInts, false);
+		GetNeighborIntervals(yCutInt, CandNum, yStep, -10*yStep, 10*yStep, yNbInts);
+		NbErrs.clear();
+		NbErrs.reserve(CandNum);
+		for (size_t NbID = 0; NbID < CandNum; NbID++)
+		{
+			if (partChars.size() > 0)
+			{
+				partChars.clear();
+			}
+			if (partBases.size() > 0)
+			{
+				partBases.clear();
+			}
+			SplitAndEvaluatePC(xNbInts[NbID], yNbInts[NbID], maxIters, minInliers, paraSize, UTh, LTh, in_pc, partChars, partBases, curErr);
+			tmpErrPr.first = NbID;
+			tmpErrPr.second = curErr;
+			NbErrs.push_back(tmpErrPr);
+		}
+		sort(NbErrs.begin(), NbErrs.end(), PairCompare);
+
+		for (size_t NbID = 0; NbID < NbErrs.size(); NbID++)
+		{
+			curErr = NbErrs[NbID].second;
+			curNbID = NbErrs[NbID].first;
+			if (curErr > bestErr)//Is best candidate better than best result?
+			{
+				bestErr = curErr;
+				bestxInts = xNbInts[curNbID];
+				bestyInts = yNbInts[curNbID];
+				xCutInt = bestxInts;
+				yCutInt = bestyInts;
+				if (xTBList.size() >= TbLen && yTBList.size() >= TbLen)
+				{
+					xTBList.erase(xTBList.begin());
+					yTBList.erase(yTBList.begin());
+				}
+				xTBList.push_back(bestxInts);
+				yTBList.push_back(bestyInts);
+				curDivID = 0;
+				curBVIt = 0;
+				break;
+			}
+			else
+			{
+				if (!CheckTabooList(xNbInts[curNbID], yNbInts[curNbID], xTBList, yTBList))//Check wheather in taboo list or not.
+				{
+					xCutInt = xNbInts[curNbID];
+					yCutInt = yNbInts[curNbID];
+					if (xTBList.size() >= TbLen && yTBList.size() >= TbLen)
+					{
+						xTBList.erase(xTBList.begin());
+						yTBList.erase(yTBList.begin());
+					}
+					xTBList.push_back(xCutInt);
+					yTBList.push_back(yCutInt);
+					curDivID++;
+					break;
+				}
+			}
+		}
+		
+		curBVIt++;
+		curItID++;
+	}
+	
+
+	m_basePCs = partBases;
+	m_charPCs = partChars;
+	char_pcs = partChars;
+	base_pcs = partBases;
+
+	delete pCurPD;
+	pCurPD = NULL;
 	return 0;
 }
 

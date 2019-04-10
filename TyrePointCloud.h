@@ -184,18 +184,13 @@ protected:
 		float voxel_res = 0.03f, float seed_res = 0.09f, float color_imp = 0.0f,
 		float spatial_imp=0.6f, float normal_imp=1.0f);
 
-	template<class T>
-	void SetIntervals(vector<T>& io_v,unsigned int InsertSize, T beg, T end);
+	//Plane Division methods
+	void GetPDNeighbors(PDYMajor basePD, unsigned int nghbNum, double stepLen, double stepLB, double stepUB, vector<PDYMajor>& pdNghbs);
 
-	template<class IntType>
-	void SplitAndEvaluatePC(vector<IntType> in_xv, vector<IntType> in_yv, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
+	void SplitAndEvaluatePC(PDYMajor curPD, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
 		pcl::PointCloud<PointXYZ>::Ptr in_pc, vector<pcl::PointCloud<PointXYZ>::Ptr>& out_chars, vector<pcl::PointCloud<PointXYZ>::Ptr>& out_bases, double& valErr);
 
-	template<class T>
-	void GetNeighborIntervals(vector<T> in_v, unsigned int nghbNum, T stepLen, T stepLB, T stepUB, vector<vector<T>>& out_Ints, bool NeedSort=true);
-
-	template<class IntType>
-	bool CheckTabooList(vector<IntType> in_xv, vector<IntType> in_yv, vector<vector<IntType>> xTb, vector<vector<IntType>> yTb);
+	bool CheckTabooList(PDYMajor curPD, vector<PDYMajor> Tb);
 
 public:
 	void InitCloudData();
