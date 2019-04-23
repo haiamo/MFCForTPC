@@ -26,7 +26,7 @@ extern "C" cudaError_t RANSACOnGPU(double* xvals, double* yvals, size_t pcsize, 
 							double* &paraList, int* &resInliers,	double* &modelErr, double* &dists, int &resIters);
 
 extern "C" cudaError_t DataFitToGivenModel(double* xvals, double* yvals, size_t pcSize, int paraSize, double* modelPara,double uTh, double lTh,
-							int* &resInliers, double* &modelErr);
+							int &resInliers, double &modelErr, double* &dists);
 
 #endif
 

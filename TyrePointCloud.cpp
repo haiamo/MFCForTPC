@@ -1409,6 +1409,66 @@ int TyrePointCloud::FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 	return 0;
 }
 
+int TyrePointCloud::FindCharsBy2DRANSACGPUStep(pcl::PointCloud<PointXYZ>::Ptr in_pc, int maxIters, int minInliers, int paraSize, double UTh, double LTh, pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc)
+{
+	cudaError_t cudaErr;
+	size_t pcsize = in_pc->points.size();
+	int *resInliers;
+	double *xvals, *yvals, *paraList, modelErr, *dists;
+
+	double* bestDist, *bestParas;
+
+	//Malloc spaces for data
+	bestParas = (double*)malloc(paraSize * sizeof(double));
+	resInliers = (int*)malloc(pcsize * sizeof(int));
+	xvals = (double*)malloc(pcsize * sizeof(double));
+	yvals = (double*)malloc(pcsize * sizeof(double));
+	paraList = (double*)malloc(paraSize * sizeof(double));
+	dists = (double*)malloc(pcsize * sizeof(double));
+
+	for (size_t ii = 0; ii < pcsize; ii++)
+	{
+		xvals[ii] = in_pc->points[ii].x;
+		yvals[ii] = in_pc->points[ii].z;
+	}
+
+	cudaErr = RANSACOnGPU1(xvals, yvals, pcsize, maxIters, minInliers, paraSize, UTh, LTh,
+		paraList, resInliers, modelErr, dists);
+
+	//Free spaces
+	if (NULL != bestParas)
+	{
+		free(bestParas);
+		bestParas = NULL;
+	}
+	if (NULL != resInliers)
+	{
+		free(resInliers);
+		resInliers = NULL;
+	}
+	if (NULL != xvals)
+	{
+		free(xvals);
+		xvals = NULL;
+	}
+	if (NULL != yvals)
+	{
+		free(yvals);
+		yvals = NULL;
+	}
+	if (NULL != paraList)
+	{
+		free(paraList);
+		paraList = NULL;
+	}
+	if (NULL != dists)
+	{
+		free(dists);
+		dists = NULL;
+	}
+	return 0;
+}
+
 int TyrePointCloud::FindCharsWithPieces(pcl::PointCloud<PointXYZ>::Ptr in_pc, TPCProperty prop, int maxIters, int minInliers, int paraSize, double UTh, double LTh, vector<pcl::PointCloud<PointXYZ>::Ptr>& char_pcs, vector<pcl::PointCloud<PointXYZ>::Ptr>& base_pcs)
 {
 	//Perpare variables

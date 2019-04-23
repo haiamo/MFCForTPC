@@ -536,7 +536,18 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 		}
 
 		QueryPerformanceCounter(&nst);
-		m_tpc.FindCharsBy2DRANSACGPU(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
+		//m_tpc.FindCharsBy2DRANSACGPU(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
+		//	stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base);
+		/*int maxInt = stoi(maxIt.GetBuffer()), minInt = stoi(minInlier.GetBuffer());
+		size_t* idList = new size_t[maxInt*minInt];
+		srand(time(NULL));
+		
+		for (size_t ii = 0; ii < maxInt*minInt; ii++)
+		{
+			idList[ii] = rand() / RAND_MAX * inCloud->points.size();
+		}*/
+
+		m_tpc.FindCharsBy2DRANSACGPUStep(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
 			stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base);
 		QueryPerformanceCounter(&nend);
 		tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;

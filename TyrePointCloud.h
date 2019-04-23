@@ -67,6 +67,9 @@
 #include <thrust\functional.h>
 
 #include "cuda_runtime.h"
+#include <cuda.h>
+#include <curand_kernel.h>
+#include <curand.h>
 
 #define GPUPCLIMIT 35000
 
@@ -291,6 +294,9 @@ public:
 		char_pc(out): The pointer of point cloud contains characteristics.
 		base_pc(out): The pointer of point cloud includes the basement points.
 	*/
+
+	int FindCharsBy2DRANSACGPUStep(pcl::PointCloud<PointXYZ>::Ptr in_pc, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
+		pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc);
 
 	int FindCharsWithPieces(pcl::PointCloud<PointXYZ>::Ptr in_pc, TPCProperty prop, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
 		vector<pcl::PointCloud<PointXYZ>::Ptr>& char_pcs, vector<pcl::PointCloud<PointXYZ>::Ptr>& base_pcs);

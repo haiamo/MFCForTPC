@@ -4,8 +4,8 @@
 */
 
 #pragma once
-#include<time.h>//时间相关头文件，可用其中函数计算图像处理速度  
 #include <stdio.h>
+#include <sstream>
 #include <iostream>
 #include <string>
 
@@ -14,6 +14,8 @@
 #include <thrust\host_vector.h>
 #include <thrust\transform.h>
 #include <time.h>
+
+#include "FileLogger.h"
 
 #define datasize 500000
 
@@ -24,6 +26,9 @@
 
 extern "C" cudaError_t RANSACOnGPU(double* xvals, double* yvals, size_t pcsize, int maxIters, int minInliers, int parasize, double uTh, double lTh,
 							double* &paraList, int* &resInliers,	double* &modelErr, double* &dists, int &resIters);
+
+extern "C" cudaError_t RANSACOnGPU1(double* xvals, double* yvals, size_t pcSize, int maxIters, int minInliers, int paraSize, double uTh, double lTh,
+							double* &bestParas, int* &resInliers, double &modelErr, double* &dists);
 
 extern "C" cudaError_t DataFitToGivenModel(double* xvals, double* yvals, size_t pcSize, int paraSize, double* modelPara,double uTh, double lTh,
 							int &resInliers, double &modelErr, double* &dists);

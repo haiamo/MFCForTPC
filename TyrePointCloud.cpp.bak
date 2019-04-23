@@ -46,6 +46,104 @@ TyrePointCloud::~TyrePointCloud()
 	m_pointNormals.reset();
 }
 
+void TyrePointCloud::GetPDNeighbors(PDYMajor basePD, unsigned int nghbNum, double stepLen, double stepLB, double stepUB, vector<PDYMajor>& pdNghbs)
+{
+	srand(time(0));
+	size_t xLen = 0, yLen = 0;
+	basePD.GetIntervalNums(xLen, yLen);
+	double tmpVal;
+	vector<double> xMoveVec, yMoveVec;
+	PDYMajor tmpPDY;
+	for (unsigned int ii = 0; ii < nghbNum; ii++)
+	{
+		tmpPDY = basePD;
+		if (xMoveVec.size() > 0)
+		{
+			xMoveVec.swap(vector<double>());
+		}
+		for (size_t tt = 0; tt < xLen - 2; tt++)
+		{
+			tmpVal = rand()*(stepUB - stepLB) / double(RAND_MAX) + stepLB;
+			xMoveVec.push_back(tmpVal);
+		}
+
+		if (yMoveVec.size() > 0)
+		{
+			yMoveVec.swap(vector<double>());
+		}
+		for (size_t tt = 0; tt < yLen - 2; tt++)
+		{
+			tmpVal = rand()*(stepUB - stepLB) / double(RAND_MAX) + stepLB;
+			yMoveVec.push_back(tmpVal);
+		}
+		tmpPDY.MoveAllIntervals(xMoveVec, yMoveVec);
+		pdNghbs.push_back(tmpPDY);
+	}
+}
+
+void TyrePointCloud::SplitAndEvaluatePC(PDYMajor curPD, int maxIters, int minInliers, int paraSize, double UTh, double LTh, pcl::PointCloud<PointXYZ>::Ptr in_pc, vector<pcl::PointCloud<PointXYZ>::Ptr>& out_chars, vector<pcl::PointCloud<PointXYZ>::Ptr>& out_bases, double & valErr)
+{
+	double* curPt = new double[3];
+	size_t pieceID = 0;
+	size_t xNum, yNum, PCparts;
+	curPD.GetIntervalNums(xNum, yNum);
+	PCparts = xNum + yNum - 3;
+	vector<pcl::PointCloud<PointXYZ>::Ptr> partPCs;
+	partPCs.reserve(PCparts);
+	pcl::PointCloud<PointXYZ>::Ptr tmpPC;
+	for (size_t ii = 0; ii < PCparts; ii++)
+	{
+		tmpPC.reset(::new pcl::PointCloud<PointXYZ>);
+		partPCs.push_back(tmpPC);
+	}
+
+	for (pcl::PointCloud<PointXYZ>::iterator ptID=in_pc->points.begin(); ptID < in_pc->points.end(); ptID++)
+	{
+		curPt[0] = ptID->x;
+		curPt[1] = ptID->y;
+		curPt[2] = ptID->z;
+		pieceID = 0;
+		curPD.GetPieceID(curPt, pieceID);
+		partPCs[pieceID]->points.push_back(*ptID);
+	}
+
+	pcl::PointCloud<PointXYZ>::Ptr tmpCharPC, tmpBasePC;
+	valErr = 0.0;
+	double basePtNum = 0.0, totalPtNum = 0.0;
+	for (vector<pcl::PointCloud<PointXYZ>::Ptr>::iterator pcIt = partPCs.begin(); pcIt < partPCs.end(); pcIt++)
+	{
+		tmpCharPC.reset(::new pcl::PointCloud<PointXYZ>);
+		tmpBasePC.reset(::new pcl::PointCloud<PointXYZ>);
+		if ((*pcIt)->points.size() > 0)
+		{
+			FindCharsBy2DRANSACGPU(*pcIt, maxIters, minInliers, paraSize, UTh, LTh, tmpCharPC, tmpBasePC);
+			out_chars.push_back(tmpCharPC);
+			out_bases.push_back(tmpBasePC);
+			basePtNum = tmpBasePC->points.size()*1.0;
+			totalPtNum = (*pcIt)->points.size()*1.0;
+			valErr += basePtNum / totalPtNum;
+		}
+	}
+
+	valErr /= PCparts;
+	delete[] curPt;
+	curPt = NULL;
+}
+
+bool TyrePointCloud::CheckTabooList(PDYMajor curPD, vector<PDYMajor> Tb)
+{
+	bool bInTbList = false;
+	for (vector<PDYMajor>::iterator tbIt = Tb.begin(); tbIt < Tb.end(); tbIt++)
+	{
+		if (curPD == *tbIt)
+		{
+			bInTbList = true;
+			break;
+		}
+	}
+	return bInTbList;
+}
+
 void TyrePointCloud::InitCloudData()
 {
 	//Protected point clouds;
@@ -295,218 +393,6 @@ int TyrePointCloud::SupervoxelClustering(pcl::PointCloud<PointXYZ>::Ptr in_pc,
 
 	return 0;
 }
-
-template<class T>
-void TyrePointCloud::SetIntervals(vector<T>& io_v, unsigned int InsertSize, T beg, T end)
-{
-	io_v.reserve(InsertSize + 1);
-	io_v.push_back(beg);
-	srand(time(0));
-	for (int ii = 0; ii < InsertSize; ii++)
-	{
-		io_v.push_back(rand() / T(RAND_MAX)*(end - beg) + beg);
-	}
-	io_v.push_back(end);
-	sort(io_v.begin(), io_v.end());
-}
-
-template<class IntType>
-void TyrePointCloud::SplitAndEvaluatePC(vector<IntType> in_xv, vector<IntType> in_yv, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
-	pcl::PointCloud<PointXYZ>::Ptr in_pc, vector<pcl::PointCloud<PointXYZ>::Ptr>& out_chars, vector<pcl::PointCloud<PointXYZ>::Ptr>& out_bases, double& valErr)
-{
-	size_t xAxisID, yAxisID, partPCID;
-	size_t xIt, yIt, PCparts = in_xv.size() + in_yv.size() - 3;
-	vector<pcl::PointCloud<PointXYZ>::Ptr> partPCs;
-	partPCs.reserve(PCparts);
-	pcl::PointCloud<PointXYZ>::Ptr tmpPC;
-	double basePtNum = 0.0, totalPtNum = 0.0;
-	for (size_t ii = 0; ii < PCparts; ii++)
-	{
-		tmpPC.reset(::new pcl::PointCloud<PointXYZ>);
-		partPCs.push_back(tmpPC);
-	}
-
-	vector<size_t> xSectNum(in_yv.size() - 1, 0);
-	size_t SectID = 0;
-	for (size_t ii = 1; ii < in_xv.size() - 1; ii++)
-	{
-		if (in_xv[ii] > in_xv[ii - 1])
-		{
-			xSectNum[SectID]++;
-		}
-		else
-		{
-			if (SectID > 0)
-			{
-				xSectNum[SectID] += xSectNum[SectID - 1];
-			}
-			SectID++;
-		}
-	}
-
-	vector<IntType> tmpXV;
-	size_t xBegID = 0, xEndID = 0;
-	for (pcl::PointCloud<PointXYZ>::iterator ptID = in_pc->points.begin(); ptID < in_pc->points.end(); ptID++)
-	{
-		yAxisID = 0;
-		for (yIt = 1; yIt < in_yv.size(); yIt++)
-		{
-			if (ptID->y > in_yv[yIt - 1] - ACCURACY && ptID->y < in_yv[yIt])
-			{
-				yAxisID = yIt;
-				break;
-			}
-		}
-
-		if (tmpXV.size() > 0)
-		{
-			tmpXV.clear();
-		}
-		if (yAxisID >= 2)
-		{
-			xBegID = xSectNum[yAxisID - 2] + 1;
-			xEndID = xSectNum[yAxisID - 1];
-		}
-		else
-		{
-			xBegID = 1;
-			xEndID = xSectNum[yAxisID - 1];
-		}
-		tmpXV.push_back(*in_xv.begin());
-		for (size_t ii = xBegID; ii <= xEndID; ii++)
-		{
-			tmpXV.push_back(in_xv[ii]);
-		}
-		tmpXV.push_back(*prev(in_xv.end()));
-
-		xAxisID = 0;
-		for (xIt=1; xIt < tmpXV.size(); xIt++)
-		{
-			if (ptID->x > tmpXV[xIt - 1] - ACCURACY && ptID->x < tmpXV[xIt])
-			{
-				xAxisID = xIt;
-				break;
-			}
-		}
-		if (0 == xAxisID)
-		{
-			xAxisID = tmpXV.size() - 1;
-		}
-		
-		partPCID = xSectNum[yAxisID - 1] + xAxisID;
-		partPCs[partPCID]->points.push_back(*ptID);
-	}
-
-	pcl::PointCloud<PointXYZ>::Ptr tmpCharPC, tmpBasePC;
-	valErr = 0.0;
-	for (vector<pcl::PointCloud<PointXYZ>::Ptr>::iterator pcIt = partPCs.begin(); pcIt < partPCs.end(); pcIt++)
-	{
-		tmpCharPC.reset(::new pcl::PointCloud<PointXYZ>);
-		tmpBasePC.reset(::new pcl::PointCloud<PointXYZ>);
-		if ((*pcIt)->points.size() > 0)
-		{
-			FindCharsBy2DRANSACGPU(*pcIt, maxIters, minInliers, paraSize, UTh, LTh, tmpCharPC, tmpBasePC);
-			out_chars.push_back(tmpCharPC);
-			out_bases.push_back(tmpBasePC);
-			basePtNum = tmpBasePC->points.size()*1.0;
-			totalPtNum = (*pcIt)->points.size()*1.0;
-			valErr += basePtNum / totalPtNum;
-		}
-	}
-
-	valErr /= PCparts;
-}
-
-template<class T>
-void TyrePointCloud::GetNeighborIntervals(vector<T> in_v, unsigned int nghbNum, T stepLen, T stepLB, T stepUB, vector<vector<T>>& out_Ints, bool NeedSort)
-{
-	T randStep;
-	srand(time(0));
-	size_t curIt = 0;
-	vector<float> curV;
-	out_Ints.clear();
-	out_Ints.reserve(nghbNum);
-	for (unsigned int ii = 0; ii < nghbNum; ii++)
-	{
-		curV.clear();
-		curV.reserve(in_v.size());
-		curV.push_back(in_v[0]);
-		for (unsigned int it = 1; it < in_v.size()-1; it++)
-		{
-			randStep = stepLen*(rand() / T(RAND_MAX)*(stepUB - stepLB) + stepLB);
-			if (in_v[it] + randStep<*in_v.begin() || in_v[it] + randStep>*prev(in_v.end()))
-			{
-				continue;
-			}
-			curV.push_back(in_v[it] + randStep);
-		}
-		curV.push_back(*prev(in_v.end()));
-		if (NeedSort)
-		{
-			sort(curV.begin(), curV.end());
-		}
-		curIt = 1;
-		do
-		{
-			if (curV[curIt] > curV[curIt-1] && curV[curIt] - curV[curIt - 1] < 10 * stepLen && curIt<curV.size()-1)
-			{
-				curV[curIt - 1] = (curV[curIt - 1] + curV[curIt]) / 2;
-				curV.erase(curV.begin() + curIt);
-			}
-			else
-			{
-				curIt++;
-			}
-		} while (curIt < curV.size());
-		out_Ints.push_back(curV);
-	}
-}
-
-template<class IntType>
-bool TyrePointCloud::CheckTabooList(vector<IntType> in_xv, vector<IntType> in_yv, vector<vector<IntType>> xTb, vector<vector<IntType>> yTb)
-{
-	bool bInTbList;
-	IntType tmpDiff;
-	for (size_t tbIt = 0; tbIt < xTb.size(); tbIt++)
-	{
-		bInTbList = true;
-		if (in_xv.size() != xTb[tbIt].size() || in_yv.size() != yTb[tbIt].size())
-		{
-			bInTbList = false;
-		}
-		else
-		{
-			for (size_t valID = 0; valID < in_xv.size(); valID++)
-			{
-				tmpDiff = abs(in_xv[valID] - xTb[tbIt][valID]);
-				if (tmpDiff > ACCURACY)
-				{
-					bInTbList = false;
-					break;
-				}
-			}
-			if (bInTbList)
-			{
-				for (size_t valID = 0; valID < in_yv.size(); valID++)
-				{
-					tmpDiff = abs(in_yv[valID] - yTb[tbIt][valID]);
-					if (tmpDiff > ACCURACY)
-					{
-						bInTbList = false;
-						break;
-					}
-				}
-			}
-		}
-		if (bInTbList)
-		{
-			break;
-		}
-	}
-	return bInTbList;
-}
-
-
 
 void TyrePointCloud::SetOriginPC(PointCloud<PointXYZ>::Ptr in_pc)
 {
@@ -1529,7 +1415,7 @@ int TyrePointCloud::FindCharsWithPieces(pcl::PointCloud<PointXYZ>::Ptr in_pc, TP
 	char_pcs.clear();
 	base_pcs.clear();
 	pcl::PointCloud<PointXYZ>::Ptr tmpBasePC, tmpCharPC, tmpPC;
-	unsigned int xInts = 3, yInts = 3;
+	unsigned int xInts = 5, yInts = 5;
 	
 	float xLB, xUB, xStep, xOrigin, yLB, yUB, yStep, yOrigin;
 	prop.GetAxisProp(&xLB, &xUB, &xStep, &xOrigin, 'x');
@@ -1567,9 +1453,10 @@ int TyrePointCloud::FindCharsWithPieces(pcl::PointCloud<PointXYZ>::Ptr in_pc, TP
 
 	//**********Taboo Searching Start 
 	//Initial result and variables for loop.
-	PlaneDivision *pCurPD = new PDYMajor();
-	pCurPD->GenerateAllRandIntervals(xInts, xBeg, xEnd, yInts, yBeg, yEnd);
-	vector<float> xTmpInt, xCutInt, yCutInt, bestxInts, bestyInts, candInts, tabooInts;
+	PDYMajor CurPD, bestPD;
+	CurPD.GenerateAllRandIntervals(xInts, xBeg, xEnd, yInts, yBeg, yEnd);
+	CurPD.SetCompareThreshold(10.0);
+	vector<PDYMajor> pdNghbors;
 
 	unsigned int MaxIt = 2000/*Max iteration*/,
 		DivIt = 100/*Threshold of Diversification Iteration*/,
@@ -1580,17 +1467,15 @@ int TyrePointCloud::FindCharsWithPieces(pcl::PointCloud<PointXYZ>::Ptr in_pc, TP
 	unsigned int curItID = 0/*Current Iteration Index*/, 
 		curDivID = 0/*Current Index for Diversification Waiting*/, 
 		curBVIt = 0/*Best value last iterations*/;
-	candInts.reserve(CandNum);
-	vector<vector<float>> xNbInts, yNbInts, xTBList, yTBList;
-	xTBList.reserve(TbLen);
-	yTBList.reserve(TbLen);
+
+	vector<PDYMajor> TBList;
+	TBList.reserve(TbLen);
 	vector<pair<size_t, double>> NbErrs;
 	pair<size_t, double> tmpErrPr;
 	while (curItID < MaxIt && curBVIt < MaxIt*0.1)
 	{
 		//Generate neighbors 
-		GetNeighborIntervals(xCutInt, CandNum, xStep, -10*xStep, 10*xStep, xNbInts, false);
-		GetNeighborIntervals(yCutInt, CandNum, yStep, -10*yStep, 10*yStep, yNbInts);
+		GetPDNeighbors(CurPD, CandNum, 1.0, -10.0, 10.0, pdNghbors);
 		NbErrs.clear();
 		NbErrs.reserve(CandNum);
 		for (size_t NbID = 0; NbID < CandNum; NbID++)
@@ -1603,7 +1488,8 @@ int TyrePointCloud::FindCharsWithPieces(pcl::PointCloud<PointXYZ>::Ptr in_pc, TP
 			{
 				partBases.clear();
 			}
-			SplitAndEvaluatePC(xNbInts[NbID], yNbInts[NbID], maxIters, minInliers, paraSize, UTh, LTh, in_pc, partChars, partBases, curErr);
+			//SplitAndEvaluatePC(xNbInts[NbID], yNbInts[NbID], maxIters, minInliers, paraSize, UTh, LTh, in_pc, partChars, partBases, curErr);
+			SplitAndEvaluatePC(pdNghbors[NbID], maxIters, minInliers, paraSize, UTh, LTh, in_pc, partChars, partBases, curErr);
 			tmpErrPr.first = NbID;
 			tmpErrPr.second = curErr;
 			NbErrs.push_back(tmpErrPr);
@@ -1617,40 +1503,32 @@ int TyrePointCloud::FindCharsWithPieces(pcl::PointCloud<PointXYZ>::Ptr in_pc, TP
 			if (curErr > bestErr)//Is best candidate better than best result?
 			{
 				bestErr = curErr;
-				bestxInts = xNbInts[curNbID];
-				bestyInts = yNbInts[curNbID];
-				xCutInt = bestxInts;
-				yCutInt = bestyInts;
-				if (xTBList.size() >= TbLen && yTBList.size() >= TbLen)
+				bestPD = pdNghbors[curNbID];
+				CurPD = bestPD;
+				if (TBList.size() >= TbLen)
 				{
-					xTBList.erase(xTBList.begin());
-					yTBList.erase(yTBList.begin());
+					TBList.erase(TBList.begin());
 				}
-				xTBList.push_back(bestxInts);
-				yTBList.push_back(bestyInts);
+				TBList.push_back(bestPD);
 				curDivID = 0;
 				curBVIt = 0;
 				break;
 			}
 			else
 			{
-				if (!CheckTabooList(xNbInts[curNbID], yNbInts[curNbID], xTBList, yTBList))//Check wheather in taboo list or not.
+				if (!CheckTabooList(pdNghbors[curNbID], TBList))//Check wheather in taboo list or not.
 				{
-					xCutInt = xNbInts[curNbID];
-					yCutInt = yNbInts[curNbID];
-					if (xTBList.size() >= TbLen && yTBList.size() >= TbLen)
+					CurPD = pdNghbors[curNbID];
+					if (TBList.size() >= TbLen)
 					{
-						xTBList.erase(xTBList.begin());
-						yTBList.erase(yTBList.begin());
+						TBList.erase(TBList.begin());
 					}
-					xTBList.push_back(xCutInt);
-					yTBList.push_back(yCutInt);
+					TBList.push_back(CurPD);
 					curDivID++;
 					break;
 				}
 			}
 		}
-		
 		curBVIt++;
 		curItID++;
 	}
@@ -1661,8 +1539,6 @@ int TyrePointCloud::FindCharsWithPieces(pcl::PointCloud<PointXYZ>::Ptr in_pc, TP
 	char_pcs = partChars;
 	base_pcs = partBases;
 
-	delete pCurPD;
-	pCurPD = NULL;
 	return 0;
 }
 
