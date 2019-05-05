@@ -94,7 +94,7 @@ public:
 	CEdit m_edt_LTh;
 	CEdit m_edt_UTh;
 	CStatic m_stc_FlPth;
-	CStatic m_stc_St;
+//	CStatic m_stc_St;
 	CButton m_btn_run;
 
 public:
@@ -112,7 +112,7 @@ protected:
 	template<typename DataType>
 	void ConvertMatToText(char*&io_text, const char* begLine, DataType** inData, int matCols, int matRows = 1, int matNums = 1);
 
-	void LoadAFile(CString cs_file, float& yBeg, RunFileProp& io_prop);
+	bool LoadAFile(CString cs_file, float& yBeg, RunFileProp& io_prop);
 
 	void RunThroughAFile(CString cs_file, RunFileProp& io_prop);
 
@@ -137,4 +137,6 @@ public:
 	CButton m_btn_save;
 	CButton m_btn_exit;
 	CEdit m_edt_Status;
+	CButton m_btn_runac;
+	afx_msg void OnBnClickedBtnRunautocut();
 };
