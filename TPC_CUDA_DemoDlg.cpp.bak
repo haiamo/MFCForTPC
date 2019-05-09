@@ -86,6 +86,7 @@ BEGIN_MESSAGE_MAP(CTPC_CUDA_DemoDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BTN_Save, &CTPC_CUDA_DemoDlg::OnBnClickedBtnSave)
 	ON_BN_CLICKED(IDC_BTN_RunFolder, &CTPC_CUDA_DemoDlg::OnBnClickedBtnRunfolder)
 	ON_BN_CLICKED(IDC_BTN_RunAutoCut, &CTPC_CUDA_DemoDlg::OnBnClickedBtnRunautocut)
+	ON_BN_CLICKED(IDC_BTN_GetDeviceProp, &CTPC_CUDA_DemoDlg::OnBnClickedBtnGetdeviceprop)
 END_MESSAGE_MAP()
 
 
@@ -494,7 +495,7 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	cloud = m_tpc.GetOriginalPC();
 	pcl::PointCloud<PointXYZ>::iterator listBeg, listEnd;
 	CString ptsize_cs;
-	size_t ptSizeBeg = 0, ptSizeEnd, totalPCSize = cloud->points.size(), PCPieces = (totalPCSize + PIECEPOINTSIZE) / PIECEPOINTSIZE;
+	size_t ptSizeBeg = 0, ptSizeEnd, totalPCSize = cloud->points.size(), PCPieces = (totalPCSize + PIECEPOINTSIZE - 1) / PIECEPOINTSIZE;
 	int dsFolder;
 	io_prop.Pieces = PCPieces;
 	io_prop.PieceRunTime.reserve(PCPieces);
@@ -537,7 +538,7 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 
 		QueryPerformanceCounter(&nst);
 		//m_tpc.FindCharsBy2DRANSACGPU(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
-		//	stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base);
+			//stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base);
 		/*int maxInt = stoi(maxIt.GetBuffer()), minInt = stoi(minInlier.GetBuffer());
 		size_t* idList = new size_t[maxInt*minInt];
 		srand(time(NULL));
@@ -845,4 +846,23 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnRunautocut()
 	}
 
 	EnableAllButtons(TRUE);
+}
+
+
+void CTPC_CUDA_DemoDlg::OnBnClickedBtnGetdeviceprop()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	cudaError_t cudaErr;
+	int count;
+	cudaErr = cudaGetDeviceCount(&count);
+	if (0 == count)
+	{
+		MessageBox(L"No variable Devices.", L"DeviceError",MB_OK);
+		return;
+	}
+	cudaDeviceProp myDProp;
+	for (int ii = 0; ii < count; ii++)
+	{
+		cudaErr = cudaGetDeviceProperties(&myDProp, ii);
+	}
 }

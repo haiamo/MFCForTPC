@@ -139,4 +139,5 @@ public:
 	CEdit m_edt_Status;
 	CButton m_btn_runac;
 	afx_msg void OnBnClickedBtnRunautocut();
+	afx_msg void OnBnClickedBtnGetdeviceprop();
 };

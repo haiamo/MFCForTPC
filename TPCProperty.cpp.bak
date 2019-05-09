@@ -311,6 +311,35 @@ int TPCProperty::GetAxisProp(float * lb, float * ub, float * step, float* origin
 	return 0;
 }
 
+int TPCProperty::SetAxisProp(float lb, float ub, float step, float origin, char axisName)
+{
+	switch (axisName)
+	{
+	case 'x':
+	case 'X':
+		m_loadprop.begX = lb;
+		m_loadprop.endX = ub;
+		m_loadprop.originX = origin;
+		m_loadprop.stepX = step;
+		break;
+	case 'y':
+	case 'Y':
+		m_loadprop.begY = lb;
+		m_loadprop.endY = ub;
+		m_loadprop.originY = origin;
+		m_loadprop.stepY = step;
+		break;
+	case 'z':
+	case 'Z':
+		m_loadprop.begZ = lb;
+		m_loadprop.endZ = ub;
+		m_loadprop.originZ = origin;
+		m_loadprop.stepZ = step;
+		break;
+	}
+	return 0;
+}
+
 int TPCProperty::GetWidthHeightBSize(size_t * w, size_t * h, int* bs)
 {
 	if (NULL != w)

@@ -365,3 +365,28 @@ int TPCProperty::GetRIType(string & typeR, string & typeI)
 	typeI = m_loadprop.typeIntensity;
 	return 0;
 }
+
+TPCProperty & TPCProperty::operator=(const TPCProperty & prop)
+{
+	if (this != &prop)
+	{
+		this->m_byteSize = prop.m_byteSize;
+		this->m_height = prop.m_height;
+		this->m_width = prop.m_width;
+		this->m_loadprop.begX = prop.m_loadprop.begX;
+		this->m_loadprop.begY = prop.m_loadprop.begY;
+		this->m_loadprop.begZ = prop.m_loadprop.begZ;
+		this->m_loadprop.endX = prop.m_loadprop.endX;
+		this->m_loadprop.endY = prop.m_loadprop.endY;
+		this->m_loadprop.endZ = prop.m_loadprop.endZ;
+		this->m_loadprop.originX = prop.m_loadprop.originX;
+		this->m_loadprop.originY = prop.m_loadprop.originY;
+		this->m_loadprop.originZ = prop.m_loadprop.originZ;
+		this->m_loadprop.stepX = prop.m_loadprop.stepX;
+		this->m_loadprop.stepY = prop.m_loadprop.stepY;
+		this->m_loadprop.stepZ = prop.m_loadprop.stepZ;
+		this->m_loadprop.typeIntensity = prop.m_loadprop.typeIntensity;
+		this->m_loadprop.typeRange = prop.m_loadprop.typeRange;
+	}
+	return *this;
+}

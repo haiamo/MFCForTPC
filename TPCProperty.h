@@ -43,6 +43,8 @@ public:
 
 	int GetRIType(string& typeR, string& typeI);
 
+	TPCProperty& operator=(const TPCProperty& prop);
+
 private:
 	size_t m_width;
 	size_t m_height;

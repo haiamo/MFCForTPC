@@ -75,6 +75,7 @@ void CTPC_CUDA_DemoDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_BTN_Exit, m_btn_exit);
 	DDX_Control(pDX, IDC_EDIT_Status, m_edt_Status);
 	DDX_Control(pDX, IDC_BTN_RunAutoCut, m_btn_runac);
+	DDX_Control(pDX, IDC_EDT_RANSACMethod, m_edt_ransacMethod);
 }
 
 BEGIN_MESSAGE_MAP(CTPC_CUDA_DemoDlg, CDialogEx)
@@ -122,14 +123,16 @@ BOOL CTPC_CUDA_DemoDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
-	m_edt_xBeg.SetWindowText(_T("110.0"));
-	m_edt_xEnd.SetWindowText(_T("144.275"));
+	m_edt_xBeg.SetWindowText(_T("0"));
+	m_edt_xEnd.SetWindowText(_T("2560"));
+	m_edt_DSFolder.SetWindowText(_T("64"));
+	m_edt_ransacMethod.SetWindowText(_T("0"));
 
 	m_edt_MaxIters.SetWindowText(_T("1000"));
 	m_edt_MinInliers.SetWindowText(_T("100"));
 	m_edt_ParaSize.SetWindowText(_T("4"));
-	m_edt_UTh.SetWindowText(_T("0.2"));
-	m_edt_LTh.SetWindowText(_T("0.2"));
+	m_edt_UTh.SetWindowText(_T("5"));
+	m_edt_LTh.SetWindowText(_T("5"));
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -279,7 +282,7 @@ int CTPC_CUDA_DemoDlg::SaveCloudToFile(PointTPtr p_inpc, string ex_info)
 		bIsBin = true;
 		ftype = "ply";
 	}
-	fe = pcl::io::savePLYFile(savepath + "_" + ex_info + "." + ftype, *p_inpc, bIsBin);
+	fe = pcl::io::savePLYFile(savepath + "_" + ex_info + "." + ftype, *p_inpc, false);
 	return fe;
 }
 
@@ -410,6 +413,7 @@ bool CTPC_CUDA_DemoDlg::LoadAFile(CString cs_file, float & yBeg, RunFileProp& io
 		tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;
 		io_prop.LoadTime = tmpT;
 		io_prop.TotalPtNum = (m_tpc.GetOriginalPC())->points.size();
+		m_tpc.SetTPCProp(m_tpcProp);
 		return true;
 	}
 }
@@ -482,12 +486,13 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	char* tmp_str = new char[1000];
 	LPCWSTR info_wstr;
 
-	CString maxIt, minInlier, paraSize, UTh, LTh;
+	CString maxIt, minInlier, paraSize, UTh, LTh, ransacMethod;
 	m_edt_MaxIters.GetWindowTextW(maxIt);
 	m_edt_MinInliers.GetWindowTextW(minInlier);
 	m_edt_ParaSize.GetWindowTextW(paraSize);
 	m_edt_UTh.GetWindowTextW(UTh);
 	m_edt_LTh.GetWindowTextW(LTh);
+	m_edt_ransacMethod.GetWindowTextW(ransacMethod);
 	pcl::PointCloud<PointXYZ>::Ptr chars(::new pcl::PointCloud<PointXYZ>);
 	pcl::PointCloud<PointXYZ>::Ptr base(::new pcl::PointCloud<PointXYZ>);
 	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
@@ -497,9 +502,6 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	CString ptsize_cs;
 	size_t ptSizeBeg = 0, ptSizeEnd, totalPCSize = cloud->points.size(), PCPieces = (totalPCSize + PIECEPOINTSIZE - 1) / PIECEPOINTSIZE;
 	int dsFolder;
-	io_prop.Pieces = PCPieces;
-	io_prop.PieceRunTime.reserve(PCPieces);
-
 	/*m_edt_PtSize.GetWindowTextW(ptsize_cs);
 	ptSizeBeg = stoll(ptsize_cs.GetBuffer());
 	m_edt_PtSize2.GetWindowTextW(ptsize_cs);
@@ -507,14 +509,34 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	m_edt_DSFolder.GetWindowTextW(ptsize_cs);
 	dsFolder = stoi(ptsize_cs.GetBuffer());
 
+	double* paraList = NULL;
+	m_tpc.DownSampling(cloud, dsFolder);
+	cloud = m_tpc.GetDownSample();
+	totalPCSize = cloud->points.size();
+	PCPieces = (totalPCSize + PIECEPOINTSIZE - 1) / PIECEPOINTSIZE;
+	io_prop.DownsamplePtNum = cloud->points.size();
+	io_prop.Pieces = PCPieces;
+	io_prop.PieceRunTime.reserve(PCPieces);
+
 	std::memset(info_str, 0, sizeof(info_str) / sizeof(char));
 	std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
-	std::sprintf(tmp_str, "The entire Point Cloud is split into %lu pieces,\r\n whose computing time are shown below:\r\n", PCPieces);
-	info_str = strcat(info_str, tmp_str);
+	if (dsFolder > 1)
+	{
+		std::sprintf(tmp_str, "The entire Point Cloud is downsampling by %lu folders.\r\n", dsFolder);
+		info_str = strcat(info_str, tmp_str);
+		std::sprintf(tmp_str, "The downsampling Cloud is split into %lu pieces,\r\n whose computing time are shown below:\r\n", PCPieces);
+		info_str = strcat(info_str, tmp_str);
+	}
+	else
+	{
+		std::sprintf(tmp_str, "The entire Point Cloud is split into %lu pieces,\r\n whose computing time are shown below:\r\n", PCPieces);
+		info_str = strcat(info_str, tmp_str);
+	}
 	info_wstr = A2W(info_str);
 	m_edt_Status.SetWindowTextW(info_wstr);
 	UpdateData(FALSE);
 	UpdateWindow();
+
 	for (int tt = 0; tt < PCPieces; tt++)
 	{
 		ptSizeBeg = tt*PIECEPOINTSIZE;
@@ -530,26 +552,36 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 		inCloud->points.clear();
 		for (size_t ptID = ptSizeBeg; ptID < ptSizeEnd; ptID++)
 		{
-			if (ptID%dsFolder == 0)
-			{
+			//if (ptID%dsFolder == 0)
+			//{
 				inCloud->points.push_back(cloud->points[ptID]);
-			}
+			//}
 		}
 
 		QueryPerformanceCounter(&nst);
-		//m_tpc.FindCharsBy2DRANSACGPU(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
-			//stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base);
-		/*int maxInt = stoi(maxIt.GetBuffer()), minInt = stoi(minInlier.GetBuffer());
-		size_t* idList = new size_t[maxInt*minInt];
-		srand(time(NULL));
-		
-		for (size_t ii = 0; ii < maxInt*minInt; ii++)
+		switch (stoi(ransacMethod.GetBuffer()))
 		{
-			idList[ii] = rand() / RAND_MAX * inCloud->points.size();
-		}*/
+		case 0:
+			paraList = new double[stoi(paraSize.GetBuffer())];
+			m_tpc.FindCharsBy2DRANSACGPU(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
+				stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base, paraList);
+			/*int maxInt = stoi(maxIt.GetBuffer()), minInt = stoi(minInlier.GetBuffer());
+			size_t* idList = new size_t[maxInt*minInt];
+			srand(time(NULL));
+		
+			for (size_t ii = 0; ii < maxInt*minInt; ii++)
+			{
+				idList[ii] = rand() / RAND_MAX * inCloud->points.size();
+			}*/
+			break;
+		case 1:
+		default:
+			paraList = new double[stoi(paraSize.GetBuffer())];
+			m_tpc.FindCharsBy2DRANSACGPUStep(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
+				stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base, paraList);
+			break;
+		}
 
-		m_tpc.FindCharsBy2DRANSACGPUStep(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
-			stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base);
 		QueryPerformanceCounter(&nend);
 		tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;
 		io_prop.PieceRunTime.push_back(tmpT);
@@ -559,11 +591,23 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 		info_str = strcat(info_str, tmp_str);
 		info_wstr = A2W(info_str);
 		m_edt_Status.SetWindowTextW(info_wstr);
+
 		UpdateData(FALSE);
 		UpdateWindow();
 	}
-
 	std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+	QueryPerformanceCounter(&nst);
+	//m_tpc.GenerateHypoBaseSurface(paraList, stoi(paraSize.GetBuffer()));
+	m_tpc.GenerateHypoBaseSurface(paraList, stoi(paraSize.GetBuffer()), cloud);
+	QueryPerformanceCounter(&nend);
+	tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;
+	std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
+	std::sprintf(tmp_str, "Hypobase generating costs %.3fs.\r\n", tmpT);
+	info_str = strcat(info_str, tmp_str);
+	info_wstr = A2W(info_str);
+	m_edt_Status.SetWindowTextW(info_wstr);
+
+
 	std::sprintf(tmp_str, "All computing work has been finished.");
 	info_str = strcat(info_str, tmp_str);
 	info_wstr = A2W(info_str);
@@ -574,17 +618,23 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	size_t ii = 0;
 	pcl::PointCloud<PointXYZ>::Ptr segPC = m_tpc.GetSegPC();
 	pcl::PointCloud<PointXYZ>::Ptr restPC = m_tpc.GetRestPC();
+	pcl::PointCloud<PointXYZ>::Ptr hypoPC = m_tpc.GetHypoBasePC();
 	string curName;
 	QueryPerformanceCounter(&nst);
 	curName = "BasePC_Total";
 	SaveCloudToFile(segPC, curName);
 	curName = "CharsPC_Total";
 	SaveCloudToFile(restPC, curName);
+	curName = "HypoBasePC_Total";
+	SaveCloudToFile(hypoPC, curName);
 	QueryPerformanceCounter(&nend);
 	tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;
 	io_prop.SaveTime = tmpT;
 
 	//Pointers clearation.
+	delete[] paraList;
+	paraList = NULL;
+
 	delete[] info_str;
 	delete[] tmp_str;
 	tmp_str = nullptr;
@@ -608,6 +658,10 @@ void CTPC_CUDA_DemoDlg::ReadFilePropIntoStream(RunFileProp in_prop, string & out
 	io_ss << "File Name " << in_prop.FileName << "." << endl;
 	io_ss << "Total Points " << in_prop.TotalPtNum << "." << endl;
 	io_ss << "Loading Time " << in_prop.LoadTime << "s." << endl;
+	if (in_prop.DownsamplePtNum > 0)
+	{
+		io_ss << "Down sampling Points " << in_prop.DownsamplePtNum << "." << endl;
+	}	
 	io_ss << "Point Pieces " << in_prop.Pieces << "." << endl;
 	io_ss << "Running Time " << in_prop.TotalRunTime << "s." << endl;
 	io_ss << "Running Pieces Time " << endl;
@@ -772,7 +826,7 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnRunfolder()
 				}
 			} while (_findnext(Handle, &FileInfo) == 0);
 
-			char* info_str = new char[10000];
+			char* info_str = new char[1024*1024/4];
 			string tmpStr = "", resStr = "";
 			for (vector<RunFileProp>::iterator it = vProp.begin(); it < vProp.end(); it++)
 			{

@@ -1431,9 +1431,22 @@ int TyrePointCloud::FindCharsBy2DRANSACGPUStep(pcl::PointCloud<PointXYZ>::Ptr in
 		xvals[ii] = in_pc->points[ii].x;
 		yvals[ii] = in_pc->points[ii].z;
 	}
-
 	cudaErr = RANSACOnGPU1(xvals, yvals, pcsize, maxIters, minInliers, paraSize, UTh, LTh,
 		paraList, resInliers, modelErr, dists);
+
+	for (size_t jj = 0; jj < pcsize; jj++)
+	{
+		if (resInliers[jj] >= 0)
+		{
+			base_pc->points.push_back(in_pc->points[jj]);
+		}
+		else
+		{
+			char_pc->points.push_back(in_pc->points[jj]);
+		}
+	}
+	m_restPC = char_pc;
+	m_segbase = base_pc;
 
 	//Free spaces
 	if (NULL != bestParas)
