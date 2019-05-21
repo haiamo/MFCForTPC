@@ -88,6 +88,7 @@ BEGIN_MESSAGE_MAP(CTPC_CUDA_DemoDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BTN_RunFolder, &CTPC_CUDA_DemoDlg::OnBnClickedBtnRunfolder)
 	ON_BN_CLICKED(IDC_BTN_RunAutoCut, &CTPC_CUDA_DemoDlg::OnBnClickedBtnRunautocut)
 	ON_BN_CLICKED(IDC_BTN_GetDeviceProp, &CTPC_CUDA_DemoDlg::OnBnClickedBtnGetdeviceprop)
+	ON_BN_CLICKED(IDC_BTN_Test, &CTPC_CUDA_DemoDlg::OnBnClickedBtnTest)
 END_MESSAGE_MAP()
 
 
@@ -391,18 +392,26 @@ bool CTPC_CUDA_DemoDlg::LoadAFile(CString cs_file, float & yBeg, RunFileProp& io
 
 		file_type = pcfile.substr(pcfile.length() - 4, 4);
 		size_t lastNpos = 0;
+		lastNpos = pcfile.find_last_of("\\");
+		io_prop.FileName = pcfile.substr(lastNpos + 1, pcfile.length() - lastNpos);
 
 		if (0 == strcmp(file_type.data(), ".dat"))
 		{
 			string xmlStr = "";
 			xmlStr = pcfile.substr(0, pcfile.length() - 4) + ".xml";
 			m_tpcProp.SetTPCLoadProp(xmlStr);
-			lastNpos = pcfile.find_last_of("\\");
-			io_prop.FileName = pcfile.substr(lastNpos + 1, pcfile.length() - lastNpos);
 		}
 
 		QueryPerformanceCounter(&nst);
-		f_error = m_tpc.LoadTyrePC(pcfile, m_tpcProp, xb, xe, yb);
+		if (0 == strcmp(file_type.data(), ".dat"))
+		{
+			f_error = m_tpc.LoadTyrePC(pcfile, m_tpcProp, xb, xe, yb);
+		}
+		else if (0 == strcmp(file_type.data(), ".ply"))
+		{
+			f_error = m_tpc.LoadTyrePC(pcfile, yb);
+		}
+		
 		QueryPerformanceCounter(&nend);
 		if (-1 == f_error)
 		{
@@ -522,14 +531,14 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
 	if (dsFolder > 1)
 	{
-		std::sprintf(tmp_str, "The entire Point Cloud is downsampling by %lu folders.\r\n", dsFolder);
+		std::sprintf(tmp_str, "The entire Point Cloud is downsampling by %d folders.\r\n", dsFolder);
 		info_str = strcat(info_str, tmp_str);
-		std::sprintf(tmp_str, "The downsampling Cloud is split into %lu pieces,\r\n whose computing time are shown below:\r\n", PCPieces);
+		std::sprintf(tmp_str, "The downsampling Cloud is split into %zd pieces,\r\n whose computing time are shown below:\r\n", PCPieces);
 		info_str = strcat(info_str, tmp_str);
 	}
 	else
 	{
-		std::sprintf(tmp_str, "The entire Point Cloud is split into %lu pieces,\r\n whose computing time are shown below:\r\n", PCPieces);
+		std::sprintf(tmp_str, "The entire Point Cloud is split into %zd pieces,\r\n whose computing time are shown below:\r\n", PCPieces);
 		info_str = strcat(info_str, tmp_str);
 	}
 	info_wstr = A2W(info_str);
@@ -919,4 +928,34 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnGetdeviceprop()
 	{
 		cudaErr = cudaGetDeviceProperties(&myDProp, ii);
 	}
+	
+	
+}
+
+void CTPC_CUDA_DemoDlg::OnBnClickedBtnTest()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	EnableAllButtons(FALSE);
+	m_tpc.InitCloudData();
+	CFileDialog fileopendlg(TRUE);
+	CString filepath;
+	if (fileopendlg.DoModal() == IDOK)
+	{
+		filepath = fileopendlg.GetPathName();
+		m_stc_FlPth.SetWindowText(filepath);
+	}
+	else
+	{
+		m_stc_FlPth.SetWindowText(L"");
+	}
+	float yBeg = 0.0f;
+
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	RunFileProp rfProp;
+	bool bLoad = true;
+	rfProp.Init();
+	QueryPerformanceFrequency(&nfreq);
+	QueryPerformanceCounter(&nst);
+	bLoad = LoadAFile(filepath, yBeg, rfProp);
+	QueryPerformanceCounter(&nend);
 }

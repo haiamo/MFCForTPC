@@ -125,7 +125,6 @@ enum PtRefType//Point reference type
 
 bool PairCompare(pair<size_t, double> pr1, pair<size_t, double> pr2);
 
-
 //Class for point cloud
 class TyrePointCloud
 {
@@ -314,4 +313,9 @@ public:
 	*/
 
 	int DownSampling(pcl::PointCloud<PointXYZ>::Ptr in_pc, int folder);
+
+	//NURBS+RANSAC
+	int FindCharsByNURBSRANSAC(pcl::PointCloud<PointXYZ>::Ptr in_pc, int maxIters, int minInliers,
+		pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc);
+
 };

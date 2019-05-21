@@ -143,4 +143,5 @@ public:
 	afx_msg void OnBnClickedBtnRunautocut();
 	afx_msg void OnBnClickedBtnGetdeviceprop();
 	CEdit m_edt_ransacMethod;
+	afx_msg void OnBnClickedBtnTest();
 };

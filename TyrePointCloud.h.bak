@@ -152,7 +152,7 @@ private:
 	PinObject m_pinsobj;
 
 	//Implementation
-	
+	TPCProperty m_TPCPorp;
 
 protected:
 	char* m_inCloud;//The input point cloud char pointer.
@@ -161,6 +161,7 @@ protected:
 	PointCloud<PointXYZ>::Ptr m_downsample;//Original down sampling cloud.
 	PointCloud<PointXYZ>::Ptr m_segbase;//Segementation basic cloud.
 	PointCloud<PointXYZ>::Ptr m_restPC;//Rest point cloud after segementation.
+	PointCloud<PointXYZ>::Ptr m_hypobase;//Hypobase surface cloud.
 	vector<PointCloud<PointXYZ>::Ptr> m_refPlanes;//Reference planes' list.
 	vector<ModelCoefficients::Ptr> m_refCoefs;//The coefficients of planes.
 	vector<PointCloud<PointXYZI>::Ptr> m_restClusters;//The clusters after segmentation searching
@@ -197,6 +198,11 @@ protected:
 
 public:
 	void InitCloudData();
+
+	int GenerateHypoBaseSurface(double* paraList, size_t paraSize);
+
+	int GenerateHypoBaseSurface(double* paraList, size_t paraSize, PointCloud<PointXYZ>::Ptr originPC);
+
 	//Get and Set point clouds.
 	void SetOriginPC(PointCloud<PointXYZ>::Ptr in_pc);
 	void setOriginRGBPC(PointCloud<PointXYZRGB>::Ptr in_pc);
@@ -204,6 +210,7 @@ public:
 	PointCloud<PointXYZ>::Ptr GetOriginalPC();
 	PointCloud<PointXYZ>::Ptr GetSegPC();
 	PointCloud<PointXYZ>::Ptr GetRestPC();
+	PointCloud<PointXYZ>::Ptr GetHypoBasePC();
 	PointCloud<PointXYZ>::Ptr GetDownSample();
 	PointCloud<PointXYZI>::Ptr GetPinsPC();
 	PointCloud<PointXYZRGB>::Ptr GetRGBPC();
@@ -227,6 +234,9 @@ public:
 	void SetNormalDistanceWeight(double ndw);
 	void SetInlierRatio(double ir);
 	void SetClusterTolerance(double ct);
+
+	//TPC Property
+	void SetTPCProp(TPCProperty& inProp);
 
 public:
 	int LoadTyrePC(string pcfile, TPCProperty& prop, float xBeg, float xEnd, float &yBeg);
@@ -281,7 +291,7 @@ public:
 	*/
 
 	int FindCharsBy2DRANSACGPU(pcl::PointCloud<PointXYZ>::Ptr in_pc, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
-		pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc);
+		pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc, double* paraList = NULL);
 	/* This function splits one in put point cloud(in_pc) into two parts: PC including chars(char_pc) and the basement
 	   one(base_pc).
 	   Parameters:
@@ -296,7 +306,7 @@ public:
 	*/
 
 	int FindCharsBy2DRANSACGPUStep(pcl::PointCloud<PointXYZ>::Ptr in_pc, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
-		pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc);
+		pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc, double* paraList=NULL);
 
 	int FindCharsWithPieces(pcl::PointCloud<PointXYZ>::Ptr in_pc, TPCProperty prop, int maxIters, int minInliers, int paraSize, double UTh, double LTh,
 		vector<pcl::PointCloud<PointXYZ>::Ptr>& char_pcs, vector<pcl::PointCloud<PointXYZ>::Ptr>& base_pcs);

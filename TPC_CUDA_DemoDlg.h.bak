@@ -37,6 +37,7 @@ struct RunFileProp
 	double SaveTime;
 	vector<double> PieceRunTime;
 	size_t TotalPtNum;
+	size_t DownsamplePtNum;
 	size_t Pieces;
 
 	void Init()
@@ -47,6 +48,7 @@ struct RunFileProp
 		SaveTime = 0.0;
 		PieceRunTime.clear();
 		TotalPtNum = 0;
+		DownsamplePtNum = 0;
 		Pieces = 0;
 	}
 };
@@ -140,4 +142,5 @@ public:
 	CButton m_btn_runac;
 	afx_msg void OnBnClickedBtnRunautocut();
 	afx_msg void OnBnClickedBtnGetdeviceprop();
+	CEdit m_edt_ransacMethod;
 };

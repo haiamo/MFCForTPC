@@ -792,7 +792,7 @@ int TyrePointCloud::FindPointNormalsGPU(PointCloud<PointXYZ>::Ptr in_pc, pcl::gp
 	radii_device.upload(radii);
 
 	// Output buffer on the device
-	pcl::gpu::NeighborIndices result_device(queries_device.size(), m_maxneighboranswers);
+	pcl::gpu::NeighborIndices result_device((int)queries_device.size(), m_maxneighboranswers);
 
 	// Do the actual search
 	octree_device->radiusSearch(queries_device, radii_device, m_maxneighboranswers, result_device);
@@ -1489,8 +1489,9 @@ int TyrePointCloud::FindCharsBy2DRANSACGPUStep(pcl::PointCloud<PointXYZ>::Ptr in
 	size_t pcsize = in_pc->points.size();
 	int *resInliers;
 	double *xvals, *yvals, modelErr, *dists;
+	CtrPtBound curBd;
 
-	double* bestDist, *bestParas;
+	double *bestParas;
 
 	//Malloc spaces for data
 	bestParas = (double*)malloc(paraSize * sizeof(double));
@@ -1504,9 +1505,32 @@ int TyrePointCloud::FindCharsBy2DRANSACGPUStep(pcl::PointCloud<PointXYZ>::Ptr in
 	{
 		xvals[ii] = in_pc->points[ii].x;
 		yvals[ii] = in_pc->points[ii].z;
+		if (ii == 0)
+		{
+			curBd.xbeg = xvals[ii];
+			curBd.xend = xvals[ii];
+			curBd.ybeg = yvals[ii];
+			curBd.yend = yvals[ii];
+		}
+		else
+		{
+			if (xvals[ii] < curBd.xbeg)
+			{
+				curBd.xbeg = xvals[ii];
+				curBd.ybeg = yvals[ii];
+			}
+
+			if (xvals[ii] > curBd.xend)
+			{
+				curBd.xend = xvals[ii];
+				curBd.yend = yvals[ii];
+			}
+		}
 	}
-	cudaErr = RANSACOnGPU1(xvals, yvals, pcsize, maxIters, minInliers, paraSize, UTh, LTh,
-		paraList, resInliers, modelErr, dists);
+	//cudaErr = RANSACOnGPU1(xvals, yvals, pcsize, maxIters, minInliers, paraSize, UTh, LTh,
+		//paraList, resInliers, modelErr, dists);
+
+	cudaErr = NURBSRANSACOnGPU(curBd,xvals, yvals, pcsize, maxIters, minInliers, UTh, resInliers, modelErr, dists);
 
 	for (size_t jj = 0; jj < pcsize; jj++)
 	{
@@ -1700,4 +1724,7 @@ int TyrePointCloud::DownSampling(pcl::PointCloud<PointXYZ>::Ptr in_pc, int folde
 	return 0;
 }
 
-
+int TyrePointCloud::FindCharsByNURBSRANSAC(pcl::PointCloud<PointXYZ>::Ptr in_pc, int maxIters, int minInliers, pcl::PointCloud<PointXYZ>::Ptr & char_pc, pcl::PointCloud<PointXYZ>::Ptr & base_pc)
+{
+	return 0;
+}

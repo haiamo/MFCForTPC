@@ -33,10 +33,8 @@ vector<double>& PlaneDivision::GetIntervalList(const char axisName)
 		break;
 	case 'y':
 	case 'Y':
-		return this->m_yIntervals;
-		break;
 	default:
-		return vector<double>();
+		return this->m_yIntervals;
 		break;
 	}
 }
@@ -44,7 +42,7 @@ vector<double>& PlaneDivision::GetIntervalList(const char axisName)
 void PlaneDivision::GenerateRandomInterval(unsigned int partNum, double axisBeg, double axisEnd, char axisName)
 {
 	double tmpVal = 0.0;
-	srand(time(0));
+	srand(unsigned int(time(0)));
 	vector<double> tmpVec;
 	tmpVec.reserve(partNum + 1);
 
