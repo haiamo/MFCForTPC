@@ -546,6 +546,8 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	UpdateData(FALSE);
 	UpdateWindow();
 
+	double* ctrPtx, *ctrPty;
+
 	for (int tt = 0; tt < PCPieces; tt++)
 	{
 		ptSizeBeg = tt*PIECEPOINTSIZE;
@@ -586,8 +588,10 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 		case 1:
 		default:
 			paraList = new double[stoi(paraSize.GetBuffer())];
+			ctrPtx = new double[stoi(minInlier.GetBuffer())];
+			ctrPty = new double[stoi(minInlier.GetBuffer())];
 			m_tpc.FindCharsBy2DRANSACGPUStep(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
-				stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base, paraList);
+				stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base,ctrPtx,ctrPty, paraList);
 			break;
 		}
 
@@ -607,7 +611,19 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
 	QueryPerformanceCounter(&nst);
 	//m_tpc.GenerateHypoBaseSurface(paraList, stoi(paraSize.GetBuffer()));
-	m_tpc.GenerateHypoBaseSurface(paraList, stoi(paraSize.GetBuffer()), cloud);
+	//m_tpc.GenerateHypoBaseSurface(paraList, stoi(paraSize.GetBuffer()), cloud);
+
+	GridProp inGP;
+	float beg, end, step, origin;
+	m_tpcProp.GetAxisProp(&beg, &end, &step, &origin, 'x');
+	inGP.xbeg = origin;
+	inGP.xend = origin + (end - beg)*step;
+	inGP.xstep = step*dsFolder;
+	m_tpcProp.GetAxisProp(&beg, &end, &step, &origin, 'y');
+	inGP.ybeg = origin;
+	inGP.yend = origin + (end - beg)*step;
+	inGP.ystep = step;
+	m_tpc.GenearteHypoNURBSCurve(inGP, ctrPtx, ctrPty, stoi(minInlier.GetBuffer()));
 	QueryPerformanceCounter(&nend);
 	tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;
 	std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
@@ -648,6 +664,10 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	delete[] tmp_str;
 	tmp_str = nullptr;
 	info_str = nullptr;
+	delete[] ctrPtx;
+	ctrPtx = NULL;
+	delete[] ctrPty;
+	ctrPty = NULL;
 	cloud.reset();
 }
 

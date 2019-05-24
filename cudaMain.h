@@ -28,7 +28,9 @@ typedef struct
 	double xend;
 	double ybeg;
 	double yend;
-}CtrPtBound;
+	double xstep;
+	double ystep;
+}CtrPtBound,GridProp;
 
 #ifdef __cplusplus
 
@@ -42,7 +44,9 @@ extern "C" cudaError_t DataFitToGivenModel(__in double* xvals, __in double* yval
 	__out int &resInliers, __out double &modelErr, __out double* &dists);
 
 extern "C" cudaError_t NURBSRANSACOnGPU(__in CtrPtBound inBound, __in double* xvals, __in double* yvals, __in size_t pcsize, __in int maxIters, __in int minInliers, __in double Threshold,
-	__out int*& resInliers, __out double &modelErr, __out double* &dists);
+	__out int*& resInliers, __out double &modelErr, __out double* &bestCtrx, __out double* &bestCtry);
+
+extern "C" cudaError_t GenNURBSCurve(__in GridProp inGP, __in double* ctrPtx, __in double* ctrPty, __in int ctrSize, __in size_t pcSize, __inout double* xvals, __inout double* yvals);
 #endif
 
 #endif

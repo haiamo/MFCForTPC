@@ -22,17 +22,27 @@
 #ifndef INCLUDES_CUDAMAIN_H_
 #define INCLUDES_CUDAMAIN_H_
 
+typedef struct
+{
+	double xbeg;
+	double xend;
+	double ybeg;
+	double yend;
+}CtrPtBound;
+
 #ifdef __cplusplus
 
-extern "C" cudaError_t RANSACOnGPU(double* xvals, double* yvals, size_t pcsize, int maxIters, int minInliers, int parasize, double uTh, double lTh,
-							double* &paraList, int* &resInliers,	double* &modelErr, double* &dists, int &resIters);
+extern "C" cudaError_t RANSACOnGPU(__in double* xvals,__in double* yvals,__in size_t pcsize,__in int maxIters,__in int minInliers,__in int parasize,__in double uTh,__in double lTh,
+	__out double* &paraList, __out int* &resInliers, __out	double* &modelErr, __out double* &dists, __out int &resIters);
 
-extern "C" cudaError_t RANSACOnGPU1(double* xvals, double* yvals, size_t pcSize, int maxIters, int minInliers, int paraSize, double uTh, double lTh,
-							double* &bestParas, int* &resInliers, double &modelErr, double* &dists);
+extern "C" cudaError_t RANSACOnGPU1(__in double* xvals, __in double* yvals, __in size_t pcSize, __in int maxIters, __in int minInliers, __in int paraSize, __in double uTh, __in double lTh,
+	__out double* &bestParas, __out int* &resInliers, __out double &modelErr, __out double* &dists);
 
-extern "C" cudaError_t DataFitToGivenModel(double* xvals, double* yvals, size_t pcSize, int paraSize, double* modelPara,double uTh, double lTh,
-							int &resInliers, double &modelErr, double* &dists);
+extern "C" cudaError_t DataFitToGivenModel(__in double* xvals, __in double* yvals, __in size_t pcSize, __in int paraSize, __in double* modelPara, __in double uTh, __in double lTh,
+	__out int &resInliers, __out double &modelErr, __out double* &dists);
 
+extern "C" cudaError_t NURBSRANSACOnGPU(__in CtrPtBound inBound, __in double* xvals, __in double* yvals, __in size_t pcsize, __in int maxIters, __in int minInliers, __in double Threshold,
+	__out int*& resInliers, __out double &modelErr, __out double* &dists);
 #endif
 
 #endif
