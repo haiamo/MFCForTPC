@@ -237,6 +237,46 @@ int TPCProperty::SetTPCLoadProp(string filename)
 	return 0;
 }
 
+int TPCProperty::GetAxisBoundary(float * lb, float * ub, char axisName)
+{
+	float beg, end, step, origin;
+	switch (axisName)
+	{
+	case 'x':
+	case 'X':
+		beg = m_loadprop.begX;
+		end = m_loadprop.endX;
+		step = m_loadprop.stepX;
+		origin = m_loadprop.originX;
+		break;
+	case 'y':
+	case 'Y':
+		beg = m_loadprop.begY;
+		end = m_loadprop.endY;
+		step = m_loadprop.stepY;
+		origin = m_loadprop.originY;
+		break;
+	case 'z':
+	case 'Z':
+		beg = m_loadprop.begZ;
+		end = m_loadprop.endZ;
+		step = m_loadprop.stepZ;
+		origin = m_loadprop.originZ;
+		break;
+	}
+	if (step > 0)
+	{
+		*lb = origin;
+		*ub = origin + (end - beg)*step;
+	}
+	else
+	{
+		*ub = origin;
+		*lb = origin + (end - beg)*step;
+	}
+	return 0;
+}
+
 int TPCProperty::GetAxisProp(float * lb, float * ub, float * step, float* origin, char axisName)
 {
 	switch (axisName)

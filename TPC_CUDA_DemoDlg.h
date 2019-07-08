@@ -25,7 +25,7 @@
 
 #include <atlconv.h>
 
-#define PIECEPOINTSIZE 1000000
+#define PIECEPOINTSIZE 20000000
 
 using namespace pcl;
 
@@ -34,7 +34,9 @@ struct RunFileProp
 	string FileName;
 	double LoadTime;
 	double TotalRunTime;
-	double SaveTime;
+	double TotalSaveTime;
+	vector<double> FileSaveTime;
+	vector<string> SavedFileName;
 	vector<double> PieceRunTime;
 	size_t TotalPtNum;
 	size_t DownsamplePtNum;
@@ -45,7 +47,9 @@ struct RunFileProp
 		FileName = "";
 		LoadTime = 0.0;
 		TotalRunTime = 0.0;
-		SaveTime = 0.0;
+		TotalSaveTime = 0.0;
+		FileSaveTime.clear();
+		SavedFileName.clear();
 		PieceRunTime.clear();
 		TotalPtNum = 0;
 		DownsamplePtNum = 0;
@@ -102,10 +106,10 @@ public:
 public:
 	//User defined methods
 	template <typename PointTPtr>
-	int SaveCloudToFile(vector<PointTPtr> p_inpc, string ex_info);
+	int SaveCloudToFile(vector<PointTPtr> p_inpc, string ex_info, RunFileProp &ioProp);
 
 	template <typename PointTPtr>
-	int SaveCloudToFile(PointTPtr p_inpc, string ex_info);
+	int SaveCloudToFile(PointTPtr p_inpc, string ex_info, RunFileProp &ioProp);
 
 protected:
 	//User defined methods
@@ -144,4 +148,20 @@ public:
 	afx_msg void OnBnClickedBtnGetdeviceprop();
 	CEdit m_edt_ransacMethod;
 	afx_msg void OnBnClickedBtnTest();
+//	afx_msg void OnEnChangeEditPtsize2();
+	afx_msg void OnEnChangeEdtRansacmethod();
+//	afx_msg void OnStnClickedStaticxub2();
+//	afx_msg void OnStnClickedStaticHeight3();
+//	afx_msg void OnStnClickedStaticPtsize2();
+	CStatic m_stc_Height2;
+	CStatic m_stc_Height3;
+	CStatic m_stc_PtSize;
+	CStatic m_stc_PtSize2;
+	CStatic m_stc_PtSize3;
+	CStatic m_stc_xLB2;
+	CStatic m_stc_xUB2;
+	CStatic m_stc_yStep2;
+	CStatic m_stc_zLB2;
+	CStatic m_stc_zUB2;
+	CStatic m_stc_zUB3;
 };

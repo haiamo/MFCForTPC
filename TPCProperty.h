@@ -35,6 +35,8 @@ public:
 
 	int SetTPCLoadProp(string filename);
 
+	int GetAxisBoundary(float* lb, float* ub, char axisName);
+
 	int GetAxisProp(float* lb, float* ub, float* step, float* origin, char axisName);
 
 	int SetAxisProp(float lb, float ub, float step, float origin, char axisName);

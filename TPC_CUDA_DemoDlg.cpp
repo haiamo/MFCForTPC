@@ -76,6 +76,17 @@ void CTPC_CUDA_DemoDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_Status, m_edt_Status);
 	DDX_Control(pDX, IDC_BTN_RunAutoCut, m_btn_runac);
 	DDX_Control(pDX, IDC_EDT_RANSACMethod, m_edt_ransacMethod);
+	DDX_Control(pDX, IDC_STATIC_Height2, m_stc_Height2);
+	DDX_Control(pDX, IDC_STATIC_Height3, m_stc_Height3);
+	DDX_Control(pDX, IDC_STATIC_PtSize, m_stc_PtSize);
+	DDX_Control(pDX, IDC_STATIC_PtSize2, m_stc_PtSize2);
+	DDX_Control(pDX, IDC_STATIC_PtSize3, m_stc_PtSize3);
+	DDX_Control(pDX, IDC_STATIC_xLB2, m_stc_xLB2);
+	DDX_Control(pDX, IDC_STATIC_xUB2, m_stc_xUB2);
+	DDX_Control(pDX, IDC_STATIC_yStep2, m_stc_yStep2);
+	DDX_Control(pDX, IDC_STATIC_zLB2, m_stc_zLB2);
+	DDX_Control(pDX, IDC_STATIC_zUB2, m_stc_zUB2);
+	DDX_Control(pDX, IDC_STATIC_zUB3, m_stc_zUB3);
 }
 
 BEGIN_MESSAGE_MAP(CTPC_CUDA_DemoDlg, CDialogEx)
@@ -89,6 +100,7 @@ BEGIN_MESSAGE_MAP(CTPC_CUDA_DemoDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BTN_RunAutoCut, &CTPC_CUDA_DemoDlg::OnBnClickedBtnRunautocut)
 	ON_BN_CLICKED(IDC_BTN_GetDeviceProp, &CTPC_CUDA_DemoDlg::OnBnClickedBtnGetdeviceprop)
 	ON_BN_CLICKED(IDC_BTN_Test, &CTPC_CUDA_DemoDlg::OnBnClickedBtnTest)
+	ON_EN_CHANGE(IDC_EDT_RANSACMethod, &CTPC_CUDA_DemoDlg::OnEnChangeEdtRansacmethod)
 END_MESSAGE_MAP()
 
 
@@ -126,6 +138,8 @@ BOOL CTPC_CUDA_DemoDlg::OnInitDialog()
 	// TODO: Add extra initialization here
 	m_edt_xBeg.SetWindowText(_T("0"));
 	m_edt_xEnd.SetWindowText(_T("2560"));
+	m_edt_PtSize.SetWindowText(_T("0"));
+	m_edt_PtSize2.SetWindowText(_T("100000"));
 	m_edt_DSFolder.SetWindowText(_T("64"));
 	m_edt_ransacMethod.SetWindowText(_T("0"));
 
@@ -248,7 +262,7 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnExit()
 }
 
 template<typename PointTPtr>
-int CTPC_CUDA_DemoDlg::SaveCloudToFile(vector<PointTPtr> p_inpc, string ex_info)
+int CTPC_CUDA_DemoDlg::SaveCloudToFile(vector<PointTPtr> p_inpc, string ex_info, RunFileProp &ioProp)
 {
 	string savepath, ftype;
 	GetPathAndType(savepath, ftype);
@@ -259,10 +273,19 @@ int CTPC_CUDA_DemoDlg::SaveCloudToFile(vector<PointTPtr> p_inpc, string ex_info)
 		bIsBin = true;
 		ftype = "ply";
 	}
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	double tmpT = 0.0;
+	QueryPerformanceFrequency(&nfreq);
+	
 	for (vector<PointTPtr>::iterator it = p_inpc.begin(); it < p_inpc.end(); it++)
 	{
-
-		fe = pcl::io::savePLYFile(savepath + "_" + to_string(int(it - p_inpc.begin())) + "_" + ex_info + "." + ftype, **it, bIsBin);
+		QueryPerformanceCounter(&nst);
+		fe = pcl::io::savePLYFile(savepath + "_" + to_string(int(it - p_inpc.begin())) + "_" + ex_info + "." + ftype, **it, false);
+		QueryPerformanceCounter(&nend);
+		tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart;
+		ioProp.SavedFileName.push_back(to_string(int(it - p_inpc.begin())) + "_" + ex_info);
+		ioProp.FileSaveTime.push_back(tmpT);
+		ioProp.TotalSaveTime += tmpT;
 		if (fe < 0)
 		{
 			res += fe;
@@ -272,7 +295,7 @@ int CTPC_CUDA_DemoDlg::SaveCloudToFile(vector<PointTPtr> p_inpc, string ex_info)
 }
 
 template<typename PointTPtr>
-int CTPC_CUDA_DemoDlg::SaveCloudToFile(PointTPtr p_inpc, string ex_info)
+int CTPC_CUDA_DemoDlg::SaveCloudToFile(PointTPtr p_inpc, string ex_info, RunFileProp &ioProp)
 {
 	string savepath, ftype;
 	GetPathAndType(savepath, ftype);
@@ -283,7 +306,16 @@ int CTPC_CUDA_DemoDlg::SaveCloudToFile(PointTPtr p_inpc, string ex_info)
 		bIsBin = true;
 		ftype = "ply";
 	}
+	LARGE_INTEGER nfreq, nst, nend;//Timer parameters.
+	double tmpT = 0.0;
+	QueryPerformanceFrequency(&nfreq);
+	QueryPerformanceCounter(&nst);
 	fe = pcl::io::savePLYFile(savepath + "_" + ex_info + "." + ftype, *p_inpc, false);
+	QueryPerformanceCounter(&nend);
+	tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart;
+	ioProp.SavedFileName.push_back(ex_info);
+	ioProp.FileSaveTime.push_back(tmpT);
+	ioProp.TotalSaveTime += tmpT;
 	return fe;
 }
 
@@ -409,7 +441,7 @@ bool CTPC_CUDA_DemoDlg::LoadAFile(CString cs_file, float & yBeg, RunFileProp& io
 		}
 		else if (0 == strcmp(file_type.data(), ".ply"))
 		{
-			f_error = m_tpc.LoadTyrePC(pcfile, yb);
+			f_error = m_tpc.LoadTyrePC(pcfile, m_tpcProp);
 		}
 		
 		QueryPerformanceCounter(&nend);
@@ -502,6 +534,8 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	m_edt_UTh.GetWindowTextW(UTh);
 	m_edt_LTh.GetWindowTextW(LTh);
 	m_edt_ransacMethod.GetWindowTextW(ransacMethod);
+	pcl::PointCloud<PointXYZI>::Ptr pins(::new pcl::PointCloud<PointXYZI>);
+	pcl::PointCloud<PointXYZI>::Ptr seghgh(::new pcl::PointCloud<PointXYZI>);
 	pcl::PointCloud<PointXYZ>::Ptr chars(::new pcl::PointCloud<PointXYZ>);
 	pcl::PointCloud<PointXYZ>::Ptr base(::new pcl::PointCloud<PointXYZ>);
 	PointCloud<PointXYZ>::Ptr cloud(::new PointCloud<PointXYZ>);//Create point cloud pointer.
@@ -509,17 +543,17 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	cloud = m_tpc.GetOriginalPC();
 	pcl::PointCloud<PointXYZ>::iterator listBeg, listEnd;
 	CString ptsize_cs;
-	size_t ptSizeBeg = 0, ptSizeEnd, totalPCSize = cloud->points.size(), PCPieces = (totalPCSize + PIECEPOINTSIZE - 1) / PIECEPOINTSIZE;
+	size_t ptSizeBeg = 0, ptSizeEnd = 0, totalPCSize = cloud->points.size(), PCPieces = (totalPCSize + PIECEPOINTSIZE - 1) / PIECEPOINTSIZE;
 	int dsFolder;
-	/*m_edt_PtSize.GetWindowTextW(ptsize_cs);
+	m_edt_PtSize.GetWindowTextW(ptsize_cs);
 	ptSizeBeg = stoll(ptsize_cs.GetBuffer());
 	m_edt_PtSize2.GetWindowTextW(ptsize_cs);
-	ptSizeEnd = stoll(ptsize_cs.GetBuffer());*/
+	ptSizeEnd = stoll(ptsize_cs.GetBuffer());
 	m_edt_DSFolder.GetWindowTextW(ptsize_cs);
 	dsFolder = stoi(ptsize_cs.GetBuffer());
 
 	double* paraList = NULL;
-	m_tpc.DownSampling(cloud, dsFolder);
+	m_tpc.DownSampling(cloud, dsFolder, ptSizeBeg, ptSizeEnd, m_tpcProp);
 	cloud = m_tpc.GetDownSample();
 	totalPCSize = cloud->points.size();
 	PCPieces = (totalPCSize + PIECEPOINTSIZE - 1) / PIECEPOINTSIZE;
@@ -547,6 +581,7 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	UpdateWindow();
 
 	double* ctrPtx, *ctrPty;
+	Point3Dw* ctrPts = NULL;
 
 	for (int tt = 0; tt < PCPieces; tt++)
 	{
@@ -586,13 +621,49 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 			}*/
 			break;
 		case 1:
-		default:
 			paraList = new double[stoi(paraSize.GetBuffer())];
 			ctrPtx = new double[stoi(minInlier.GetBuffer())];
 			ctrPty = new double[stoi(minInlier.GetBuffer())];
 			m_tpc.FindCharsBy2DRANSACGPUStep(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
 				stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), chars, base,ctrPtx,ctrPty, paraList);
 			break;
+		case 2:
+			paraList = new double[stoi(paraSize.GetBuffer())];
+			ctrPtx = new double[stoi(minInlier.GetBuffer())];
+			ctrPty = new double[stoi(minInlier.GetBuffer())];
+			m_tpc.SetClusterTolerance(min(stof(UTh.GetBuffer()), stof(LTh.GetBuffer())));
+			m_tpc.FindPinsByNURBSRANSAC(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()), stof(UTh.GetBuffer()),
+				stof(LTh.GetBuffer()), pins, base, ctrPtx, ctrPty);
+			break;
+		case 3:
+			paraList = new double[stoi(paraSize.GetBuffer())];
+			ctrPtx = new double[stoi(minInlier.GetBuffer())];
+			ctrPty = new double[stoi(minInlier.GetBuffer())];
+			m_tpc.SetClusterTolerance(min(stof(UTh.GetBuffer()), stof(LTh.GetBuffer())));
+			m_tpc.FindSegmentalHeightByNURBSRANSCA(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()), stof(UTh.GetBuffer()),
+				stof(LTh.GetBuffer()), seghgh, base, ctrPtx, ctrPty);
+			break;
+		case 4:
+			paraList = new double[stoi(paraSize.GetBuffer())];
+			ctrPtx = new double[stoi(minInlier.GetBuffer())];
+			ctrPty = new double[stoi(minInlier.GetBuffer())];
+			//ctrPts=new Point3Dw[]
+			float beg, end, origin, step;
+			size_t width, height;
+			m_tpcProp.GetAxisProp(&beg, &end, &step, &origin, 'x');
+			width = (size_t)(end - beg) / step + 1;
+			m_tpcProp.GetAxisProp(&beg, &end, &step, &origin, 'y');
+			height = (size_t)(end - beg) / step + 1;
+			ctrPts = new Point3Dw[(width + 2)*height];
+			const char* info = m_tpc.SplitBaseByNURBSAlongLine(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()), stof(UTh.GetBuffer()),
+				stof(LTh.GetBuffer()),(unsigned int)stoi(paraSize.GetBuffer()), pins, base, ctrPts);
+			if (strcmp(info, "Success") != 0)
+			{
+				MessageBox(A2W(info), L"Error", MB_OK | MB_ICONERROR);
+				return;
+			}
+			break;
+
 		}
 
 		QueryPerformanceCounter(&nend);
@@ -609,28 +680,32 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 		UpdateWindow();
 	}
 	std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
-	QueryPerformanceCounter(&nst);
+	/*QueryPerformanceCounter(&nst);
 	//m_tpc.GenerateHypoBaseSurface(paraList, stoi(paraSize.GetBuffer()));
 	//m_tpc.GenerateHypoBaseSurface(paraList, stoi(paraSize.GetBuffer()), cloud);
 
 	GridProp inGP;
 	float beg, end, step, origin;
+	size_t width, height;
 	m_tpcProp.GetAxisProp(&beg, &end, &step, &origin, 'x');
 	inGP.xbeg = origin;
 	inGP.xend = origin + (end - beg)*step;
 	inGP.xstep = step*dsFolder;
+	width = (size_t)(end - beg) / step + 1;
 	m_tpcProp.GetAxisProp(&beg, &end, &step, &origin, 'y');
 	inGP.ybeg = origin;
 	inGP.yend = origin + (end - beg)*step;
 	inGP.ystep = step;
-	m_tpc.GenearteHypoNURBSCurve(inGP, ctrPtx, ctrPty, stoi(minInlier.GetBuffer()));
+	height = (size_t)(end - beg) / step + 1;
+	//m_tpc.GenearteHypoNURBSCurve(inGP, ctrPtx, ctrPty, stoi(minInlier.GetBuffer()));
+	//m_tpc.GenerateHypoNURBSCurve(inGP, ctrPts, width + 2, height);
 	QueryPerformanceCounter(&nend);
 	tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;
 	std::memset(tmp_str, 0, sizeof(tmp_str) / sizeof(char));
 	std::sprintf(tmp_str, "Hypobase generating costs %.3fs.\r\n", tmpT);
 	info_str = strcat(info_str, tmp_str);
 	info_wstr = A2W(info_str);
-	m_edt_Status.SetWindowTextW(info_wstr);
+	m_edt_Status.SetWindowTextW(info_wstr);*/
 
 
 	std::sprintf(tmp_str, "All computing work has been finished.");
@@ -644,30 +719,72 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	pcl::PointCloud<PointXYZ>::Ptr segPC = m_tpc.GetSegPC();
 	pcl::PointCloud<PointXYZ>::Ptr restPC = m_tpc.GetRestPC();
 	pcl::PointCloud<PointXYZ>::Ptr hypoPC = m_tpc.GetHypoBasePC();
+	float beg, end, step, origin;
+	float xlb, xub, ylb, yub, zlb, zub, tmp;
+	m_tpcProp.GetAxisBoundary(&xlb, &xub, 'x');
+	m_tpcProp.GetAxisBoundary(&ylb, &yub, 'y');
+	m_tpcProp.GetAxisBoundary(&zlb, &zub, 'z');
+	for (pcl::PointCloud<PointXYZ>::iterator it = hypoPC->points.begin(); it < hypoPC->points.end();)
+	{
+		if ((it->x<xlb || it->x>xub) || (it->y<ylb || it->y>yub) || (it->z<zlb || it->z>zub))
+		{
+			it = hypoPC->points.erase(it);
+		}
+		else
+		{
+			it++;
+		}
+	}
+	vector<pcl::PointCloud<PointXYZI>::Ptr> pinsPC;
+	pcl::PointCloud<PointXYZI>::Ptr resPins = m_tpc.GetPinsPC();
+	m_tpc.GetRestClusters(pinsPC);
 	string curName;
-	QueryPerformanceCounter(&nst);
+	//QueryPerformanceCounter(&nst);
 	curName = "BasePC_Total";
-	SaveCloudToFile(segPC, curName);
+	SaveCloudToFile(segPC, curName, io_prop);
 	curName = "CharsPC_Total";
-	SaveCloudToFile(restPC, curName);
+	SaveCloudToFile(restPC, curName, io_prop);
 	curName = "HypoBasePC_Total";
-	SaveCloudToFile(hypoPC, curName);
-	QueryPerformanceCounter(&nend);
-	tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;
-	io_prop.SaveTime = tmpT;
+	SaveCloudToFile(hypoPC, curName, io_prop);
+	curName = "PinsClusterPC_Total";
+	SaveCloudToFile(pinsPC, curName, io_prop);
+	curName = "ResultPinsPC_Total";
+	SaveCloudToFile(resPins, curName, io_prop);
+	//QueryPerformanceCounter(&nend);
+	//tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;
+	//io_prop.TotalSaveTime = tmpT;
 
 	//Pointers clearation.
-	delete[] paraList;
-	paraList = NULL;
+	if (NULL != paraList)
+	{
+		delete[] paraList;
+		paraList = NULL;
+	}
 
-	delete[] info_str;
-	delete[] tmp_str;
-	tmp_str = nullptr;
-	info_str = nullptr;
-	delete[] ctrPtx;
-	ctrPtx = NULL;
-	delete[] ctrPty;
-	ctrPty = NULL;
+	if (NULL != info_str)
+	{
+		delete[] info_str;
+		info_str = NULL;
+	}
+
+	if (NULL != tmp_str)
+	{
+		delete[] tmp_str;
+		tmp_str = nullptr;
+	}
+
+	if (NULL != ctrPts)
+	{
+		delete[] ctrPts;
+		ctrPts = NULL;
+	}
+
+	if (NULL != ctrPty)
+	{
+		delete[] ctrPty;
+		ctrPty = NULL;
+	}
+
 	cloud.reset();
 }
 
@@ -705,7 +822,11 @@ void CTPC_CUDA_DemoDlg::ReadFilePropIntoStream(RunFileProp in_prop, string & out
 			io_ss << in_prop.PieceRunTime[it] << "s." << endl;
 		}
 	}
-	io_ss << "Saving Time " << in_prop.SaveTime << "s." << endl;
+	for (size_t ii = 0; ii < in_prop.SavedFileName.size(); ii++)
+	{
+		io_ss << in_prop.SavedFileName[ii] << " costs:" << in_prop.FileSaveTime[ii] << "s." << endl;
+	}
+	io_ss << "Total Saving Time " << in_prop.TotalSaveTime << "s." << endl;
 	string tmp = "";
 	out_str = "";
 	size_t dotPos = 0;
@@ -797,8 +918,9 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnSave()
 		LPCWSTR info_wch = A2W(info_str);
 		m_edt_Status.SetWindowTextW(info_wch);
 		pcl::PointCloud<PointXYZ>::Ptr oriPC = m_tpc.GetOriginalPC();
+		RunFileProp tmpProp;
 		QueryPerformanceCounter(&nst);
-		if (0 > SaveCloudToFile(oriPC, "OriginPC"))
+		if (0 > SaveCloudToFile(oriPC, "OriginPC", tmpProp))
 		{
 			MessageBox(L"Fail to save point cloud data, please check!", L"Save File Error", MB_OK | MB_ICONERROR);
 			m_edt_Status.SetWindowTextW(L"Saving failed: .ply file save failed.");
@@ -840,6 +962,8 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnRunfolder()
 			float yBeg = 0.0f;
 			RunFileProp tmpProp;
 			vector<RunFileProp> vProp;
+			pcl::PointCloud<PointXYZ>::Ptr tmpPC;
+			string PCName;
 			do {
 				tmpProp.Init();
 				pcfile = pcpath + FileInfo.name;
@@ -849,7 +973,10 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnRunfolder()
 				{
 					if (LoadAFile(filename, yBeg, tmpProp))
 					{
-						RunThroughAFile(filename,tmpProp);
+						//RunThroughAFile(filename,tmpProp);
+						tmpPC = m_tpc.GetOriginalPC();
+						PCName = "origin";
+						SaveCloudToFile(tmpPC, PCName, tmpProp);
 						vProp.push_back(tmpProp);
 					}
 				}
@@ -915,17 +1042,22 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnRunautocut()
 		m_edt_ParaSize.GetWindowTextW(paraSize);
 		m_edt_UTh.GetWindowTextW(UTh);
 		m_edt_LTh.GetWindowTextW(LTh);
+				size_t ptSizeBeg = 0, ptSizeEnd = 0;
+		m_edt_PtSize.GetWindowTextW(ptsize_cs);
+		ptSizeBeg = stoll(ptsize_cs.GetBuffer());
+		m_edt_PtSize2.GetWindowTextW(ptsize_cs);
+		ptSizeEnd = stoll(ptsize_cs.GetBuffer());
 		m_edt_DSFolder.GetWindowTextW(ptsize_cs);
 		int dsFolder = stoi(ptsize_cs.GetBuffer());
 		pcl::PointCloud<PointXYZ>::Ptr cloud = m_tpc.GetOriginalPC();
-		m_tpc.DownSampling(cloud, dsFolder);
+		m_tpc.DownSampling(cloud, dsFolder, ptSizeBeg, ptSizeEnd, m_tpcProp);
 		cloud = m_tpc.GetDownSample();
 		vector<pcl::PointCloud<PointXYZ>::Ptr> charPCs, basePCs;
 		m_tpc.FindCharsWithPieces(cloud, m_tpcProp, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()),
 			stoi(paraSize.GetBuffer()), stof(UTh.GetBuffer()), stof(LTh.GetBuffer()), charPCs, basePCs);
 
-		SaveCloudToFile(charPCs, "char");
-		SaveCloudToFile(basePCs, "base");
+		SaveCloudToFile(charPCs, "char", rfProp);
+		SaveCloudToFile(basePCs, "base", rfProp);
 	}
 
 	EnableAllButtons(TRUE);
@@ -978,4 +1110,44 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnTest()
 	QueryPerformanceCounter(&nst);
 	bLoad = LoadAFile(filepath, yBeg, rfProp);
 	QueryPerformanceCounter(&nend);
+}
+
+
+//void CTPC_CUDA_DemoDlg::OnEnChangeEditPtsize2()
+//{
+//	// TODO:  如果该控件是 RICHEDIT 控件，它将不
+//	// 发送此通知，除非重写 CDialogEx::OnInitDialog()
+//	// 函数并调用 CRichEditCtrl().SetEventMask()，
+//	// 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+//
+//	// TODO:  在此添加控件通知处理程序代码
+//}
+
+
+void CTPC_CUDA_DemoDlg::OnEnChangeEdtRansacmethod()
+{
+	// TODO:  如果该控件是 RICHEDIT 控件，它将不
+	// 发送此通知，除非重写 CDialogEx::OnInitDialog()
+	// 函数并调用 CRichEditCtrl().SetEventMask()，
+	// 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+	// TODO:  在此添加控件通知处理程序代码
+	CString ransacMethod;
+	m_edt_ransacMethod.GetWindowTextW(ransacMethod);
+	switch (stoi(ransacMethod.GetBuffer()))
+	{
+	case 0:
+	case 1:
+	case 2:
+	case 3:
+		m_stc_yStep2.SetWindowTextW(L"Para Size");
+		m_stc_zLB2.SetWindowTextW(L"Lower Threshold");
+		m_stc_zUB2.SetWindowTextW(L"Upper Threshold");
+		break;
+	case 4:
+		m_stc_yStep2.SetWindowTextW(L"Curve Size");
+		m_stc_zLB2.SetWindowTextW(L"Curvature Threshold");
+		m_stc_zUB2.SetWindowTextW(L"Degree Threshold");
+		break;
+	}
 }
