@@ -629,8 +629,8 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 			break;
 		case 2:
 			paraList = new double[stoi(paraSize.GetBuffer())];
-			ctrPtx = new double[stoi(minInlier.GetBuffer())];
-			ctrPty = new double[stoi(minInlier.GetBuffer())];
+			ctrPtx = new double[stoi(minInlier.GetBuffer()) + 2];
+			ctrPty = new double[stoi(minInlier.GetBuffer()) + 2];
 			m_tpc.SetClusterTolerance(min(stof(UTh.GetBuffer()), stof(LTh.GetBuffer())));
 			m_tpc.FindPinsByNURBSRANSAC(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()), stof(UTh.GetBuffer()),
 				stof(LTh.GetBuffer()), pins, base, ctrPtx, ctrPty);
@@ -720,7 +720,7 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	pcl::PointCloud<PointXYZ>::Ptr restPC = m_tpc.GetRestPC();
 	pcl::PointCloud<PointXYZ>::Ptr hypoPC = m_tpc.GetHypoBasePC();
 	float beg, end, step, origin;
-	float xlb, xub, ylb, yub, zlb, zub, tmp;
+	float xlb, xub, ylb, yub, zlb, zub;
 	m_tpcProp.GetAxisBoundary(&xlb, &xub, 'x');
 	m_tpcProp.GetAxisBoundary(&ylb, &yub, 'y');
 	m_tpcProp.GetAxisBoundary(&zlb, &zub, 'z');

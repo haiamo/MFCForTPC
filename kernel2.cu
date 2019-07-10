@@ -11,7 +11,7 @@
 #include "FileLogger.h"
 
 #define cudaERRORHANDEL(err, info) {if(cudaSuccess!=(err))\
-									{return (GetCUDAErrorInfo((err),(info)));}}
+									{return GetCUDAErrorInfo((err),(info));}}
 
 __host__ __device__ TPCVec4::TPCVec4(const Point3D& inVec, const float wt)
 {
@@ -104,13 +104,11 @@ __device__ TPCVec4 TPCVec4::Pt3DToHomoCoordPt(Point3D inV, float wt)
 	return tmp;
 }
 
-__device__ Point3D& TPCVec4::GetPoint3D()
+__device__ void TPCVec4::GetPoint3D(Point3D& outP3D)
 {
-	Point3D tmp;
-	tmp.x3 = x;
-	tmp.y3 = y;
-	tmp.z3 = z;
-	return tmp;
+	outP3D.x3 = x;
+	outP3D.y3 = y;
+	outP3D.z3 = z;
 }
 
 __device__ TPCVec4 TPCVec4::Cross(TPCVec4 v)
@@ -540,7 +538,7 @@ __device__ void CurvePoint3D(__in int span, __in int p, __in int n, __in double*
 	if (abs(denom) > 1e-6)
 	{
 		tmp /= denom;
-		*resPt = tmp.GetPoint3D();
+		tmp.GetPoint3D(*resPt);
 	}
 }
 
@@ -573,7 +571,6 @@ __device__ void CurvePointCurvature3D(__in int p, __in int m, __in double* U, __
 	*curvature = (der1Pt.Cross(der2Pt)).Length() / der1Pt.Length() / der1Pt.Length() / der1Pt.Length();
 
 	Point3Dw tanV, normV, binormV;
-	double tLen, nLen, bLen;
 	tanV = der1Pt;
 	tanV /= tanV.Length();
 
@@ -696,8 +693,7 @@ __global__ void GetCurvePointAndCurvature3D(__in Point3Dw* ctrPts, __in int ctrS
 		__inout Point3D* cvPts, __inout double* curvatures, __out Point3D* ptTans, __out Point3D* ptNorms)
 {
 	unsigned int bID = blockIdx.x + blockIdx.y*gridDim.x,
-		tID = threadIdx.x + threadIdx.y*blockDim.x + bID*blockDim.x*blockDim.y,
-		tIDInB = threadIdx.x + threadIdx.y*blockDim.x;
+		tID = threadIdx.x + threadIdx.y*blockDim.x + bID*blockDim.x*blockDim.y;
 	int p = 3,             //degree of basis function
 		n = ctrSize - 1,  //(n+1) control points,id=0,1,...,n.
 		m = n + p + 1;     //Size of knot vector(m+1),id=0,1,2,...,m.
@@ -721,7 +717,7 @@ __global__ void GetCurvePointAndCurvature3D(__in Point3Dw* ctrPts, __in int ctrS
 		double* Ndu = (double*)malloc((p + 1)*(p + 1) * sizeof(double));
 		double* a = (double*)malloc(2 * (p + 1) * sizeof(double)),
 			*ders2 = (double*)malloc(3 * (p + 1) * sizeof(double));
-		double curCvt, curNormx, curNormy, curNormz;
+		double curCvt;
 		Point3Dw* ders = (Point3Dw*)malloc(3 * sizeof(Point3Dw)),
 			*norms = (Point3Dw*)malloc(sizeof(Point3Dw)),
 			*tans = (Point3Dw*)malloc(sizeof(Point3Dw)),
@@ -793,8 +789,7 @@ __global__ void ClearCurvePoints(__in GridProp ptProp, __in Point3D* cvPts,__in 
 __global__ void GetDataPointCurvature3D(__in GridProp ptProp, __in char lineName, __in Point3D* cvPts,__in Point3D* cvNorms, __in Point3D* dtPts, __in unsigned int cvSize, __in double* cvCurvs, __in unsigned int dtSize, __out double* dtCurvs, __out Point3D* dtNorms)
 {
 	unsigned int bID = blockIdx.x + blockIdx.y*gridDim.x,
-		tID = threadIdx.x + threadIdx.y*blockDim.x + bID*blockDim.x*blockDim.y,
-		tIDInB = threadIdx.x + threadIdx.y*blockDim.x;
+		tID = threadIdx.x + threadIdx.y*blockDim.x + bID*blockDim.x*blockDim.y;
 
 	if (tID < dtSize)
 	{
@@ -998,7 +993,6 @@ const char* GetCUDAErrorInfo(cudaError_t inErr, char* refInfo)
 const char* NURBSCurveSearchGPU(GridProp ptProp, Point3D* inPts, unsigned int ptSize, char lineName,
 	float cvThrs, unsigned int cvSize, float dgThrs, unsigned int nghbs, int* outIDs, Point3Dw* outCtrs, Point3D* outCvPts)
 {
-	cudaError_t cudaErr;
 	unsigned int gridX = 1, gridY = 1;
 	GetGridFactor((unsigned int)ptSize, (unsigned int)THREAD_SIZE*THREAD_SIZE, gridX, gridY);
 	dim3 blocks(THREAD_SIZE, THREAD_SIZE);
@@ -1048,7 +1042,7 @@ const char* NURBSCurveSearchGPU(GridProp ptProp, Point3D* inPts, unsigned int pt
 	Point3D* h_cvPts, *h_cvTans, *h_cvNorms, *h_dtNorms, *h_validCvPts;
 	double* d_cvCurvature, *d_dtCurvature;
 	double* h_cvCurvature, *h_dtCurvature;
-	int* d_resID, *h_resID, *d_totalID, *h_totalID;
+	int* d_resID, *h_resID, *d_totalID;
 	unsigned int cvPoints = cvSize;
 	cudaERRORHANDEL(cudaMalloc((void**)&d_cvPts, cvPoints * sizeof(Point3D)), "Malloc d_cvPts");
 	cudaERRORHANDEL(cudaMalloc((void**)&d_validCvPts, cvPoints * sizeof(Point3D)), "Malloc d_validCvPts");

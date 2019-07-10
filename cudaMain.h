@@ -80,7 +80,7 @@ public:
 
 	__device__ TPCVec4 Pt3DToHomoCoordPt(Point3D inV, float wt);
 
-	__device__ Point3D& GetPoint3D();
+	__device__ void GetPoint3D(Point3D& outP3D);
 
 	__device__ TPCVec4 Cross(TPCVec4 v);
 
