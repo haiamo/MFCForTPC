@@ -236,8 +236,8 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnRun()
 		RunThroughAFile(filepath,rfProp);
 		QueryPerformanceCounter(&nend);
 
-		char* info_str = new char[1000];
-		char* tmp_str = new char[1000];
+		char* info_str = new char[100000];
+		char* tmp_str = new char[100000];
 		int str_len = 0;
 		USES_CONVERSION;
 		string resStr("");
@@ -582,6 +582,7 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 
 	double* ctrPtx, *ctrPty;
 	Point3Dw* ctrPts = NULL;
+	PointCloud<PointXYZI>::Ptr pinRadii;
 
 	for (int tt = 0; tt < PCPieces; tt++)
 	{
@@ -631,15 +632,19 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 			paraList = new double[stoi(paraSize.GetBuffer())];
 			ctrPtx = new double[stoi(minInlier.GetBuffer()) + 2];
 			ctrPty = new double[stoi(minInlier.GetBuffer()) + 2];
-			m_tpc.SetClusterTolerance(min(stof(UTh.GetBuffer()), stof(LTh.GetBuffer())));
+			m_tpc.SetClusterTolerance(2*min(stof(UTh.GetBuffer()), stof(LTh.GetBuffer())));
 			m_tpc.FindPinsByNURBSRANSAC(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()), stof(UTh.GetBuffer()),
 				stof(LTh.GetBuffer()), pins, base, ctrPtx, ctrPty);
+			if (pins->points.size() > 0)
+			{
+				m_tpc.GetPinsRadii(min(stof(UTh.GetBuffer()), stof(LTh.GetBuffer())), 0.8, pinRadii);
+			}
 			break;
 		case 3:
 			paraList = new double[stoi(paraSize.GetBuffer())];
 			ctrPtx = new double[stoi(minInlier.GetBuffer())];
 			ctrPty = new double[stoi(minInlier.GetBuffer())];
-			m_tpc.SetClusterTolerance(min(stof(UTh.GetBuffer()), stof(LTh.GetBuffer())));
+			m_tpc.SetClusterTolerance(2*min(stof(UTh.GetBuffer()), stof(LTh.GetBuffer())));
 			m_tpc.FindSegmentalHeightByNURBSRANSCA(inCloud, stoi(maxIt.GetBuffer()), stoi(minInlier.GetBuffer()), stof(UTh.GetBuffer()),
 				stof(LTh.GetBuffer()), seghgh, base, ctrPtx, ctrPty);
 			break;
@@ -750,6 +755,8 @@ void CTPC_CUDA_DemoDlg::RunThroughAFile(CString cs_file, RunFileProp& io_prop)
 	SaveCloudToFile(pinsPC, curName, io_prop);
 	curName = "ResultPinsPC_Total";
 	SaveCloudToFile(resPins, curName, io_prop);
+	curName = "PinRadii";
+	SaveCloudToFile(pinRadii, curName, io_prop);
 	//QueryPerformanceCounter(&nend);
 	//tmpT = (nend.QuadPart - nst.QuadPart)*1.0 / nfreq.QuadPart*1.0;
 	//io_prop.TotalSaveTime = tmpT;
@@ -1070,18 +1077,108 @@ void CTPC_CUDA_DemoDlg::OnBnClickedBtnGetdeviceprop()
 	cudaError_t cudaErr;
 	int count;
 	cudaErr = cudaGetDeviceCount(&count);
+	char* info_str = new char[1000];
+	int str_len = 0;
+	USES_CONVERSION;
+	
+	LPCWSTR info_wstr;
 	if (0 == count)
 	{
-		MessageBox(L"No variable Devices.", L"DeviceError",MB_OK);
+		//MessageBox(L"No variable Devices.", L"DeviceError",MB_OK);
+		std::sprintf(info_str, "No variable devices.");
+		info_wstr = A2W(info_str);
+		m_edt_Status.SetWindowTextW(info_wstr);
+		delete[] info_str;
+		info_str = NULL;
 		return;
 	}
 	cudaDeviceProp myDProp;
+	ofstream outFile("DeviceProperties.txt");
+	if (outFile.fail())
+	{
+		std::sprintf(info_str, "Open file failed!");
+		info_wstr = A2W(info_str);
+		m_edt_Status.SetWindowTextW(info_wstr);
+		delete[] info_str;
+		info_str = NULL;
+		return;
+	}
+	outFile.clear();
 	for (int ii = 0; ii < count; ii++)
 	{
 		cudaErr = cudaGetDeviceProperties(&myDProp, ii);
+		outFile << "Device ID: " << ii << endl
+			<< "Device Name: " << myDProp.name << endl
+			<< "Global Memory(GB): " << myDProp.totalGlobalMem / 1024 / 1024 / 1024 << endl
+			<< "Shared Memory(KB) Per Block: " << myDProp.sharedMemPerBlock / 1024 << endl
+			<< "32-bit Registers Per Block: " << myDProp.regsPerBlock << endl
+			<< "Warp Size: " << myDProp.warpSize << endl
+			<< "Maximum Pitch(MB) by Memory copies: " << myDProp.memPitch / 1024 / 1024 << endl
+			<< "Maximum number of threads per block: " << myDProp.maxThreadsPerBlock << endl
+			<< "Maximum size of threads dimension: (" << myDProp.maxThreadsDim[0] << "," << myDProp.maxThreadsDim[1] << "," << myDProp.maxThreadsDim[2] << ")" << endl
+			<< "Maximum size of grid: (" << myDProp.maxGridSize[0] << "," << myDProp.maxGridSize[1] << "," << myDProp.maxGridSize[2] << ")" << endl
+			<< "GPU Clock frequency(GHz): " << myDProp.clockRate / 1000 / 1000 << endl
+			<< "Constant Memory(KB): " << myDProp.totalConstMem / 1024 << endl
+			<< "Compute capability: " << myDProp.major << "." << myDProp.minor << endl
+			<< "Texture Alignment(B): " << myDProp.textureAlignment << endl
+			<< "Texture Pitch Alignment(B):" << myDProp.texturePitchAlignment << endl
+			<< "Multi Processor Count: " << myDProp.multiProcessorCount << endl
+			<< "Kernel Execute Timeout Enabled: " << myDProp.kernelExecTimeoutEnabled << endl
+			<< "Integrated:" << myDProp.integrated << endl
+			<< "Can Device map host memory? " << myDProp.canMapHostMemory << endl
+			<< "Compute Mode:" << myDProp.computeMode << endl
+			<< "Maximum Texture 1D:" << myDProp.maxTexture1D << endl
+			<< "Maximum Texture 1D Mipmap:" << myDProp.maxTexture1DMipmap << endl
+			<< "Maximum Texture 1D Linear:" << myDProp.maxTexture1DLinear << endl
+			<< "Maximum Texture 2D: (" << myDProp.maxTexture2D[0] << "," << myDProp.maxTexture2D[1] << ")" << endl
+			<< "Maximum Texture 2D Mipmap: (" << myDProp.maxTexture2DMipmap[0] << "," << myDProp.maxTexture2DMipmap[1] << ")" << endl
+			<< "Maximum Texture 2D Linear: (" << myDProp.maxTexture2DLinear[0] << "," << myDProp.maxTexture2DLinear[1] << "," << myDProp.maxTexture2DLinear[2] << ")" << endl
+			<< "Maximum Texture 2D Gather: (" << myDProp.maxTexture2DGather[0] << "," << myDProp.maxTexture2DGather[1] << ")" << endl
+			<< "Maximum Texture 3D: (" << myDProp.maxTexture3D[0] << "," << myDProp.maxTexture3D[1] << "," << myDProp.maxTexture3D[2] << ")" << endl
+			<< "Maximum Texture 3D Alternate: (" << myDProp.maxTexture3DAlt[0] << "," << myDProp.maxTexture3DAlt[1] << "," << myDProp.maxTexture3DAlt[2] << ")" << endl
+			<< "Maximum Texture Cube Map:" << myDProp.maxTextureCubemap << endl
+			<< "Maximum Texture 1D Layered: (" << myDProp.maxTexture1DLayered[0] << "," << myDProp.maxTexture1DLayered[1] << ")" << endl
+			<< "Maximum Texture 2D Layered: (" << myDProp.maxTexture2DLayered[0] << "," << myDProp.maxTexture2DLayered[1] << "," << myDProp.maxTexture2DLayered[2] << ")" << endl
+			<< "Maxiumu Texture Cube Map Layered: (" << myDProp.maxTextureCubemapLayered[0] << "," << myDProp.maxTextureCubemapLayered[1] << ")" << endl
+			<< "Maximum Surface 1D:" << myDProp.maxSurface1D << endl
+			<< "Maximum Surface 2D: (" << myDProp.maxSurface2D[0] << "," << myDProp.maxSurface2D[1] << ")" << endl
+			<< "Maximum Surface 3D: (" << myDProp.maxSurface3D[0] << "," << myDProp.maxSurface3D[1] << "," << myDProp.maxSurface3D[2] << ")" << endl
+			<< "Maximum Surface 1D Layered: (" << myDProp.maxSurface1DLayered[0] << "," << myDProp.maxSurface1DLayered[1] << ")" << endl
+			<< "Maximum Surface 2D Layered: (" << myDProp.maxSurface2DLayered[0] << "," << myDProp.maxSurface2DLayered[1] << "," << myDProp.maxSurface2DLayered[2] << ")" << endl
+			<< "Maximum Surface Cubemap:" << myDProp.maxSurfaceCubemap << endl
+			<< "Maximum Surface Cubemap Layered: (" << myDProp.maxSurfaceCubemapLayered[0] << "," << myDProp.maxSurfaceCubemapLayered[1] << ")" << endl
+			<< "Surface Alignment(B):" << myDProp.surfaceAlignment << endl
+			<< "Concurrent Kernels:" << myDProp.concurrentKernels << endl
+			<< "EEC Enabled:" << myDProp.ECCEnabled << endl
+			<< "PCI BUS ID:" << myDProp.pciBusID << endl
+			<< "PCI Device ID:" << myDProp.pciDeviceID << endl
+			<< "PCI Domain ID:" << myDProp.pciDeviceID << endl
+			<< "Tesla Device using TCC driver:" << myDProp.tccDriver << endl
+			<< "Asynchronous engine count:" << myDProp.asyncEngineCount << endl
+			<< "Unified Addressing:" << myDProp.unifiedAddressing << endl
+			<< "Peak Memory clock frequency(GHz): " << myDProp.memoryClockRate / 1000 / 1000 << endl
+			<< "Global Memory bus width(bit):" << myDProp.memoryBusWidth << endl
+			<< "L2 Cache size(MB):" << myDProp.l2CacheSize / 1024 / 1024 << endl
+			<< "Maximum Threads per MultiProcessor:" << myDProp.maxThreadsPerMultiProcessor << endl
+			<< "Stream Priorrities Supported:" << myDProp.streamPrioritiesSupported << endl
+			<< "Global L1 Cache Supported:" << myDProp.globalL1CacheSupported << endl
+			<< "Local L1 Cache Supported:" << myDProp.localL1CacheSupported << endl
+			<< "Shared Memory Per Multi Processors(KB):" << myDProp.sharedMemPerMultiprocessor / 1024 << endl
+			<< "Registers per Multi Processor:" << myDProp.regsPerMultiprocessor << endl
+			<< "Managed Memory:" << myDProp.managedMemory << endl
+			<< "Is Multi GPU Board:" << myDProp.isMultiGpuBoard << endl
+			<< "Multi GPU Bord Group ID:" << myDProp.multiGpuBoardGroupID << endl
+			<< "Host Native Atomic Supported:" << myDProp.hostNativeAtomicSupported << endl
+			<< "Single to Double Precision Performace Ratio:" << myDProp.singleToDoublePrecisionPerfRatio << endl
+			<< "Pageable Memory Access:" << myDProp.pageableMemoryAccess << endl
+			<< "Concurrent Managed Access:" << myDProp.concurrentManagedAccess << endl;
 	}
-	
-	
+	outFile.close();
+	std::sprintf(info_str, "Wrote device properties successfully!");
+	info_wstr = A2W(info_str);
+	m_edt_Status.SetWindowTextW(info_wstr);
+	delete[] info_str;
+	info_str = NULL;
 }
 
 void CTPC_CUDA_DemoDlg::OnBnClickedBtnTest()

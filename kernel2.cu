@@ -1172,3 +1172,927 @@ const char* NURBSCurveSearchGPU(GridProp ptProp, Point3D* inPts, unsigned int pt
 		&h_dtNorms);
 	return "Success";
 }
+
+__device__ void MergeStream(double* xs, double* ys, double* bx, double* by, int low, int mid, int high)
+{
+	int lb = mid - low, lc = high - mid;
+	if (!bx || !by)
+	{
+		return;
+	}
+
+	double* ax = xs + low, *ay = ys + low, *cx = xs + mid, *cy = ys + mid;
+
+	for (int i = 0; i < lb; i++)
+	{
+		bx[i] = ax[i];
+		by[i] = ay[i];
+	}
+
+	for (int i = 0, j = 0, k = 0; j < lb || k < lc;)
+	{
+		if (j < lb && (lc <= k || bx[j] < cx[k]))
+		{
+			ax[i] = bx[j];
+			ay[i] = by[j];
+			i++;
+			j++;
+		}
+
+		if (k < lc && (lb <= j || cx[k] <= bx[j]))
+		{
+			ax[i] = cx[k];
+			ay[i] = cy[k];
+			i++;
+			k++;
+		}
+	}
+}
+
+__device__ void MergeSortAlongStream(double* xs, double* ys, char axisName, double* tmpx, double* tmpy, int len)
+{
+
+	double* tgX, *tgY;
+	if (axisName == 'x' || axisName == 'X')
+	{
+		tgX = xs;
+		tgY = ys;
+	}
+	else
+	{
+		tgX = ys;
+		tgY = xs;
+	}
+
+	int k = 1, i = 0;
+	while (k < len)
+	{
+		i = 0;
+		while (i + 2 * k <= len)
+		{
+			MergeStream(xs, ys, tmpx, tmpy, i, i + k, i + 2 * k);
+			i += 2 * k;
+		}
+
+		if (i + k <= len)
+			MergeStream(xs, ys, tmpx, tmpy, i, i + k, len);
+
+		k *= 2;
+	}
+}
+
+__global__ void ConvertF2IMatStream(float* fVals, int fLen, size_t uiPitch, size_t width, size_t uiMax, size_t *uiVals)
+{
+	int bID = blockIdx.x + blockIdx.y*gridDim.x;
+	int tID = bID*blockDim.x*blockDim.y + threadIdx.y*blockDim.x + threadIdx.x;//Thread ID, as iteration ID.
+	size_t* pLine = uiVals;
+	while (tID < fLen)
+	{
+		pLine = (size_t*)((char*)uiVals + (tID / width)*uiPitch);
+		if (fVals[tID] < 1e-6)
+		{
+			pLine[tID%width] = 0;
+		}
+		else
+		{
+			pLine[tID%width] = size_t((fVals[tID] - 1e-6) / (1 - 1e-6)*uiMax);
+		}
+		tID += blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+	}
+}
+
+__global__ void GetHypoXYAtOnceStream(double* xs, double* ys, size_t* hypoID2D, size_t idPitch, size_t width, size_t height, double* hypoxs, size_t xPitch, double* hypoys, size_t yPitch)
+{
+	unsigned int bID = blockIdx.y*gridDim.x + blockIdx.x,
+		tID = bID*blockDim.x*blockDim.y + threadIdx.y*blockDim.x + threadIdx.x;
+	unsigned int curRow, curCol;
+	while (tID < width*height)
+	{
+		curRow = tID / width;
+		curCol = tID % width;
+		double* xsLine = (double*)((char*)hypoxs + curRow*xPitch),
+			*ysLine = (double*)((char*)hypoys + curRow*yPitch);
+		size_t* idLine = (size_t*)((char*)hypoID2D + curRow*idPitch);
+		xsLine[curCol] = xs[idLine[curCol]];
+		ysLine[curCol] = ys[idLine[curCol]];
+		tID += blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+	}
+}
+
+__global__ void SortHypoXYStream(CtrPtBound inBd, size_t width, size_t height, double* hypoxs, size_t xPitch, double* hypoys, size_t yPitch)
+{
+	unsigned int bID = blockIdx.y*gridDim.x + blockIdx.x,
+		tID = bID*blockDim.x*blockDim.y + threadIdx.y*blockDim.x + threadIdx.x;
+	double* xs = (double*)((char*)hypoxs + xPitch*tID), *ys = (double*)((char*)hypoys + yPitch*tID);
+	//QSortAlong(xs, ys, 'x', 0, width - 1);
+
+	double* tmpx = (double*)malloc(width * sizeof(double)), *tmpy = (double*)malloc(width * sizeof(double));
+
+	while (tID < height)
+	{
+		xs = (double*)((char*)hypoxs + xPitch*tID);
+		ys = (double*)((char*)hypoys + yPitch*tID);
+		//QSortAlong(xs, ys, 'x', 0, width - 1);
+
+		MergeSortAlongStream(xs, ys, 'x', tmpx, tmpy, width);
+		xs[0] = inBd.xbeg;
+		xs[width - 1] = inBd.xend;
+		ys[0] = inBd.ybeg;
+		ys[width - 1] = inBd.yend;
+
+		tID += blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+	}
+	free(tmpx);
+	tmpx = NULL;
+	free(tmpy);
+	tmpy = NULL;
+}
+
+__global__ void GetDataChordLenAndPStream(__in double* dataPtx, __in double* dataPty, __in double* dataPtz,__in double* dataH,
+	__in size_t xPitch, __in size_t yPitch, __in size_t zPitch, __in size_t hPitch, __in unsigned int width, __in unsigned int height,
+	__in size_t clPitch, __in size_t pPitch, __inout double* chordLen, __inout PointQuat* P)
+{
+	unsigned int bID = blockIdx.x + blockIdx.y*gridDim.x,
+		tID = threadIdx.x + threadIdx.y*blockDim.x + bID*blockDim.x*blockDim.y;
+
+	//Accumulated chord length parameterization for knot vector.
+	unsigned int rowID = tID / width, colID = tID%width;
+	double* xLine = (double*)((char*)dataPtx + rowID*xPitch),
+		*yLine = (double*)((char*)dataPty + rowID*yPitch),
+		*zLine = NULL,
+		*HLine = (double*)((char*)dataH + rowID*hPitch),
+		*clLine = (double*)((char*)chordLen + rowID*clPitch);
+	PointQuat *PLine = (PointQuat*)((char*)P + rowID*pPitch);
+	while (rowID<height && colID<width)
+	{
+		xLine = (double*)((char*)dataPtx + rowID*xPitch),
+			yLine = (double*)((char*)dataPty + rowID*yPitch),
+			//zLine = (double*)((char*)dataPtz + rowID*zPitch),
+			HLine = (double*)((char*)dataH + rowID*hPitch),
+			clLine = (double*)((char*)chordLen + rowID*clPitch);
+		if (NULL != dataPtz)
+		{
+			zLine = (double*)((char*)dataPtz + rowID*hPitch);
+		}
+		else
+		{
+			zLine = NULL;
+		}
+		PLine = (PointQuat*)((char*)P + rowID*pPitch);
+
+		if (colID < width - 1)
+		{
+			if (NULL != zLine)
+			{
+				clLine[colID] = sqrt((xLine[colID] - xLine[colID + 1])*(xLine[colID] - xLine[colID + 1]) +
+					(yLine[colID] - yLine[colID + 1])*(yLine[colID] - yLine[colID + 1]) +
+					(zLine[colID] - zLine[colID + 1])*(zLine[colID] - zLine[colID + 1]));
+			}
+			else
+			{
+				clLine[colID] = sqrt((xLine[colID] - xLine[colID + 1])*(xLine[colID] - xLine[colID + 1]) +
+					(yLine[colID] - yLine[colID + 1])*(yLine[colID] - yLine[colID + 1]));
+			}
+		}
+		HLine[colID] = 1.0;
+		PLine[colID].x = xLine[colID] * HLine[colID];
+		PLine[colID].y = yLine[colID] * HLine[colID];
+		if (NULL != zLine)
+		{
+			PLine[colID].z = zLine[colID] * HLine[colID];
+		}
+		else
+		{
+			PLine[colID].z = 0.0;
+		}
+		
+		PLine[colID].w = HLine[colID];
+
+		tID += blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+		rowID = tID / width;
+		colID = tID%width;
+	}
+}
+
+__global__ void GetChordTotalLenStream(__inout double* chrodLen, __in size_t clPitch, __in unsigned int width, __in unsigned int height)
+{
+	unsigned int bID = blockIdx.x + blockIdx.y*gridDim.x,
+		tID = threadIdx.x + threadIdx.y*blockDim.x + bID*blockDim.x*blockDim.y;
+
+	double* chordLenLine = (double*)((char*)chrodLen + tID*clPitch);
+	while (tID < height)
+	{
+		chordLenLine = (double*)((char*)chrodLen + tID*clPitch);
+		for (unsigned int ii = 0; ii < width - 1; ii++)
+		{
+			chordLenLine[ii + 1] += chordLenLine[ii];
+		}
+		tID += blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+	}
+}
+
+__global__ void GetUStream(__in double* chrodLen, __in size_t lenPitch, __in unsigned int width, __in unsigned int height, __in size_t UPitch, __inout double* U)
+{
+	unsigned int bID = blockIdx.x + blockIdx.y*gridDim.x,
+		tID = threadIdx.x + threadIdx.y*blockDim.x + bID*blockDim.x*blockDim.y;
+	
+	unsigned int rowID = tID / (width + 6), colID = tID % (width + 6);
+	double* tlLine = (double*)((char*)chrodLen + rowID*lenPitch),
+		*ULine = (double*)((char*)U + rowID*UPitch);
+	while (rowID < height && colID < (width + 6))
+	{
+		tlLine = (double*)((char*)chrodLen + rowID*lenPitch);
+		ULine = (double*)((char*)U + rowID*UPitch);
+		if (colID<4)
+		{
+			ULine[colID] = 0.0;
+		}
+		else if (colID > width + 1)
+		{
+			ULine[colID] = 1.0;
+		}
+		else
+		{
+			ULine[colID] = tlLine[colID - 4] / tlLine[width - 2];
+		}
+
+		tID += blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+		rowID = tID / (width + 6);
+		colID = tID % (width + 6);
+	}
+}
+
+
+__global__ void GetABCEStream(__in double* U, __in size_t UPitch, __in PointQuat* P, __in size_t PPitch,__in unsigned int width, __in unsigned int height,
+	__in size_t APitch, __in size_t BPitch, __in size_t CPitch, __in size_t EPitch, __out double* A, __out double* B, __out double* C, __out PointQuat* E)
+{
+	unsigned int bID = blockIdx.x + blockIdx.y*gridDim.x,
+		tID = threadIdx.x + threadIdx.y*blockDim.x + bID*blockDim.x*blockDim.y;
+
+	unsigned int tmpID, rowID = tID , colID = 0;
+	double* ALine = (double*)((char*)A + rowID*APitch),
+		*BLine = (double*)((char*)B + rowID*BPitch),
+		*CLine = (double*)((char*)C + rowID*CPitch),
+		*ULine = (double*)((char*)U + rowID*UPitch);
+	PointQuat* ELine = (PointQuat*)((char*)E + rowID*EPitch),
+		*PLine = (PointQuat*)((char*)P + rowID*PPitch);
+
+	//A,B,C,_C size 1*DataSize(Width), E,_E size 4*DataSize(Width)
+	/* A,B,C are vectors which contain values of tri-diagonal matrix with the following form:
+	|a1	b1	c1							|
+	|a2	b2	c2							|
+	|	a3	b3	c3						|
+	|		...	...	...					|
+	|			a_DS-1_	b_DS-1_	c_DS-1_	|
+	|			a_DS_	b_DS_	c_DS_	|
+	Therefore, A={a1,a2,...,a_DS_}, B={b1,b2,...,b_DS_} and C={c1,c2,...c_DS_}.
+	In algorithm, the indices of vectors are start from 0, so A[i]=a_i+1_, for i=0,1,...DS-1
+	*/
+
+	while (rowID < height)//dataSize - 1 = n
+	{
+		ALine = (double*)((char*)A + rowID*APitch);
+		BLine = (double*)((char*)B + rowID*BPitch);
+		CLine = (double*)((char*)C + rowID*CPitch);
+		ULine = (double*)((char*)U + rowID*UPitch);
+		ELine = (PointQuat*)((char*)E + rowID*EPitch);
+		PLine = (PointQuat*)((char*)P + rowID*PPitch);
+
+		while (colID < width)
+		{
+			//Free end boundary condition
+			if (colID == 0)
+			{
+				ALine[0] = 2 - (ULine[4] - ULine[3])*(ULine[5] - ULine[4]) / (ULine[5] - ULine[3]) / (ULine[5] - ULine[3]);
+				BLine[0] = (ULine[4] - ULine[3]) / (ULine[5] - ULine[3])*((ULine[5] - ULine[4]) / (ULine[5] - ULine[3]) - (ULine[4] - ULine[3]) / (ULine[6] - ULine[3]));
+				CLine[0] = (ULine[4] - ULine[3])*(ULine[4] - ULine[3]) / (ULine[5] - ULine[3]) / (ULine[6] - ULine[3]);
+				ELine[0] = PLine[0] + PLine[1];
+			}
+			else if (colID == width - 1)
+			{
+				ALine[width - 1] = (ULine[width + 2] - ULine[width + 1])*(ULine[width + 2] - ULine[width + 1]) /
+					(ULine[width + 2] - ULine[width]) / (ULine[width + 2] - ULine[width - 1]);
+				BLine[width - 1] = (ULine[width + 2] - ULine[width + 1]) / (ULine[width + 2] - ULine[width]) *
+					((ULine[width + 2] - ULine[width + 1]) / (ULine[width + 2] - ULine[width - 1]) - (ULine[width + 1] - ULine[width]) / (ULine[width + 2] - ULine[width]));
+				CLine[width - 1] = (ULine[width + 1] - ULine[width])*(ULine[width + 2] - ULine[width + 1]) /
+					(ULine[width + 2] - ULine[width]) / (ULine[width + 2] - ULine[width]) - 2;
+				ELine[width - 1] = -1 * PLine[width] - PLine[width - 1];
+			}//End of Free end boundary condition
+			else
+			{
+				//i=1,2,...,dataSize,i=j+1,j=1,...,dataSize-2, dataSize=width
+				//A[j]=(u_i+3-u_i+2)^2/(u_i+3-u_i)
+				tmpID = colID + 1;
+				ALine[colID] = (ULine[tmpID + 3] - ULine[tmpID + 2])*(ULine[tmpID + 3] - ULine[tmpID + 2]) / (ULine[tmpID + 3] - ULine[tmpID]);
+				//B[j]=(u_i+3-u_i+2)*(u_i+2-u_i)/(u_i+3-u_i)+(u_i+2-u_i+1)*(u_i+4-u_i+2)/(u_i+4-u_i+1)
+				BLine[colID] = (ULine[tmpID + 3] - ULine[tmpID + 2])*(ULine[tmpID + 2] - ULine[tmpID]) / (ULine[tmpID + 3] - ULine[tmpID]) +
+					(ULine[tmpID + 2] - ULine[tmpID + 1])*(ULine[tmpID + 4] - ULine[tmpID + 2]) / (ULine[tmpID + 4] - ULine[tmpID + 1]);
+				//C[j]=(u_i+2-u_i+1)^2/(u_i+4-u_i+1)
+				CLine[colID] = (ULine[tmpID + 2] - ULine[tmpID + 1])*(ULine[tmpID + 2] - ULine[tmpID + 1]) / (ULine[tmpID + 4] - ULine[tmpID + 1]);
+				//E[j]=(u_i+3-u_i+1)*P_i-1
+				ELine[colID] = PLine[tmpID - 1] * (ULine[tmpID + 3] - ULine[tmpID + 1]);
+			}
+
+			colID++;
+		}
+		tID += blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+		rowID = tID;
+	}
+}
+
+__global__ void GetControlPointsStream(__in double* dataPtx, __in double* dataPty, __in double* dataPtz, __in double* dataH,
+	__in size_t xPitch, __in size_t yPitch, __in size_t zPitch, __in size_t hPitch, __in double* A, __in double* B, __in double* C, __in double* _C, __in PointQuat* E, __in PointQuat* _E,
+	__in size_t APitch, __in size_t BPitch, __in size_t CPitch, __in size_t _CPitch, __in size_t EPitch, __in size_t _EPitch,
+	__in unsigned int width, __in unsigned int height,
+	__out PointQuat* ctrPts, __in size_t cpPitch)
+{
+	unsigned int bID = blockIdx.x + blockIdx.y*gridDim.x,
+		tID = threadIdx.x + threadIdx.y*blockDim.x + bID*blockDim.x*blockDim.y;
+
+	double __B0;
+	PointQuat curD, pre1D, pre2D;
+	unsigned int tmpID = 0, rowID = tID, colID = 0;
+	double* xLine = (double*)((char*)dataPtx + rowID*xPitch),
+		*yLine = (double*)((char*)dataPty + rowID*yPitch),
+		*zLine = NULL,
+		*hLine = (double*)((char*)dataH + rowID*hPitch);
+	if (NULL != dataPtz)
+	{
+		zLine = (double*)((char*)dataPtz + rowID*zPitch);
+	}
+	double* ALine = (double*)((char*)A + rowID*APitch),
+		*BLine = (double*)((char*)B + rowID*BPitch),
+		*CLine = (double*)((char*)C + rowID*CPitch),
+		*_CLine = (double*)((char*)_C + rowID*_CPitch);
+	PointQuat* ELine = (PointQuat*)((char*)E + rowID*EPitch),
+		*_ELine = (PointQuat*)((char*)_E + rowID*_EPitch),
+		*ctrPtLine = (PointQuat*)((char*)ctrPts + rowID*cpPitch);
+
+	while (rowID<height)
+	{//Modified Tri-diagonal matrix
+		xLine = (double*)((char*)dataPtx + rowID*xPitch);
+		yLine = (double*)((char*)dataPty + rowID*yPitch);
+		if (NULL != dataPtz)
+		{
+			zLine = (double*)((char*)dataPtz + rowID*zPitch);
+		}
+		hLine = (double*)((char*)dataH + rowID*hPitch);
+		ALine = (double*)((char*)A + rowID*APitch);
+		BLine = (double*)((char*)B + rowID*BPitch);
+		CLine = (double*)((char*)C + rowID*CPitch);
+		_CLine = (double*)((char*)_C + rowID*_CPitch);
+		ELine = (PointQuat*)((char*)E + rowID*EPitch);
+		_ELine = (PointQuat*)((char*)_E + rowID*_EPitch);
+		ctrPtLine = (PointQuat*)((char*)ctrPts + rowID*cpPitch);
+
+		__B0 = BLine[0] / ALine[0];
+		_CLine[0] = CLine[0] / ALine[0];
+		_CLine[1] = (CLine[1] * ALine[0] - ALine[1] * CLine[0]) / (BLine[1] * ALine[0] - ALine[1] * BLine[0]);
+		_ELine[0] = ELine[0] / ALine[0];
+		_ELine[1] = (ELine[1] - ALine[1] * ELine[0]) / (BLine[1] * ALine[0] - ALine[1] * BLine[0]);
+		for (int ii = 2; ii < width - 1; ii++)
+		{
+			_CLine[ii] = CLine[ii] / (BLine[ii] - ALine[ii] * _CLine[ii - 1]);
+			_ELine[ii] = (ELine[ii] - ALine[ii] * _ELine[ii - 1]) / (BLine[ii] - ALine[ii] * _CLine[ii - 1]);
+		}
+		tmpID = width - 1;
+		_CLine[tmpID] = CLine[tmpID] / (BLine[tmpID] - ALine[tmpID] * _CLine[tmpID - 1]) - _CLine[tmpID];
+		_ELine[tmpID] = (ELine[tmpID] - ALine[tmpID] * _ELine[tmpID - 2]) / (BLine[tmpID] - ALine[tmpID] * _CLine[tmpID - 2]) - _ELine[tmpID - 1];
+
+		//Chasing method to solve linear system of tri-diagonal matrix
+		ctrPtLine[width + 1].x = xLine[width - 1];
+		ctrPtLine[width + 1].y = yLine[width - 1];
+		if (NULL != zLine)
+		{
+			ctrPtLine[width + 1].z = zLine[width - 1];
+		}
+		else
+		{
+			ctrPtLine[width + 1].z = 0.0;
+		}
+		ctrPtLine[width + 1].w = hLine[width - 1];
+
+		pre1D = _ELine[width - 1] / _CLine[width - 1];
+		ctrPtLine[width] = pre1D.HomoCoordPtToPt3Dw();
+
+		for (unsigned int ii = width - 2; ii >= 1; ii--)
+		{
+			curD = _ELine[ii] - pre1D*_CLine[ii];
+			ctrPtLine[ii + 1] = curD.HomoCoordPtToPt3Dw();
+			if (ii == 1)
+			{
+				pre2D = pre1D;
+			}
+			pre1D = curD;
+		}
+		curD = _ELine[1] - __B0 * pre1D - _CLine[0] * pre2D;
+		ctrPtLine[1] = curD.HomoCoordPtToPt3Dw();
+
+		ctrPtLine[0].x = xLine[0];
+		ctrPtLine[0].y = yLine[0];
+		if (NULL != zLine)
+		{
+			ctrPtLine[0].z = zLine[0];
+		}
+		else
+		{
+			ctrPtLine[0].z = 0.0;
+		}
+		ctrPtLine[0].w = hLine[0];
+
+		tID += blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+		rowID = tID;
+	}
+}
+
+__global__ void GetCurvePointAndCurvature3DStream(__in Point3Dw* ctrPts,__in size_t cpPitch, __in unsigned int ctrSize, __in size_t pcSize,__in size_t height, __in double* inU, __in size_t UPitch,
+	__inout Point3D* cvPts,__in size_t cvPitch, __inout double* curvatures,__in size_t curPitch, __out Point3D* ptTans, __in size_t tanPitch, __out Point3D* ptNorms,__in size_t nmPitch)
+{
+	unsigned int bID = blockIdx.x + blockIdx.y*gridDim.x,
+		tID = threadIdx.x + threadIdx.y*blockDim.x + bID*blockDim.x*blockDim.y;
+	int p = 3,             //degree of basis function
+		n = ctrSize - 1,  //(n+1) control points,id=0,1,...,n.
+		m = n + p + 1;     //Size of knot vector(m+1),id=0,1,2,...,m.
+
+	Point3D curCurve;
+	int span = -1;// , prespan = -1;
+	double* N = (double*)malloc((p + 1) * sizeof(double)),
+		*left = (double*)malloc((p + 1) * sizeof(double)),
+		*right = (double*)malloc((p + 1) * sizeof(double));
+
+	double* Ndu = (double*)malloc((p + 1)*(p + 1) * sizeof(double)),
+		*a = (double*)malloc(2 * (p + 1) * sizeof(double)),
+		*ders2 = (double*)malloc(3 * (p + 1) * sizeof(double));
+	double curCvt;
+	Point3Dw ders[3], norms, tans, binorms;
+	/*Point3Dw* ders = (Point3Dw*)malloc(3 * sizeof(Point3Dw)),
+		*norms = (Point3Dw*)malloc(sizeof(Point3Dw)),
+		*tans = (Point3Dw*)malloc(sizeof(Point3Dw)),
+		*binorms = (Point3Dw*)malloc(sizeof(Point3Dw));*/
+
+	unsigned int rowID = tID / pcSize, colID = tID%pcSize;
+	double* curvLine = (double*)((char*)curvatures + rowID*curPitch);
+	Point3D* cvLine = (Point3D*)((char*)cvPts + rowID*cvPitch),
+		*tanLine = (Point3D*)((char*)ptTans + rowID*tanPitch),
+		*normLine = (Point3D*)((char*)ptNorms + rowID*nmPitch);
+	double u = (colID*1.0) / (pcSize*1.0);
+
+	while (rowID<height && colID<pcSize)
+	{
+		curvLine = (double*)((char*)curvatures + rowID*curPitch);
+		cvLine = (Point3D*)((char*)cvPts + rowID*cvPitch);
+		tanLine = (Point3D*)((char*)ptTans + rowID*tanPitch);
+		normLine = (Point3D*)((char*)ptNorms + rowID*nmPitch);
+
+		FindSpan1(n, p, u, inU, &span);
+		BasisFuns1(span, u, p, inU, left, right, N);
+		CurvePoint3D(span, p, n, N, ctrPts, &curCurve);
+		cvLine[colID] = curCurve;
+		cvLine[colID].id = tID;
+
+		CurvePointCurvature3D(p, m, inU, span, u, Ndu, ctrPts, left, right, a, ders2, ders, &curCvt, &norms, &tans, &binorms);
+
+		curvLine[colID] = curCvt;
+
+		if (NULL != tanLine)
+		{
+			tanLine[colID] = tans.HomoCoordPtToPt3D();
+			tanLine[colID].id = tID;
+		}
+
+		if (NULL != normLine)
+		{
+			normLine[colID] = norms.HomoCoordPtToPt3D();
+			normLine[colID].id = tID;
+		}
+		tID += blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+		rowID = tID / pcSize;
+		colID = tID%pcSize;
+		u = (colID*1.0) / (pcSize*1.0);
+	}
+	free(a);
+	a = NULL;
+	free(ders2);
+	ders2 = NULL;
+	free(Ndu);
+	Ndu = NULL;
+	free(N);
+	N = NULL;
+	free(left);
+	left = NULL;
+	free(right);
+	right = NULL;
+	/*free(ders);
+	ders = NULL;
+	free(norms);
+	norms = NULL;
+	free(tans);
+	tans = NULL;
+	free(binorms);
+	binorms = NULL;*/
+}
+
+
+__global__ void ClearCurvePointsStream(__in GridProp ptProp, __in Point3D* cvPts,__in size_t cvPitch, __in size_t cvSize,__in size_t height, __out Point3D* outcvPts,__in size_t outcvPitch)
+{
+	unsigned int bID = blockIdx.x + blockIdx.y*gridDim.x,
+		tID = threadIdx.x + threadIdx.y*blockDim.x + bID*blockDim.x*blockDim.y;
+
+	unsigned int rowID = tID / cvSize, colID = tID%cvSize;
+	double xLow = 0.0, xUpper = 0.0, yLow = 0.0, yUpper = 0.0;
+	if (ptProp.xbeg < ptProp.xend)
+	{
+		xLow = ptProp.xbeg;
+		xUpper = ptProp.xend;
+	}
+	else
+	{
+		xLow = ptProp.xend;
+		xUpper = ptProp.xbeg;
+	}
+
+	if (ptProp.ybeg < ptProp.yend)
+	{
+		yLow = ptProp.ybeg;
+		yUpper = ptProp.yend;
+	}
+	else
+	{
+		yLow = ptProp.yend;
+		yUpper = ptProp.ybeg;
+	}
+
+	Point3D* outcvLine = (Point3D*)((char*)outcvPts + rowID*outcvPitch),
+		*cvLine = (Point3D*)((char*)cvPts + rowID*cvPitch);
+	while (rowID<height && colID<cvSize)
+	{
+		outcvLine = (Point3D*)((char*)outcvPts + rowID*outcvPitch);
+		cvLine = (Point3D*)((char*)cvPts + rowID*cvPitch);
+
+		if ((xLow - 1e-6) < cvLine[colID].x3 && cvLine[colID].x3 < (xUpper + 1e-6) &&
+			(yLow - 1e-6) < cvLine[colID].y3 && cvLine[colID].y3 < (yUpper + 1e-6))
+		{
+			outcvLine[colID] = cvLine[colID];
+		}
+		else
+		{
+			outcvLine[colID].x3 = NAN;
+			outcvLine[colID].y3 = NAN;
+			outcvLine[colID].z3 = NAN;
+		}
+
+		tID += blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+		rowID = tID / cvSize;
+		colID = tID%cvSize;
+	}
+
+}
+
+__global__ void GetDataPointDistStream(__in double* hypox, __in size_t hypoxPitch, __in double* hypoy, __in size_t hypoyPitch,__in size_t hypoSize, __in double* dataPtx, __in double* dataPty, __in double* dataPtz, __in size_t xPitch, __in size_t yPitch, __in size_t zPitch, 
+	__in Point3Dw* ctrPts, __in size_t cpPitch, __in unsigned int ctrSize, __in size_t pcSize, __in size_t height, __in double* inU, __in size_t UPitch,
+	__in double* chordLen, __in size_t clPitch,__in size_t clSize, __out double * dists)
+{
+	unsigned int bID = blockIdx.x + blockIdx.y*gridDim.x,
+		tID = threadIdx.x + threadIdx.y*blockDim.x + bID*blockDim.x*blockDim.y;
+	int p = 3,             //degree of basis function
+		n = ctrSize - 1,  //(n+1) control points,id=0,1,...,n.
+		m = n + p + 1;     //Size of knot vector(m+1),id=0,1,2,...,m.
+
+	Point3D curCurve;
+	int span = -1;// , prespan = -1;
+	double* N = (double*)malloc((p + 1) * sizeof(double)),
+		*left = (double*)malloc((p + 1) * sizeof(double)),
+		*right = (double*)malloc((p + 1) * sizeof(double));
+
+	double* Ndu = (double*)malloc((p + 1)*(p + 1) * sizeof(double)),
+		*a = (double*)malloc(2 * (p + 1) * sizeof(double)),
+		*ders2 = (double*)malloc(3 * (p + 1) * sizeof(double));
+	double curCvt;
+	Point3Dw ders[3], norms, tans, binorms;
+
+	unsigned int rowID = tID / pcSize, colID = tID%pcSize;
+
+	double u = 0.0, ugap = 0.0, mingap = 1e10;
+	double chordLenTotal = 0.0, uLen = 0.0;
+	while (tID < pcSize)
+	{
+		double* hypoxLine = (double*)((char*)hypox + tID*hypoxPitch),
+			*hypoyLine = (double*)((char*)hypoy + tID*hypoyPitch);
+		for (unsigned int ii = 0; ii < hypoSize - 1; ii++)
+		{
+			if (hypoxLine[ii+1]<dataPtx[tID])
+			{
+				uLen += chordLen[ii];
+			}
+			else if (hypoxLine[ii] <= dataPtx[tID] && hypoxLine[ii + 1] >= dataPtx[tID])
+			{
+				uLen += chordLen[ii] * (dataPtx[tID] - hypoxLine[ii]) / (hypoxLine[ii + 1] - hypoxLine[ii]);
+			}
+			chordLenTotal += chordLen[ii];
+		}
+		u = uLen / chordLenTotal;
+		do {
+			FindSpan1(n, p, u, inU, &span);
+			BasisFuns1(span, u, p, inU, left, right, N);
+			CurvePoint3D(span, p, n, N, ctrPts, &curCurve);
+			ugap = curCurve.x2 - dataPtx[tID];
+			if (abs(ugap) < abs(mingap) && abs(ugap) > 1e-3)
+			{
+				mingap = ugap;
+			}
+			u += mingap / 2;
+		} while (ugap > 1e-3);
+
+		//CurvePointCurvature3D(p, m, inU, span, u, Ndu, ctrPts, left, right, a, ders2, ders, &curCvt, &norms, &tans, &binorms);
+
+		tID += blockDim.x*blockDim.y*gridDim.x*gridDim.y;
+	}
+
+	free(a);
+	a = NULL;
+	free(ders2);
+	ders2 = NULL;
+	free(Ndu);
+	Ndu = NULL;
+	free(N);
+	N = NULL;
+	free(left);
+	left = NULL;
+	free(right);
+	right = NULL;
+}
+
+
+const char* NURBSRANSACOnGPUStream(__in CtrPtBound inBound, __in double* xvals, __in double* yvals, __in size_t pcSize, __in int maxIters, __in int minInliers, __in double UTh, __in double LTh,
+	__out int*& resInliers, __out double &modelErr, __out double* &bestCtrx, __out double* &bestCtry, __out double* &bestDists)
+{
+	cudaError_t cudaErr;
+	unsigned int gridX = 1, gridY = 1;
+	dim3 blocks(32, 32), grids(gridX, gridY);
+	cudaEvent_t begEvent, endEvent;
+	cudaERRORHANDEL(cudaEventCreate(&begEvent), "begEvent Create");
+	cudaERRORHANDEL(cudaEventCreate(&endEvent), "endEvent Create");
+	float tEvent;
+
+	//I.Copy total data from host into device.
+	double* d_xs, *d_ys;
+	cudaERRORHANDEL(cudaMalloc((void**)&d_xs, sizeof(double)*pcSize), "Malloc d_xs");
+	cudaERRORHANDEL(cudaMalloc((void**)&d_ys, sizeof(double)*pcSize), "Malloc d_yx");
+	cudaERRORHANDEL(cudaEventRecord(begEvent, 0), "begEvent Record");
+	cudaERRORHANDEL(cudaMemcpy(d_xs, xvals, sizeof(double)*pcSize, cudaMemcpyHostToDevice), "Copy d_xs H2D");
+	cudaERRORHANDEL(cudaMemcpy(d_ys, yvals, sizeof(double)*pcSize, cudaMemcpyHostToDevice), "Copy d_ys H2D");
+	cudaERRORHANDEL(cudaEventRecord(endEvent, 0), "endEvent Record");
+	cudaERRORHANDEL(cudaEventSynchronize(endEvent), "endEvnet Sync");
+	cudaERRORHANDEL(cudaEventElapsedTime(&tEvent, begEvent, endEvent), "Calculating Event Time");
+	int curIt = 0;
+
+	//II.Choose hypo-point x and ys randomly.
+	//II.1 Generate uniform random values on GPU.
+	float *d_Randf, *h_Randf;
+	cudaERRORHANDEL(cudaMalloc((void**)&d_Randf, minInliers * maxIters * sizeof(float)), "Malloc d_Randf");
+	cudaERRORHANDEL(cudaMallocHost((void**)&h_Randf, minInliers*maxIters * sizeof(float)), "Malloc h_Randf");
+	curandGenerator_t gen;
+	curandStatus_t curandErr;
+	curandErr = curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
+	curandErr = curandSetPseudoRandomGeneratorSeed(gen, unsigned long long(time(0)));
+	curandErr = curandGenerateUniform(gen, d_Randf, minInliers * maxIters);
+
+	//cudaErr = UserDebugCopy(h_Randf, d_Randf, minInliers * maxIters * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaERRORHANDEL(cudaFreeHost(h_Randf), "Free h_Randf");
+
+	//II.2 Perpare variables to choose points randomly.
+	size_t *d_HypoIDs, *h_HypoIDs;
+	size_t hypoPitch;
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_HypoIDs, &hypoPitch, minInliers * sizeof(size_t), maxIters), "MallocPitch d_HypoIDs");
+	cudaERRORHANDEL(cudaMemset2D(d_HypoIDs, hypoPitch, 0, minInliers * sizeof(size_t), maxIters), "Memset d_HypoIDs");
+	cudaERRORHANDEL(cudaMallocHost((void**)&h_HypoIDs, minInliers*maxIters * sizeof(size_t)), "Malloc h_HypoIDs");
+
+	double *d_HypoXs, *d_HypoYs, *h_HypoXs, *h_HypoYs;
+	size_t hypoXPitch, hypoYPitch;
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_HypoXs, &hypoXPitch, minInliers * sizeof(double), maxIters), "Malloc d_HypoXs");
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_HypoYs, &hypoYPitch, minInliers * sizeof(double), maxIters), "Malloc d_HypoYs");
+	cudaERRORHANDEL(cudaMallocHost((void**)&h_HypoXs, minInliers*maxIters * sizeof(double)), "Malloc h_HypoXs");
+	cudaERRORHANDEL(cudaMallocHost((void**)&h_HypoYs, minInliers*maxIters * sizeof(double)), "Malloc h_HypoYs");
+
+	//II.3 Setup streams for choosing kernels on GPU.
+	unsigned int nStream = 8;
+	cudaStream_t* Streams = (cudaStream_t*)malloc(nStream * sizeof(cudaStream_t));
+	for (unsigned int ii = 0; ii < nStream; ii++)
+	{
+		cudaERRORHANDEL(cudaStreamCreate(&Streams[ii]), "Create Stream");
+	}
+	blocks = dim3(32, 32);
+	cudaERRORHANDEL(cudaEventRecord(begEvent, 0), "begEvent Record d_HypoIDs");
+	unsigned int offsetRowsBase = (maxIters + nStream - 1) / nStream, useRows = offsetRowsBase, offsetRows;
+	unsigned int useGrid = 10 / nStream;
+
+	//II.4 Start selecting points randomly on GPU by streams.
+	for (unsigned int ii = 0; ii < nStream; ii++)
+	{
+		offsetRows = ii*offsetRowsBase;
+		if (ii == nStream - 1)
+		{
+			useRows = maxIters - ii*offsetRowsBase;
+			if (10 % nStream > 0)
+			{
+				useGrid = 10 % nStream;
+			}
+		}
+
+		ConvertF2IMatStream << <useGrid, blocks, 0, Streams[ii] >> > (&d_Randf[offsetRows*minInliers], useRows*minInliers, hypoPitch, minInliers, pcSize, (size_t*)((char*)d_HypoIDs + offsetRows*hypoPitch));
+		cudaERRORHANDEL(cudaGetLastError(), "ConvertF2IMatStream Error");
+		//cudaERRORHANDEL(cudaMemcpy2DAsync(&h_HypoIDs[offsetRows*minInliers], minInliers * sizeof(size_t), (size_t*)((char*)d_HypoIDs + offsetRows*hypoPitch), hypoPitch, minInliers * sizeof(size_t), useRows, cudaMemcpyDeviceToHost, Streams[ii]), "Stream D2H Copy h_HypoIDs");
+		GetHypoXYAtOnceStream << <useGrid, blocks, 0, Streams[ii] >> > (d_xs, d_ys,(size_t*)((char*)d_HypoIDs+offsetRows*hypoPitch), hypoPitch, minInliers, useRows, (double*)((char*)d_HypoXs+offsetRows*hypoXPitch), hypoXPitch, (double*)((char*)d_HypoYs+offsetRows*hypoYPitch), hypoYPitch);
+		cudaERRORHANDEL(cudaGetLastError(), "GetHypoXYAtOnceStream Error");
+		//cudaERRORHANDEL(cudaMemcpy2DAsync(&h_HypoXs[offsetRows*minInliers], minInliers * sizeof(double), (double*)((char*)d_HypoXs + offsetRows*hypoXPitch), hypoXPitch, minInliers * sizeof(double), useRows, cudaMemcpyDeviceToHost, Streams[ii]), "Stream D2H Copy h_HypoXs");
+		//cudaERRORHANDEL(cudaMemcpy2DAsync(&h_HypoYs[offsetRows*minInliers], minInliers * sizeof(double), (double*)((char*)d_HypoYs + offsetRows*hypoYPitch), hypoYPitch, minInliers * sizeof(double), useRows, cudaMemcpyDeviceToHost, Streams[ii]), "Stream D2H Copy h_HypoYs");
+		SortHypoXYStream <<<useGrid, blocks, 0, Streams[ii] >>> (inBound, minInliers, useRows, (double*)((char*)d_HypoXs + offsetRows*hypoXPitch), hypoXPitch, (double*)((char*)d_HypoYs + offsetRows*hypoYPitch), hypoYPitch);
+		cudaERRORHANDEL(cudaGetLastError(), "SortHypoXYStream Error");
+		//cudaERRORHANDEL(cudaGetLastError(), "Run SortHypoXYStream");
+		//cudaERRORHANDEL(cudaMemcpy2DAsync(&h_HypoXs[offsetRows*minInliers], minInliers * sizeof(double), (double*)((char*)d_HypoXs + offsetRows*hypoXPitch), hypoXPitch, minInliers * sizeof(double), useRows, cudaMemcpyDeviceToHost, Streams[ii]), "Stream D2H Copy h_HypoXs");
+		//cudaERRORHANDEL(cudaMemcpy2DAsync(&h_HypoYs[offsetRows*minInliers], minInliers * sizeof(double), (double*)((char*)d_HypoYs + offsetRows*hypoYPitch), hypoYPitch, minInliers * sizeof(double), useRows, cudaMemcpyDeviceToHost, Streams[ii]), "Stream D2H Copy h_HypoYs");
+	}
+
+	//II.5 End of GPU selecting points method and free some host pin-paged spaces.
+	cudaERRORHANDEL(cudaDeviceSynchronize(), "Stream Sync d_HypoIDs");
+	cudaERRORHANDEL(cudaEventRecord(endEvent, 0), "endEvent Record d_HypoIDs");
+	cudaERRORHANDEL(cudaEventSynchronize(endEvent), "endEvnet Sync d_HypoIDs");
+	cudaERRORHANDEL(cudaEventElapsedTime(&tEvent, begEvent, endEvent), "Calculating Event Time d_HypoIDs");
+
+	cudaERRORHANDEL(cudaFree(d_Randf), "Free d_Randf");
+	cudaERRORHANDEL(cudaFreeHost(h_HypoIDs), "Free h_HypoIDs");
+	cudaERRORHANDEL(cudaFreeHost(h_HypoXs), "Free h_HypoXs");
+	cudaERRORHANDEL(cudaFreeHost(h_HypoYs), "Free h_HypoYs");
+
+	//III. Generating control points from hypo data points.
+	//III.1 Setup some variables for GPU kernels.
+	PointQuat* d_P, *h_P;
+	size_t pPitch;
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_P, &pPitch, minInliers * sizeof(PointQuat), maxIters), "d_P Malloc");
+	cudaERRORHANDEL(cudaMallocHost((void**)&h_P, minInliers*maxIters * sizeof(PointQuat)), "h_P Malloc");
+	double* d_ChrodLen, *h_ChrodLen, *d_U, *h_U, *d_H;
+	size_t clPitch, UPitch, hPitch;
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_H, &hPitch, minInliers * sizeof(double), maxIters), "MallocPitch H");
+	cudaERRORHANDEL(cudaMallocHost((void**)&h_U, (minInliers + 6)*maxIters * sizeof(double)), "Malloc h_U");
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_U, &UPitch, (minInliers + 6) * sizeof(double), maxIters), "d_U Malloc");
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_ChrodLen, &clPitch, (minInliers - 1) * sizeof(double), maxIters), "d_ChrodLen Malloc");
+	cudaERRORHANDEL(cudaMallocHost((void**)&h_ChrodLen, (minInliers - 1)*maxIters * sizeof(double)), "cudaMalloc h_ChrodLen");
+
+	double* d_A, *d_B, *d_C, *d__C;
+	size_t APitch, BPitch, CPitch, _CPitch;
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_A, &APitch, minInliers * sizeof(double), maxIters), "d_A Malloc");
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_B, &BPitch, minInliers * sizeof(double), maxIters), "d_B Malloc");
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_C, &CPitch, minInliers * sizeof(double), maxIters), "d_C Malloc");
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d__C, &_CPitch, minInliers * sizeof(double), maxIters), "d__C Malloc");
+
+	PointQuat* d_E, *d__E, *d_ctrPts, *h_ctrPts;
+	size_t EPitch, _EPitch, cpPitch;
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_E, &EPitch, minInliers * sizeof(PointQuat), maxIters), "d_E Malloc");
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d__E, &_EPitch, minInliers * sizeof(PointQuat), maxIters), "d__E Malloc");
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_ctrPts, &cpPitch, (minInliers + 2) * sizeof(PointQuat), maxIters), "d_ctrPts Malloc");
+	cudaERRORHANDEL(cudaMallocHost((void**)&h_ctrPts, (minInliers + 2)*maxIters * sizeof(PointQuat)), "h_ctrPts Malloc");
+
+	cudaERRORHANDEL(cudaEventRecord(begEvent, 0), "begEvent Record control point generating");
+
+	useGrid = 10 / nStream;
+	//III.2 Run through streams to generate contral ponits.
+	for (unsigned int ii = 0; ii < nStream; ii++)
+	{
+		offsetRows = ii*offsetRowsBase;
+		if (ii == nStream - 1)
+		{
+			useRows = maxIters - ii*offsetRowsBase;
+			if (10 % nStream > 0)
+			{
+				useGrid = 10 % nStream;
+			}
+		}
+
+		GetDataChordLenAndPStream << <useGrid, 512, 0, Streams[ii] >> > ((double*)((char*)d_HypoXs + offsetRows*hypoXPitch), (double*)((char*)d_HypoYs + offsetRows*hypoYPitch), NULL, d_H, hypoXPitch, hypoYPitch, 0, hPitch,
+			minInliers, useRows, clPitch, pPitch, (double*)((char*)d_ChrodLen + offsetRows*clPitch), (PointQuat*)((char*)d_P + offsetRows*pPitch));
+		cudaERRORHANDEL(cudaGetLastError(), "GetDataChordLenAndPStream Error");
+		//cudaERRORHANDEL(cudaMemcpy2DAsync(&h_ChrodLen[offsetRows*(minInliers - 1)], (minInliers - 1) * sizeof(double), (double*)((char*)d_ChrodLen + offsetRows*clPitch), clPitch, (minInliers - 1) * sizeof(double), useRows, cudaMemcpyDeviceToHost, Streams[ii]), "Stream D2H Copy h_ChrodLen");
+		//cudaERRORHANDEL(cudaMemcpy2DAsync(&h_P[offsetRows*minInliers], minInliers * sizeof(PointQuat), (PointQuat*)((char*)d_P + offsetRows*clPitch), pPitch, minInliers* sizeof(PointQuat), useRows, cudaMemcpyDeviceToHost, Streams[ii]), "Stream D2H Copy h_P");
+
+		GetChordTotalLenStream << <useGrid, blocks, 0, Streams[ii] >> > ((double*)((char*)d_ChrodLen + offsetRows*clPitch), clPitch, (minInliers - 1), useRows);
+		cudaERRORHANDEL(cudaGetLastError(), "GetChordTotalLenStream Error");
+		//cudaERRORHANDEL(cudaMemcpy2DAsync(&h_ChrodLen[offsetRows*(minInliers - 1)], (minInliers - 1) * sizeof(double), (double*)((char*)d_ChrodLen + offsetRows*clPitch), clPitch, (minInliers - 1) * sizeof(double), useRows, cudaMemcpyDeviceToHost, Streams[ii]), "Stream D2H Copy h_ChrodLen");
+
+		GetUStream << <useGrid, blocks, 0, Streams[ii] >> >((double*)((char*)d_ChrodLen + offsetRows*clPitch), clPitch, minInliers, useRows, UPitch, (double*)((char*)d_U + offsetRows*UPitch));
+		cudaERRORHANDEL(cudaGetLastError(), "GetUStream Error");
+		//cudaERRORHANDEL(cudaMemcpy2DAsync(&h_U[offsetRows*(minInliers+6)], (minInliers+6) * sizeof(double), (double*)((char*)d_U + offsetRows*UPitch), UPitch, (minInliers+6) * sizeof(double), useRows, cudaMemcpyDeviceToHost, Streams[ii]), "Stream D2H Copy h_U");
+
+		GetABCEStream << <useGrid, 512, 0, Streams[ii] >> > ((double*)((char*)d_U + offsetRows*UPitch), UPitch, (PointQuat*)((char*)d_P + offsetRows*pPitch), pPitch, minInliers, useRows,
+			APitch, BPitch, CPitch, EPitch, (double*)((char*)d_A + offsetRows*APitch), (double*)((char*)d_B + offsetRows*BPitch), (double*)((char*)d_C + offsetRows*CPitch), (PointQuat*)((char*)d_E + offsetRows*EPitch));
+		cudaErr = cudaGetLastError();
+		cudaERRORHANDEL(cudaErr, "GetABCEStream");
+
+		GetControlPointsStream << <useGrid, 256, 0, Streams[ii] >> > ((double*)((char*)d_HypoXs + offsetRows*hypoXPitch), (double*)((char*)d_HypoYs + offsetRows*hypoYPitch), NULL, (double*)((char*)d_H + offsetRows*hPitch), hypoXPitch, hypoYPitch, 0, hPitch,
+			(double*)((char*)d_A + offsetRows*APitch), (double*)((char*)d_B + offsetRows*BPitch), (double*)((char*)d_C + offsetRows*CPitch), (double*)((char*)d__C + offsetRows*_CPitch), (PointQuat*)((char*)d_E + offsetRows*EPitch), (PointQuat*)((char*)d__E + offsetRows*_EPitch),
+			APitch, BPitch, CPitch, _CPitch, EPitch, _EPitch, minInliers, useRows, (PointQuat*)((char*)d_ctrPts + offsetRows*cpPitch), cpPitch);
+		cudaErr = cudaGetLastError();
+		cudaERRORHANDEL(cudaErr, "GetControlPointsStream");
+		cudaERRORHANDEL(cudaMemcpy2DAsync(&h_ctrPts[offsetRows*(minInliers + 2)], (minInliers + 2) * sizeof(PointQuat), (PointQuat*)((char*)d_ctrPts + offsetRows*cpPitch), cpPitch, (minInliers + 2) * sizeof(PointQuat), useRows, cudaMemcpyDeviceToHost, Streams[ii]), "Stream D2H Copy h_ctrPts");
+	}
+
+	//III.3 End of GPU kernels for control points generation on streamings, and free some host and device spaces as well.
+	cudaERRORHANDEL(cudaDeviceSynchronize(), "Stream Sync control point generating");
+	cudaERRORHANDEL(cudaEventRecord(endEvent, 0), "endEvent Record control point generating");
+	cudaERRORHANDEL(cudaEventSynchronize(endEvent), "endEvnet Sync control point generating");
+	cudaERRORHANDEL(cudaEventElapsedTime(&tEvent, begEvent, endEvent), "Calculating Event Time control point generating");
+
+	cudaERRORHANDEL(cudaFreeHost(h_ChrodLen), "Free h_ChrodLen");
+	cudaERRORHANDEL(cudaFreeHost(h_P), "Free h_P");
+	cudaERRORHANDEL(cudaFreeHost(h_U), "Free h_U");
+	cudaERRORHANDEL(cudaFree(d_HypoIDs), "Free d_HypoIDs");
+	cudaERRORHANDEL(cudaFree(d_HypoXs), "Free d_HypoXs");
+	cudaERRORHANDEL(cudaFree(d_HypoYs), "Free d_HypoYs");
+	cudaERRORHANDEL(cudaFreeHost(h_ctrPts), "Free h_ctrPts");
+
+	cudaERRORHANDEL(cudaFree(d_A), "Free d_A");
+	cudaERRORHANDEL(cudaFree(d_B), "Free d_B");
+	cudaERRORHANDEL(cudaFree(d_C), "Free d_C");
+	cudaERRORHANDEL(cudaFree(d__C), "Free d__C");
+	cudaERRORHANDEL(cudaFree(d_E), "Free d_E");
+	cudaERRORHANDEL(cudaFree(d__E), "Free d__E");
+
+	//IV. Generating NURBRS curves and checking models.
+	//IV.1 Perparing such parameters will be usied in kernel.
+	double* d_curvatures;
+	size_t curvPitch, cvSize = 5000;
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_curvatures, &curvPitch, cvSize * sizeof(double), maxIters), "Malloc d_curvatures");
+
+	Point3D* d_cvPoint,*h_cvPoint, *d_ptTans, *d_ptNorms, *d_valcvPt, *h_valcvPt;
+	size_t cvPitch, tanPitch, normPitch, valPitch;
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_cvPoint, &cvPitch, cvSize * sizeof(Point3D), maxIters), "Malloc d_cvPoint");
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_ptTans, &tanPitch, cvSize * sizeof(Point3D), maxIters), "Malloc d_ptTans");
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_ptNorms, &normPitch, cvSize * sizeof(Point3D), maxIters), "Malloc d_ptNorms");
+	cudaERRORHANDEL(cudaMallocPitch((void**)&d_valcvPt, &valPitch, cvSize * sizeof(Point3D), maxIters), "Malloc d_valcvPt");
+	cudaERRORHANDEL(cudaMallocHost((void**)&h_cvPoint, cvSize*maxIters * sizeof(Point3D)), "Malloc h_cvPoint");
+	cudaERRORHANDEL(cudaMallocHost((void**)&h_valcvPt, cvSize*maxIters * sizeof(Point3D)), "Malloc h_valcvPt");
+
+	cudaERRORHANDEL(cudaEventRecord(begEvent, 0), "begEvent Record curve point generating");
+	for (unsigned int ii = 0; ii < nStream; ii++)
+	{
+		cudaERRORHANDEL(cudaStreamDestroy(Streams[ii]), "Destroy Stream");
+	}
+	free(Streams);
+	nStream = 4;
+	Streams = (cudaStream_t*)malloc(nStream * sizeof(cudaStream_t));
+	for (unsigned int ii = 0; ii < nStream; ii++)
+	{
+		cudaERRORHANDEL(cudaStreamCreate(&Streams[ii]), "Create Stream");
+	}
+	offsetRowsBase = (maxIters + nStream - 1) / nStream;
+	useRows = offsetRowsBase;
+	blocks = dim3(32, 16);
+	unsigned int totalGrid = 10240 / blocks.x / blocks.y;
+	useGrid = totalGrid / nStream;
+	//IV.2 Run through streams to generate curve ponits.
+	for (unsigned int ii = 0; ii < nStream; ii++)
+	{
+		offsetRows = ii*offsetRowsBase;
+		if (ii == nStream - 1)
+		{
+			useRows = maxIters - ii*offsetRowsBase;
+			if (totalGrid % nStream > 0)
+			{
+				useGrid = totalGrid % nStream;
+			}
+		}
+		GetCurvePointAndCurvature3DStream <<<useGrid, blocks, 0, Streams[ii] >>> ((Point3Dw*)((char*)d_ctrPts + offsetRows*cpPitch), cpPitch, minInliers + 2, cvSize, useRows, (double*)((char*)d_U + offsetRows*UPitch), UPitch,
+			(Point3D*)((char*)d_cvPoint + offsetRows*cvPitch), cvPitch, (double*)((char*)d_curvatures + offsetRows*curvPitch), curvPitch, (Point3D*)((char*)d_ptTans + offsetRows*tanPitch), tanPitch,
+			(Point3D*)((char*)d_ptNorms + offsetRows*normPitch), normPitch);
+		cudaERRORHANDEL(cudaGetLastError(), "GetCurvePointAndCurvature3DStream");
+		cudaERRORHANDEL(cudaMemcpy2DAsync(&h_cvPoint[offsetRows*cvSize], cvSize * sizeof(Point3D), (Point3D*)((char*)d_cvPoint + offsetRows*cvPitch), cvPitch, cvSize*sizeof(Point3D), useRows, cudaMemcpyDeviceToHost, Streams[ii]), "Copy h_cvPoint");
+
+
+		ClearCurvePointsStream <<<useGrid, blocks, 0, Streams[ii] >>> (inBound, (Point3D*)((char*)d_cvPoint + offsetRows*cvPitch), cvPitch, cvSize, useRows, (Point3D*)((char*)d_valcvPt + offsetRows*valPitch), valPitch);
+		cudaERRORHANDEL(cudaGetLastError(), "ClearCurvePointsStream");
+		cudaERRORHANDEL(cudaMemcpy2DAsync(&h_valcvPt[offsetRows*cvSize], cvSize * sizeof(Point3D), (Point3D*)((char*)d_valcvPt + offsetRows*valPitch), valPitch, cvSize*sizeof(Point3D), useRows, cudaMemcpyDeviceToHost, Streams[ii]), "Copy h_valcvPt");
+	}
+
+	//IV.3 End of GPU kernels for curve points generation on streamings, and free some host and device spaces as well.
+	cudaERRORHANDEL(cudaDeviceSynchronize(), "Stream Sync curve point generating");
+	cudaERRORHANDEL(cudaEventRecord(endEvent, 0), "endEvent Record curve point generating");
+	cudaERRORHANDEL(cudaEventSynchronize(endEvent), "endEvnet Sync curve point generating");
+	cudaERRORHANDEL(cudaEventElapsedTime(&tEvent, begEvent, endEvent), "Calculating Event Time curve point generating");
+	//V. Free all malloc spaces
+	cudaERRORHANDEL(cudaFree(d_xs), "Free d_x");
+	cudaERRORHANDEL(cudaFree(d_ys), "Free d_y");
+
+	cudaERRORHANDEL(cudaFree(d_ChrodLen), "Free d_ChrodLen");
+	cudaERRORHANDEL(cudaFree(d_P), "Free d_P");
+	cudaERRORHANDEL(cudaFree(d_H), "Free d_H");
+
+	for (unsigned int ii = 0; ii < nStream; ii++)
+	{
+		cudaERRORHANDEL(cudaStreamDestroy(Streams[ii]), "Free Stream");
+	}
+
+	free(Streams);
+	Streams = NULL;
+	
+
+	return "Success";
+}

@@ -150,6 +150,10 @@ extern "C" cudaError_t DataFitToGivenModel(__in double* xvals, __in double* yval
 extern "C" cudaError_t NURBSRANSACOnGPU(__in CtrPtBound inBound, __in double* xvals, __in double* yvals, __in size_t pcsize, __in int maxIters, __in int minInliers, __in double UTh, __in double LTh,
 	__out int*& resInliers, __out double &modelErr, __out double* &bestCtrx, __out double* &bestCtry, __out double*&bestDists);
 
+extern "C" const char* NURBSRANSACOnGPUStream(__in CtrPtBound inBound, __in double* xvals, __in double* yvals, __in size_t pcsize, __in int maxIters, __in int minInliers, __in double UTh, __in double LTh,
+	__out int*& resInliers, __out double &modelErr, __out double* &bestCtrx, __out double* &bestCtry, __out double*&bestDists);
+
+
 extern "C" cudaError_t GenNURBSCurve(__in double* dataPtx, __in double* dataPty,__in double* H, __in int dataSize, __in size_t pcSize, __inout double* xvals, __inout double* yvals);
 
 extern "C" cudaError_t GenNURBSCurveByCtr(__in Point3Dw *ctrPts, __in unsigned int ctrSize, __in unsigned int dataSize, __out double* xvals, __out double* zvals);

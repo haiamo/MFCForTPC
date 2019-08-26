@@ -25,6 +25,9 @@
 
 #include <atlconv.h>
 
+#include <fstream>
+#include <iostream>
+
 #define PIECEPOINTSIZE 20000000
 
 using namespace pcl;
