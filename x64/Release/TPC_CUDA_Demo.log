@@ -1,0 +1,54 @@
+﻿  
+  F:\Win32s\TPC_CUDA_Demo>"D:\ProgramTools\CUDAPath\Development\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64"  -ID:\ProgramTools\CUDAPath\Development\include -ID:\ProgramTools\CUDAPath\Development\include     --keep-dir x64\Release -maxrregcount=0  --machine 64 --compile      -D_WINDOWS -DNDEBUG -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_UNICODE -DUNICODE -D_AFXDLL -Xcompiler "/EHsc /W3 /nologo /O2 /FS /Zi  /MD " -o x64\Release\kernel.cu.obj "F:\Win32s\TPC_CUDA_Demo\kernel.cu" -clean 
+CUDACOMPILE : nvcc warning : The 'compute_20', 'sm_20', and 'sm_21' architectures are deprecated, and may be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+  kernel.cu
+  Compiling CUDA source file kernel.cu...
+  
+  F:\Win32s\TPC_CUDA_Demo>"D:\ProgramTools\CUDAPath\Development\bin\nvcc.exe" -gencode=arch=compute_20,code=\"sm_20,compute_20\" --use-local-env --cl-version 2015 -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64"  -ID:\ProgramTools\CUDAPath\Development\include -ID:\ProgramTools\CUDAPath\Development\include     --keep-dir x64\Release -maxrregcount=0  --machine 64 --compile -cudart static     -D_WINDOWS -DNDEBUG -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_UNICODE -DUNICODE -D_AFXDLL -Xcompiler "/EHsc /W3 /nologo /O2 /FS /Zi  /MD " -o x64\Release\kernel.cu.obj "F:\Win32s\TPC_CUDA_Demo\kernel.cu" 
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(1978): warning : variable "bestLast" was declared but never referenced
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(1978): warning : variable "bestLast" was declared but never referenced
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/throw_on_error.h(28): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+CUDACOMPILE : nvcc warning : The 'compute_20', 'sm_20', and 'sm_21' architectures are deprecated, and may be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+  kernel.cu
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits/is_call_possible.h(35): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  stdafx.cpp
+  FileLogger.cpp
+  PlaneDivision.cpp
+  TPCProperty.cpp
+  TPC_CUDA_Demo.cpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/pointer_traits.hpp(55): warning C4800: “unsigned int”: 将值强制为布尔值“true”或“false”(性能警告)
+  TPC_CUDA_DemoDlg.cpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/pointer_traits.hpp(55): warning C4800: “unsigned int”: 将值强制为布尔值“true”或“false”(性能警告)
+  TyrePointCloud.cpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/pointer_traits.hpp(55): warning C4800: “unsigned int”: 将值强制为布尔值“true”或“false”(性能警告)
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl\segmentation\supervoxel_clustering.h(528): warning C4396: “boost::checked_delete”: 友元声明引用函数模板的专用化时无法使用内联说明符
+  TyrePointCloud.cpp(440): note: 参见对正在编译的类 模板 实例化“pcl::SupervoxelClustering<pcl::PointXYZ>”的引用
+  D:\ProgramTools\PCL 1.8.1\3rdParty\Boost\include\boost-1_64\boost/bind/placeholders.hpp(54): note: 参见对正在编译的类 模板 实例化“boost::arg<9>”的引用
+  D:\ProgramTools\PCL 1.8.1\3rdParty\Boost\include\boost-1_64\boost/bind/placeholders.hpp(53): note: 参见对正在编译的类 模板 实例化“boost::arg<8>”的引用
+  D:\ProgramTools\PCL 1.8.1\3rdParty\Boost\include\boost-1_64\boost/bind/placeholders.hpp(52): note: 参见对正在编译的类 模板 实例化“boost::arg<7>”的引用
+  D:\ProgramTools\PCL 1.8.1\3rdParty\Boost\include\boost-1_64\boost/bind/placeholders.hpp(51): note: 参见对正在编译的类 模板 实例化“boost::arg<6>”的引用
+  D:\ProgramTools\PCL 1.8.1\3rdParty\Boost\include\boost-1_64\boost/bind/placeholders.hpp(50): note: 参见对正在编译的类 模板 实例化“boost::arg<5>”的引用
+  D:\ProgramTools\PCL 1.8.1\3rdParty\Boost\include\boost-1_64\boost/bind/placeholders.hpp(49): note: 参见对正在编译的类 模板 实例化“boost::arg<4>”的引用
+  D:\ProgramTools\PCL 1.8.1\3rdParty\Boost\include\boost-1_64\boost/bind/placeholders.hpp(48): note: 参见对正在编译的类 模板 实例化“boost::arg<3>”的引用
+  D:\ProgramTools\PCL 1.8.1\3rdParty\Boost\include\boost-1_64\boost/bind/placeholders.hpp(47): note: 参见对正在编译的类 模板 实例化“boost::arg<2>”的引用
+  D:\ProgramTools\PCL 1.8.1\3rdParty\Boost\include\boost-1_64\boost/bind/placeholders.hpp(46): note: 参见对正在编译的类 模板 实例化“boost::arg<1>”的引用
+    正在创建库 F:\Win32s\TPC_CUDA_Demo\x64\Release\TPC_CUDA_Demo.lib 和对象 F:\Win32s\TPC_CUDA_Demo\x64\Release\TPC_CUDA_Demo.exp
+  正在生成代码
+  All 3515 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  已完成代码的生成
+  TPC_CUDA_Demo.vcxproj -> F:\Win32s\TPC_CUDA_Demo\x64\Release\TPC_CUDA_Demo.exe
+  TPC_CUDA_Demo.vcxproj -> F:\Win32s\TPC_CUDA_Demo\x64\Release\TPC_CUDA_Demo.pdb (Full PDB)

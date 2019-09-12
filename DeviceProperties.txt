@@ -1,0 +1,65 @@
+Device ID: 0
+Device Name: GeForce GTX 1050
+Global Memory(GB): 2
+Shared Memory(KB) Per Block: 48
+32-bit Registers Per Block: 65536
+Warp Size: 32
+Maximum Pitch(MB) by Memory copies: 2047
+Maximum number of threads per block: 1024
+Maximum size of threads dimension: (1024,1024,64)
+Maximum size of grid: (2147483647,65535,65535)
+GPU Clock frequency(GHz): 1
+Constant Memory(KB): 64
+Compute capability: 6.1
+Texture Alignment(B): 512
+Texture Pitch Alignment(B):32
+Multi Processor Count: 5
+Kernel Execute Timeout Enabled: 1
+Integrated:0
+Can Device map host memory? 1
+Compute Mode:0
+Maximum Texture 1D:131072
+Maximum Texture 1D Mipmap:16384
+Maximum Texture 1D Linear:134217728
+Maximum Texture 2D: (131072,65536)
+Maximum Texture 2D Mipmap: (32768,32768)
+Maximum Texture 2D Linear: (131072,65000,2097120)
+Maximum Texture 2D Gather: (32768,32768)
+Maximum Texture 3D: (16384,16384,16384)
+Maximum Texture 3D Alternate: (8192,8192,32768)
+Maximum Texture Cube Map:32768
+Maximum Texture 1D Layered: (32768,2048)
+Maximum Texture 2D Layered: (32768,32768,2048)
+Maxiumu Texture Cube Map Layered: (32768,2046)
+Maximum Surface 1D:32768
+Maximum Surface 2D: (131072,65536)
+Maximum Surface 3D: (16384,16384,16384)
+Maximum Surface 1D Layered: (32768,2048)
+Maximum Surface 2D Layered: (32768,32768,2048)
+Maximum Surface Cubemap:32768
+Maximum Surface Cubemap Layered: (32768,2046)
+Surface Alignment(B):512
+Concurrent Kernels:1
+EEC Enabled:0
+PCI BUS ID:1
+PCI Device ID:0
+PCI Domain ID:0
+Tesla Device using TCC driver:0
+Asynchronous engine count:2
+Unified Addressing:1
+Peak Memory clock frequency(GHz): 3
+Global Memory bus width(bit):128
+L2 Cache size(MB):1
+Maximum Threads per MultiProcessor:2048
+Stream Priorrities Supported:1
+Global L1 Cache Supported:1
+Local L1 Cache Supported:1
+Shared Memory Per Multi Processors(KB):96
+Registers per Multi Processor:65536
+Managed Memory:1
+Is Multi GPU Board:0
+Multi GPU Bord Group ID:0
+Host Native Atomic Supported:0
+Single to Double Precision Performace Ratio:32
+Pageable Memory Access:0
+Concurrent Managed Access:0

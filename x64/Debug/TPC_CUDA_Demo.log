@@ -1,0 +1,423 @@
+﻿  
+  F:\Win32s\TPC_CUDA_Demo>"D:\ProgramTools\CUDAPath\Development\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64"  -ID:\ProgramTools\CUDAPath\Development\include -ID:\ProgramTools\CUDAPath\Development\include  -G   --keep-dir x64\Debug -maxrregcount=0  --machine 64 --compile   -g   -D_WINDOWS -D_DEBUG -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_UNICODE -DUNICODE -D_AFXDLL -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\kernel.cu.obj "F:\Win32s\TPC_CUDA_Demo\kernel.cu" -clean 
+CUDACOMPILE : nvcc warning : The 'compute_20', 'sm_20', and 'sm_21' architectures are deprecated, and may be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+  kernel.cu
+  
+  F:\Win32s\TPC_CUDA_Demo>"D:\ProgramTools\CUDAPath\Development\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64"  -ID:\ProgramTools\CUDAPath\Development\include -ID:\ProgramTools\CUDAPath\Development\include  -G   --keep-dir x64\Debug -maxrregcount=0  --machine 64 --compile   -g   -D_WINDOWS -D_DEBUG -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_UNICODE -DUNICODE -D_AFXDLL -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\kernel2.cu.obj "F:\Win32s\TPC_CUDA_Demo\kernel2.cu" -clean 
+CUDACOMPILE : nvcc warning : The 'compute_20', 'sm_20', and 'sm_21' architectures are deprecated, and may be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+  kernel2.cu
+  Compiling CUDA source file kernel.cu...
+  Compiling CUDA source file kernel2.cu...
+  
+  F:\Win32s\TPC_CUDA_Demo>"D:\ProgramTools\CUDAPath\Development\bin\nvcc.exe" -gencode=arch=compute_20,code=\"sm_20,compute_20\" -gencode=arch=compute_30,code=\"sm_30,compute_30\" -gencode=arch=compute_35,code=\"sm_35,compute_35\" -gencode=arch=compute_37,code=\"sm_37,compute_37\" -gencode=arch=compute_50,code=\"sm_50,compute_50\" -gencode=arch=compute_52,code=\"sm_52,compute_52\" -gencode=arch=compute_60,code=\"sm_60,compute_60\" -gencode=arch=compute_61,code=\"sm_61,compute_61\" -gencode=arch=compute_62,code=\"sm_62,compute_62\" --use-local-env --cl-version 2015 -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64"  -ID:\ProgramTools\CUDAPath\Development\include -ID:\ProgramTools\CUDAPath\Development\include  -G   --keep-dir x64\Debug -maxrregcount=0  --machine 64 --compile -cudart static  -g   -D_WINDOWS -D_DEBUG -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_UNICODE -DUNICODE -D_AFXDLL -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\kernel.cu.obj "F:\Win32s\TPC_CUDA_Demo\kernel.cu" 
+  
+  F:\Win32s\TPC_CUDA_Demo>"D:\ProgramTools\CUDAPath\Development\bin\nvcc.exe" -gencode=arch=compute_20,code=\"sm_20,compute_20\" -gencode=arch=compute_30,code=\"sm_30,compute_30\" -gencode=arch=compute_35,code=\"sm_35,compute_35\" -gencode=arch=compute_37,code=\"sm_37,compute_37\" -gencode=arch=compute_50,code=\"sm_50,compute_50\" -gencode=arch=compute_52,code=\"sm_52,compute_52\" -gencode=arch=compute_60,code=\"sm_60,compute_60\" -gencode=arch=compute_61,code=\"sm_61,compute_61\" -gencode=arch=compute_62,code=\"sm_62,compute_62\" --use-local-env --cl-version 2015 -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64"  -ID:\ProgramTools\CUDAPath\Development\include -ID:\ProgramTools\CUDAPath\Development\include  -G   --keep-dir x64\Debug -maxrregcount=0  --machine 64 --compile -cudart static  -g   -D_WINDOWS -D_DEBUG -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS -D_UNICODE -DUNICODE -D_AFXDLL -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\kernel2.cu.obj "F:\Win32s\TPC_CUDA_Demo\kernel2.cu" 
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(298): warning : a __device__ function("dIsZero") redeclared with __host__ __device__, hence treated as a __host__ __device__ function
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2306): warning : variable "dotVal" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2778): warning : variable "curandErr" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(990): warning : returning pointer to local variable
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgX" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgY" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1514): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1780): warning : variable "hypoyLine" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1759): warning : variable "m" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1770): warning : variable "curCvt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "rowID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1847): warning : variable "curIt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1855): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(298): warning : a __device__ function("dIsZero") redeclared with __host__ __device__, hence treated as a __host__ __device__ function
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(990): warning : returning pointer to local variable
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgX" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgY" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1514): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1780): warning : variable "hypoyLine" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1759): warning : variable "m" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2306): warning : variable "dotVal" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1770): warning : variable "curCvt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "rowID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2778): warning : variable "curandErr" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1847): warning : variable "curIt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1855): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2306): warning : variable "dotVal" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2778): warning : variable "curandErr" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(298): warning : a __device__ function("dIsZero") redeclared with __host__ __device__, hence treated as a __host__ __device__ function
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(990): warning : returning pointer to local variable
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgX" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgY" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1514): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1780): warning : variable "hypoyLine" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1759): warning : variable "m" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1770): warning : variable "curCvt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "rowID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1847): warning : variable "curIt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1855): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2306): warning : variable "dotVal" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2778): warning : variable "curandErr" was set but never used
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(298): warning : a __device__ function("dIsZero") redeclared with __host__ __device__, hence treated as a __host__ __device__ function
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(990): warning : returning pointer to local variable
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgX" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgY" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1514): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1780): warning : variable "hypoyLine" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1759): warning : variable "m" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1770): warning : variable "curCvt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "rowID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1847): warning : variable "curIt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1855): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2306): warning : variable "dotVal" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2778): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(298): warning : a __device__ function("dIsZero") redeclared with __host__ __device__, hence treated as a __host__ __device__ function
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(990): warning : returning pointer to local variable
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgX" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgY" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1514): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1780): warning : variable "hypoyLine" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1759): warning : variable "m" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1770): warning : variable "curCvt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "rowID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1847): warning : variable "curIt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1855): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2306): warning : variable "dotVal" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2778): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(298): warning : a __device__ function("dIsZero") redeclared with __host__ __device__, hence treated as a __host__ __device__ function
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(990): warning : returning pointer to local variable
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgX" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgY" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1514): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1780): warning : variable "hypoyLine" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1759): warning : variable "m" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1770): warning : variable "curCvt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "rowID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1847): warning : variable "curIt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1855): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2306): warning : variable "dotVal" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2778): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(298): warning : a __device__ function("dIsZero") redeclared with __host__ __device__, hence treated as a __host__ __device__ function
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(990): warning : returning pointer to local variable
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgX" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgY" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1514): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1780): warning : variable "hypoyLine" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1759): warning : variable "m" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1770): warning : variable "curCvt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "rowID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1847): warning : variable "curIt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1855): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2306): warning : variable "dotVal" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2778): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(298): warning : a __device__ function("dIsZero") redeclared with __host__ __device__, hence treated as a __host__ __device__ function
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(990): warning : returning pointer to local variable
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgX" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgY" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1514): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1780): warning : variable "hypoyLine" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1759): warning : variable "m" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1770): warning : variable "curCvt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "rowID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1847): warning : variable "curIt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1855): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2306): warning : variable "dotVal" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2778): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1091): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("real") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function("imag") from a __host__ __device__ function("abs") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/MathFunctions.h(1096): warning : calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(298): warning : a __device__ function("dIsZero") redeclared with __host__ __device__, hence treated as a __host__ __device__ function
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(634): warning : __shared__ memory variable with non-empty constructor or destructor (potential race between threads)
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(990): warning : returning pointer to local variable
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgX" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgY" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1514): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1780): warning : variable "hypoyLine" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1759): warning : variable "m" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1770): warning : variable "curCvt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "rowID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1847): warning : variable "curIt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1855): warning : variable "curandErr" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/products/Parallelizer.h(20): warning : variable "m_maxThreads" was set but never used
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+d:\programtools\pcl 1.8.1\3rdparty\eigen\eigen3\eigen\src/Core/ArrayWrapper.h(94): warning : __declspec attributes ignored
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+D:\ProgramTools\PCL 1.8.1\include\pcl-1.8\pcl/impl/point_types.hpp(684): warning : attribute does not apply to any entity
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2306): warning : variable "dotVal" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(990): warning : returning pointer to local variable
+F:/Win32s/TPC_CUDA_Demo/kernel.cu(2778): warning : variable "curandErr" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgX" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1215): warning : variable "tgY" was set but never used
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1514): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1780): warning : variable "hypoyLine" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1759): warning : variable "m" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1770): warning : variable "curCvt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "rowID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1773): warning : variable "colID" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1847): warning : variable "curIt" was declared but never referenced
+F:/Win32s/TPC_CUDA_Demo/kernel2.cu(1855): warning : variable "curandErr" was set but never used
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/detail/stable_merge_sort.hpp(268): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+CUDACOMPILE : nvcc warning : The 'compute_20', 'sm_20', and 'sm_21' architectures are deprecated, and may be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+  kernel2.cu
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/detail/stable_merge_sort.hpp(268): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+CUDACOMPILE : nvcc warning : The 'compute_20', 'sm_20', and 'sm_21' architectures are deprecated, and may be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+  kernel.cu
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/allocator_traits.h(45): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/allocator_traits.h(45): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+f:\win32s\tpc_cuda_demo\kernel2.cu(990): warning C4172: 返回局部变量或临时变量的地址: retstr
+  stdafx.cpp
+  FileLogger.cpp
+  PlaneDivision.cpp
+  Utility.cpp
+  TPCProperty.cpp
+  TPC_CUDA_Demo.cpp
+  TPC_CUDA_DemoDlg.cpp
+  TyrePointCloud.cpp
+d:\programtools\cudapath\development\include\thrust\system\cuda\detail\bulk\detail\pointer_traits.hpp(55): warning C4800: “unsigned int”: 将值强制为布尔值“true”或“false”(性能警告) (编译源文件 TPC_CUDA_Demo.cpp)
+d:\programtools\cudapath\development\include\thrust\system\cuda\detail\bulk\detail\pointer_traits.hpp(55): warning C4800: “unsigned int”: 将值强制为布尔值“true”或“false”(性能警告) (编译源文件 TPC_CUDA_DemoDlg.cpp)
+d:\programtools\cudapath\development\include\thrust\system\cuda\detail\bulk\detail\pointer_traits.hpp(55): warning C4800: “unsigned int”: 将值强制为布尔值“true”或“false”(性能警告) (编译源文件 TyrePointCloud.cpp)
+f:\win32s\tpc_cuda_demo\tpc_cuda_demodlg.cpp(727): warning C4101: “origin”: 未引用的局部变量
+f:\win32s\tpc_cuda_demo\tpc_cuda_demodlg.cpp(727): warning C4101: “end”: 未引用的局部变量
+f:\win32s\tpc_cuda_demo\tpc_cuda_demodlg.cpp(727): warning C4101: “step”: 未引用的局部变量
+f:\win32s\tpc_cuda_demo\tpc_cuda_demodlg.cpp(727): warning C4101: “beg”: 未引用的局部变量
+d:\programtools\pcl 1.8.1\include\pcl-1.8\pcl\segmentation\supervoxel_clustering.h(528): warning C4396: “boost::checked_delete”: 友元声明引用函数模板的专用化时无法使用内联说明符 (编译源文件 TyrePointCloud.cpp)
+  f:\win32s\tpc_cuda_demo\tyrepointcloud.cpp(823): note: 参见对正在编译的类 模板 实例化“pcl::SupervoxelClustering<pcl::PointXYZ>”的引用
+  d:\programtools\pcl 1.8.1\3rdparty\boost\include\boost-1_64\boost\bind\placeholders.hpp(54): note: 参见对正在编译的类 模板 实例化“boost::arg<9>”的引用 (编译源文件 TyrePointCloud.cpp)
+  d:\programtools\pcl 1.8.1\3rdparty\boost\include\boost-1_64\boost\bind\placeholders.hpp(53): note: 参见对正在编译的类 模板 实例化“boost::arg<8>”的引用 (编译源文件 TyrePointCloud.cpp)
+  d:\programtools\pcl 1.8.1\3rdparty\boost\include\boost-1_64\boost\bind\placeholders.hpp(52): note: 参见对正在编译的类 模板 实例化“boost::arg<7>”的引用 (编译源文件 TyrePointCloud.cpp)
+  d:\programtools\pcl 1.8.1\3rdparty\boost\include\boost-1_64\boost\bind\placeholders.hpp(51): note: 参见对正在编译的类 模板 实例化“boost::arg<6>”的引用 (编译源文件 TyrePointCloud.cpp)
+  d:\programtools\pcl 1.8.1\3rdparty\boost\include\boost-1_64\boost\bind\placeholders.hpp(50): note: 参见对正在编译的类 模板 实例化“boost::arg<5>”的引用 (编译源文件 TyrePointCloud.cpp)
+  d:\programtools\pcl 1.8.1\3rdparty\boost\include\boost-1_64\boost\bind\placeholders.hpp(49): note: 参见对正在编译的类 模板 实例化“boost::arg<4>”的引用 (编译源文件 TyrePointCloud.cpp)
+  d:\programtools\pcl 1.8.1\3rdparty\boost\include\boost-1_64\boost\bind\placeholders.hpp(48): note: 参见对正在编译的类 模板 实例化“boost::arg<3>”的引用 (编译源文件 TyrePointCloud.cpp)
+  d:\programtools\pcl 1.8.1\3rdparty\boost\include\boost-1_64\boost\bind\placeholders.hpp(47): note: 参见对正在编译的类 模板 实例化“boost::arg<2>”的引用 (编译源文件 TyrePointCloud.cpp)
+  d:\programtools\pcl 1.8.1\3rdparty\boost\include\boost-1_64\boost\bind\placeholders.hpp(46): note: 参见对正在编译的类 模板 实例化“boost::arg<1>”的引用 (编译源文件 TyrePointCloud.cpp)
+f:\win32s\tpc_cuda_demo\tyrepointcloud.cpp(2437): warning C4267: “参数”: 从“size_t”转换到“int”，可能丢失数据
+f:\win32s\tpc_cuda_demo\tyrepointcloud.cpp(2533): warning C4267: “参数”: 从“size_t”转换到“unsigned int”，可能丢失数据
+    正在创建库 F:\Win32s\TPC_CUDA_Demo\x64\Debug\TPC_CUDA_Demo.lib 和对象 F:\Win32s\TPC_CUDA_Demo\x64\Debug\TPC_CUDA_Demo.exp
+  TPC_CUDA_Demo.vcxproj -> F:\Win32s\TPC_CUDA_Demo\x64\Debug\TPC_CUDA_Demo.exe

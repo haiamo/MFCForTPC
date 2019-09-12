@@ -1,0 +1,838 @@
+D:\ProgramTools\CUDAPath\Development\include\cuda_runtime.h
+d:\programtools\cudapath\development\include\host_config.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\crtdefs.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\sal.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\ConcurrencySal.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vadefs.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\limits.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\stddef.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\library_types.h
+d:\programtools\cudapath\development\include\channel_descriptor.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\cuda_runtime_api.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\cuda_device_runtime_api.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\cuda_runtime_api.h
+d:\programtools\cudapath\development\include\driver_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\vector_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\vector_functions.hpp
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\common_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\string.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_memory.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_memcpy_s.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\errno.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime_string.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_wstring.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\time.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_wtime.h
+d:\programtools\cudapath\development\include\math_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\math.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\stdlib.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_malloc.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_search.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_wstdlib.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\cmath
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\yvals.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xkeycheck.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\crtdefs.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\use_ansi.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\math.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xtgmath.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xtr1common
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\cstdlib
+d:\programtools\cudapath\development\include\math_functions.hpp
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\math_functions_dbl_ptx3.h
+d:\programtools\cudapath\development\include\math_functions_dbl_ptx3.hpp
+d:\programtools\cudapath\development\include\cuda_surface_types.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\channel_descriptor.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\cuda_texture_types.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\channel_descriptor.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\device_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\device_functions.hpp
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\device_atomic_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\device_double_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\device_double_functions.hpp
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\sm_20_atomic_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\sm_32_atomic_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\sm_35_atomic_functions.h
+d:\programtools\cudapath\development\include\sm_32_atomic_functions.h
+d:\programtools\cudapath\development\include\sm_60_atomic_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\sm_20_intrinsics.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\sm_30_intrinsics.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\sm_32_intrinsics.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\sm_35_intrinsics.h
+d:\programtools\cudapath\development\include\sm_32_intrinsics.h
+d:\programtools\cudapath\development\include\sm_61_intrinsics.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\surface_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\cuda_surface_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\vector_functions.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\texture_fetch_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\cuda_texture_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_functions.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\texture_indirect_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\vector_functions.h
+d:\programtools\cudapath\development\include\surface_indirect_functions.h
+d:\programtools\cudapath\development\include\builtin_types.h
+d:\programtools\cudapath\development\include\device_types.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\surface_types.h
+d:\programtools\cudapath\development\include\texture_types.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\host_defines.h
+d:\programtools\cudapath\development\include\vector_functions.h
+d:\programtools\cudapath\development\include\device_launch_parameters.h
+d:\programtools\cudapath\development\include\vector_types.h
+D:\ProgramTools\CUDAPath\Development\include\cuda_runtime.h
+D:\ProgramTools\CUDAPath\Development\include\device_launch_parameters.h
+D:\ProgramTools\CUDAPath\Development\include\curand_kernel.h
+d:\programtools\cudapath\development\include\curand.h
+D:\ProgramTools\CUDAPath\Development\include\cuda_runtime.h
+d:\programtools\cudapath\development\include\curand_discrete.h
+d:\programtools\cudapath\development\include\curand_precalc.h
+d:\programtools\cudapath\development\include\curand_mrg32k3a.h
+d:\programtools\cudapath\development\include\curand_mtgp32_kernel.h
+D:\ProgramTools\CUDAPath\Development\include\cuda.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\memory.h
+d:\programtools\cudapath\development\include\curand.h
+d:\programtools\cudapath\development\include\curand_mtgp32.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\math.h
+d:\programtools\cudapath\development\include\curand_philox4x32_x.h
+d:\programtools\cudapath\development\include\curand_globals.h
+d:\programtools\cudapath\development\include\curand_uniform.h
+d:\programtools\cudapath\development\include\curand_mrg32k3a.h
+d:\programtools\cudapath\development\include\curand_mtgp32_kernel.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\math.h
+d:\programtools\cudapath\development\include\curand_normal.h
+d:\programtools\cudapath\development\include\curand_mrg32k3a.h
+d:\programtools\cudapath\development\include\curand_mtgp32_kernel.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\math.h
+d:\programtools\cudapath\development\include\curand_normal_static.h
+d:\programtools\cudapath\development\include\curand_lognormal.h
+d:\programtools\cudapath\development\include\curand_mrg32k3a.h
+d:\programtools\cudapath\development\include\curand_mtgp32_kernel.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\math.h
+d:\programtools\cudapath\development\include\curand_poisson.h
+d:\programtools\cudapath\development\include\curand_mrg32k3a.h
+d:\programtools\cudapath\development\include\curand_mtgp32_kernel.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\math.h
+d:\programtools\cudapath\development\include\curand_discrete2.h
+d:\programtools\cudapath\development\include\curand_mrg32k3a.h
+d:\programtools\cudapath\development\include\curand_mtgp32_kernel.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\math.h
+D:\ProgramTools\CUDAPath\Development\include\device_functions.h
+D:\ProgramTools\CUDAPath\Development\include\cublas.h
+D:\ProgramTools\CUDAPath\Development\include\cuda_runtime.h
+d:\programtools\cudapath\development\include\cublas_api.h
+d:\programtools\cudapath\development\include\driver_types.h
+d:\programtools\cudapath\development\include\cuComplex.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\math.h
+d:\programtools\cudapath\development\include\vector_types.h
+d:\programtools\cudapath\development\include\cuda_fp16.h
+d:\programtools\cudapath\development\include\library_types.h
+D:\ProgramTools\CUDAPath\Development\include\cublas_v2.h
+d:\programtools\cudapath\development\include\cublas_api.h
+f:\win32s\tpc_cuda_demo\cudaMain.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\stdio.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_wstdio.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_stdio_config.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\iostream
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\istream
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\ostream
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\ios
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xlocnum
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\climits
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\cstdio
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\streambuf
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xiosbase
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xlocale
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\cstring
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\stdexcept
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\exception
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\type_traits
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xstddef
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\cstddef
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\initializer_list
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\malloc.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime_exception.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\eh.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_terminate.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xstring
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xmemory0
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\cstdint
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\stdint.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\limits
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\ymath.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\cfloat
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\float.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\cwchar
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\wchar.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_wconio.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_wctype.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_wdirect.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_wio.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_share.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\corecrt_wprocess.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\sys/stat.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\sys/types.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\new
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime_new.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xutility
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\utility
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\iosfwd
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\crtdbg.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime_new_debug.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xatomic0.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\intrin.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\setjmp.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\immintrin.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\wmmintrin.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\nmmintrin.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\smmintrin.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\tmmintrin.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\pmmintrin.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\emmintrin.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xmmintrin.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\mmintrin.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\ammintrin.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\mm3dnow.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\typeinfo
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime_typeinfo.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vcruntime.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xlocinfo
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xlocinfo.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\ctype.h
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\locale.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xfacet
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\system_error
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\cerrno
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\share.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\string
+D:\ProgramTools\CUDAPath\Development\include\thrust\device_vector.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/config.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/config/config.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/config/simple_defines.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/config/compiler.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/config/host_system.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/config/device_system.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/config/host_device.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/config/debug.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/config/compiler_fence.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/config/forceinline.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/config/exec_check_disable.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/config/global_workarounds.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/device_malloc_allocator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/device_ptr.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/memory.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits/pointer_traits.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits/has_trivial_assign.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits/is_metafunction_defined.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits/has_nested_type.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/iterator_traits.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\iterator
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/iterator_traversal_tags.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/host_system_tag.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/execution_policy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/execution_policy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/execution_policy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/device_system_tag.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/execution_policy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/any_system_tag.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/iterator_traits.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/iterator_categories.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/iterator_category_with_system_and_traversal.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/universal_categories.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/iterator_category_to_traversal.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/iterator_category_to_system.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/pointer.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/iterator_adaptor.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/iterator_facade.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/iterator_facade_category.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/is_iterator_category.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/distance_from_result.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/use_default.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/iterator_adaptor_base.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/reference_forward_declaration.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/pointer.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/reference.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/reference.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/select_system.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/minimum_system.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits/minimum_type.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/type_traits.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/memory.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/tag.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/pair.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/pair.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/swap.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/memory.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/malloc_and_free.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/malloc_and_free.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/raw_pointer_cast.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/malloc_and_free.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/malloc_and_free.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/guarded_cuda_runtime_api.h
+D:\ProgramTools\CUDAPath\Development\include\cuda_runtime_api.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/system_error.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/error_code.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/errno.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/error_category.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/functional.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\functional
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xfunctional
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\tuple
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/placeholder.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/actor.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/tuple.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/tuple.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/value.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/composite.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/operators/assignment_operator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/operators/operator_adaptors.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits/result_of_adaptable_function.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits/function_traits.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/actor.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/argument.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/operators.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/operators/arithmetic_operators.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/operators/relational_operators.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/operators/logical_operators.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/operators/bitwise_operators.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/functional/operators/compound_assignment_operators.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/error_code.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/error_condition.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/system_error.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/error.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/guarded_driver_types.h
+D:\ProgramTools\CUDAPath\Development\include\driver_types.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/error.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/bad_alloc.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/throw_on_error.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/bulk.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/config.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/version.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/execution_policy.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/future.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/guarded_cuda_runtime_api.hpp
+D:\ProgramTools\CUDAPath\Development\include\cuda_runtime_api.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/throw_on_error.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/terminate.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system_error.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/cuda_launcher/runtime_introspection.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/cuda_launcher/cuda_launch_config.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/minmax.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/cuda_launcher/runtime_introspection.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/util/blocking.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/choose_sizes.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/choose_sizes.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/closure.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/apply_from_tuple.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/cuda_launcher/cuda_launcher.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/alignment.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/cuda_task.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/malloc.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/pointer_traits.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/uninitialized.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/tuple_transform.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/tuple_meta_transform.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/cuda_launcher/triple_chevron_launcher.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/cuda_launcher/parameter_ptr.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/synchronize.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/async.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/cstdint.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/async.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/copy.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/is_contiguous_iterator.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/is_trivial_iterator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/reduce.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/iterator/strided_iterator.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/scan.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/accumulate.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits/iterator/is_output_iterator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/any_assign.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/merge.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/gather.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/permutation_iterator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/permutation_iterator_base.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/counting_iterator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/counting_iterator.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/numeric_traits.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/join_iterator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/scatter.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/adjacent_difference.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/reduce_by_key.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/head_flags.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/transform_iterator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/transform_iterator.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/zip_iterator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/zip_iterator_base.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/minimum_category.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/tuple_meta_transform.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/tuple_transform.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/tuple_of_iterator_references.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/zip_iterator.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/detail/tail_flags.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/sort.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/algorithm/detail/stable_merge_sort.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/bulk/iterator.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/malloc_and_free.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/seq.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/execute_with_allocator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/allocator_traits.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits/has_member_function.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/allocator_traits.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits/is_call_possible.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/integer_traits.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/static_assert.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/get_value.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/get_value.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/get_value.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/get_value.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/assign_value.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/copy.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/copy.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/internal_functional.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/raw_reference_cast.h
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\memory
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\xmemory
+D:\ProgramTools\CUDAPath\Development\include\thrust/transform.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/transform.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/transform.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/transform.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/for_each.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/for_each.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/for_each.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/for_each.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/for_each.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/function.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/for_each.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/for_each.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/for_each.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/distance.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/distance.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/advance.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/advance.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/advance.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/advance.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/distance.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/distance.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/execute_on_stream.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/transform.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/transform.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/transform.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/transform.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/copy.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/dispatch/is_trivial_copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/general_copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/trivial_copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/copy.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/copy_device_to_device.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/copy_device_to_device.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/copy_cross_system.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/copy_cross_system.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/temporary_array.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/tagged_iterator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/contiguous_storage.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/normal_iterator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/contiguous_storage.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/copy_construct_range.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/copy_construct_range.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/default_construct_range.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/default_construct_range.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/uninitialized_fill.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/uninitialized_fill.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/uninitialized_fill.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/uninitialized_fill.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/fill.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/fill.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/fill.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/generate.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/generate.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/generate.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/generate.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/generate.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/generate.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/generate.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/generate.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/fill.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/fill.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/fill.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/fill.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/uninitialized_fill.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/uninitialized_fill.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/uninitialized_fill.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/uninitialized_fill.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/destroy_range.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/destroy_range.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/fill_construct_range.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/fill_construct_range.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/temporary_allocator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/tagged_allocator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/tagged_allocator.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/memory.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/temporary_buffer.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/temporary_buffer.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/temporary_buffer.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/temporary_buffer.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/temporary_buffer.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/temporary_buffer.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/temporary_buffer.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/temporary_allocator.inl
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\cassert
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\assert.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/allocator/no_throw_allocator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/temporary_array.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/trivial_copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/trivial_copy.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/trivial_copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/synchronize.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/synchronize.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/trivial_copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/assign_value.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/assign_value.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/assign_value.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/iter_swap.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/iter_swap.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/iter_swap.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/iter_swap.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/swap.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/swap.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/swap_ranges.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/swap_ranges.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/swap_ranges.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/swap_ranges.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/swap_ranges.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/swap_ranges.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/swap_ranges.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/device_ptr.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/device_reference.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/device_reference.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/device_malloc.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/device_malloc.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/device_free.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/device_free.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/vector_base.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/reverse_iterator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/reverse_iterator_base.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/reverse_iterator.inl
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include\vector
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/vector_base.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/overlapped_copy.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/equal.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/equal.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/equal.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/equal.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/mismatch.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/mismatch.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/mismatch.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/mismatch.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/find.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/find.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/find.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/find.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/reduce.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/reduce.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/reduce.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/reduce.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/reduce_by_key.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/reduce_by_key.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/scatter.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/scatter.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/scatter.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/scatter.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/scatter.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/scatter.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/scatter.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/scatter.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/scan.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/scan.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/scan.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/scan.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/scan_by_key.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/scan_by_key.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/replace.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/replace.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/replace.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/generic/replace.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/replace.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/replace.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/replace.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/replace.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/scan.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/scan.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/scan.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/scan.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/scan.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/decomposition.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/scan_by_key.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/scan_by_key.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/scan_by_key.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/scan_by_key.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/reduce.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/reduce.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/reduce.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/reduce.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/reduce.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/reduce_by_key.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/reduce_by_key.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/type_traits/algorithm/intermediate_type_from_function_and_iterators.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/reduce_by_key.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/reduce_by_key.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/reduce_by_key.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/constant_iterator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/constant_iterator_base.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/discard_iterator.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/iterator/detail/discard_iterator_base.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/range/head_flags.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/range/tail_flags.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/reduce_intervals.hpp
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/find.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/find.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/find.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/find.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/mismatch.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/mismatch.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/mismatch.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/mismatch.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/adl/equal.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/detail/sequential/equal.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cpp/detail/equal.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/system/cuda/detail/equal.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/device_vector.inl
+D:\ProgramTools\CUDAPath\Development\include\thrust/host_vector.h
+D:\ProgramTools\CUDAPath\Development\include\thrust/detail/host_vector.inl
